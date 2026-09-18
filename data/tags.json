@@ -1,0 +1,511 @@
+{
+  "tags": [
+    {
+      "id": "spof",
+      "label": "Single point of failure",
+      "kind": "weakness",
+      "description": "Only one instance carries this responsibility, so losing it takes down everything downstream.",
+      "targeted_by": [
+        "hardware_failure",
+        "az_outage"
+      ],
+      "resolved_by": [
+        "add_replica",
+        "scale_out",
+        "enable_multi_az"
+      ]
+    },
+    {
+      "id": "no_backup",
+      "label": "No backup",
+      "kind": "weakness",
+      "description": "No copy of this data exists elsewhere, so any corruption or deletion is permanent.",
+      "targeted_by": [
+        "data_loss_incident",
+        "ransomware_attack"
+      ],
+      "resolved_by": [
+        "enable_backup"
+      ]
+    },
+    {
+      "id": "single_az",
+      "label": "Single availability zone",
+      "kind": "weakness",
+      "description": "All resources live in one availability zone, so a zonal failure takes the entire component offline.",
+      "targeted_by": [
+        "az_outage"
+      ],
+      "resolved_by": [
+        "enable_multi_az"
+      ]
+    },
+    {
+      "id": "single_region",
+      "label": "Single region",
+      "kind": "weakness",
+      "description": "All resources live in one cloud region, so a regional disaster eliminates every redundant path.",
+      "targeted_by": [
+        "region_outage"
+      ],
+      "resolved_by": [
+        "enable_multi_region"
+      ]
+    },
+    {
+      "id": "unencrypted",
+      "label": "Unencrypted",
+      "kind": "weakness",
+      "description": "Data is stored or transmitted in plaintext, exposing it to anyone who can read the underlying medium.",
+      "targeted_by": [
+        "data_breach",
+        "compliance_audit_failure"
+      ],
+      "resolved_by": [
+        "enable_encryption"
+      ]
+    },
+    {
+      "id": "public_exposed",
+      "label": "Publicly exposed",
+      "kind": "weakness",
+      "description": "The endpoint is reachable from the public internet without network-level restrictions, widening the attack surface.",
+      "targeted_by": [
+        "brute_force_attack",
+        "credential_stuffing"
+      ],
+      "resolved_by": [
+        "restrict_access"
+      ]
+    },
+    {
+      "id": "no_ratelimit",
+      "label": "No rate limit",
+      "kind": "weakness",
+      "description": "Unlimited inbound traffic is accepted, so a surge or malicious flood can exhaust capacity instantly.",
+      "targeted_by": [
+        "traffic_spike",
+        "ddos_attack"
+      ],
+      "resolved_by": [
+        "enable_rate_limit"
+      ]
+    },
+    {
+      "id": "no_autoscale",
+      "label": "No autoscaling",
+      "kind": "weakness",
+      "description": "Capacity is fixed at provisioning time, so unexpected load will saturate the component and cause errors.",
+      "targeted_by": [
+        "traffic_spike",
+        "load_surge"
+      ],
+      "resolved_by": [
+        "enable_autoscaling"
+      ]
+    },
+    {
+      "id": "manual_failover",
+      "label": "Manual failover",
+      "kind": "weakness",
+      "description": "Switching to a standby requires human intervention, so the outage lasts as long as it takes someone to act.",
+      "targeted_by": [
+        "primary_node_failure"
+      ],
+      "resolved_by": [
+        "enable_auto_failover"
+      ]
+    },
+    {
+      "id": "no_monitoring",
+      "label": "No monitoring",
+      "kind": "weakness",
+      "description": "No metrics or traces are collected, so failures are invisible until users report them.",
+      "targeted_by": [
+        "silent_failure",
+        "performance_degradation"
+      ],
+      "resolved_by": [
+        "enable_observability"
+      ]
+    },
+    {
+      "id": "no_alerting",
+      "label": "No alerting",
+      "kind": "weakness",
+      "description": "Even if metrics exist, no alerts fire when thresholds are breached, leaving the team unaware of ongoing incidents.",
+      "targeted_by": [
+        "silent_failure",
+        "sla_breach"
+      ],
+      "resolved_by": [
+        "enable_observability"
+      ]
+    },
+    {
+      "id": "stale_cert",
+      "label": "Stale TLS certificate",
+      "kind": "weakness",
+      "description": "The TLS certificate is expired or near expiry, causing clients to reject connections with a hard error.",
+      "targeted_by": [
+        "cert_expiry_incident"
+      ],
+      "resolved_by": [
+        "renew_cert"
+      ]
+    },
+    {
+      "id": "cold_cache",
+      "label": "Cold cache",
+      "kind": "weakness",
+      "description": "The cache has been emptied, so every request falls through to the datastore behind it and latency spikes.",
+      "targeted_by": [
+        "cache_eviction_storm",
+        "redis_restart"
+      ],
+      "resolved_by": [
+        "warm_cache"
+      ],
+      "runtime_only": true
+    },
+    {
+      "id": "unbounded_queue",
+      "label": "Unbounded queue",
+      "kind": "weakness",
+      "description": "The message queue has no depth limit or consumer throttle, so a backlog grows without bound until memory is exhausted.",
+      "targeted_by": [
+        "consumer_crash",
+        "scheduler_drift"
+      ],
+      "resolved_by": [
+        "drain_queue"
+      ],
+      "runtime_only": true
+    },
+    {
+      "id": "no_dlq",
+      "label": "No dead-letter queue",
+      "kind": "weakness",
+      "description": "A message that cannot be processed has nowhere to go, so it is retried forever or lost, and the failure is invisible.",
+      "targeted_by": [
+        "poison_message",
+        "consumer_crash"
+      ],
+      "resolved_by": [
+        "add_dlq"
+      ]
+    },
+    {
+      "id": "shared_credentials",
+      "label": "Shared credentials",
+      "kind": "weakness",
+      "description": "Multiple services or users share the same secret, so a single credential leak compromises all of them simultaneously.",
+      "targeted_by": [
+        "credential_leak",
+        "insider_threat"
+      ],
+      "resolved_by": [
+        "rotate_credentials"
+      ]
+    },
+    {
+      "id": "no_rollback",
+      "label": "No rollback capability",
+      "kind": "weakness",
+      "description": "Deployments cannot be reversed automatically, so a bad release requires a full re-deploy that prolongs the outage.",
+      "targeted_by": [
+        "bad_deploy",
+        "schema_migration_failure"
+      ],
+      "resolved_by": [
+        "enable_rollback"
+      ]
+    },
+    {
+      "id": "untested_restore",
+      "label": "Untested restore",
+      "kind": "weakness",
+      "description": "Backups exist but have never been successfully restored, so recovery procedures are unvalidated and may fail under pressure.",
+      "targeted_by": [
+        "disaster_recovery_drill",
+        "data_loss_incident"
+      ],
+      "resolved_by": [
+        "verify_restore"
+      ]
+    },
+    {
+      "id": "vertically_scalable_only",
+      "label": "Vertically scalable only",
+      "kind": "weakness",
+      "description": "Capacity can only be increased by upgrading the instance size, which has a hard ceiling and requires downtime.",
+      "targeted_by": [
+        "vertical_limit_reached",
+        "instance_size_cap"
+      ],
+      "resolved_by": [
+        "refactor_for_scale_out"
+      ]
+    },
+    {
+      "id": "has_replica",
+      "label": "Has replica",
+      "kind": "capability",
+      "description": "A second copy exists and can absorb reads or be promoted during a primary failure.",
+      "targeted_by": [
+        "replication_lag_spike"
+      ],
+      "resolved_by": []
+    },
+    {
+      "id": "auto_failover",
+      "label": "Auto failover",
+      "kind": "capability",
+      "description": "The system detects primary failure and promotes a standby automatically, minimising the recovery time objective.",
+      "targeted_by": [
+        "failover_jitter"
+      ],
+      "resolved_by": []
+    },
+    {
+      "id": "multi_az",
+      "label": "Multi-AZ",
+      "kind": "capability",
+      "description": "Resources are spread across multiple availability zones, so a single zonal outage does not cause a full service interruption.",
+      "targeted_by": [
+        "az_outage"
+      ],
+      "resolved_by": []
+    },
+    {
+      "id": "multi_region",
+      "label": "Multi-region",
+      "kind": "capability",
+      "description": "Active capacity exists in more than one region, enabling traffic to be rerouted when an entire region becomes unavailable.",
+      "targeted_by": [
+        "region_outage"
+      ],
+      "resolved_by": []
+    },
+    {
+      "id": "autoscaling",
+      "label": "Autoscaling",
+      "kind": "capability",
+      "description": "Capacity adjusts automatically in response to load, preventing saturation without manual intervention.",
+      "targeted_by": [
+        "scale_event_latency"
+      ],
+      "resolved_by": []
+    },
+    {
+      "id": "managed",
+      "label": "Managed service",
+      "kind": "capability",
+      "description": "The underlying infrastructure is operated by a cloud provider, so patching, failover, and capacity planning are delegated.",
+      "targeted_by": [
+        "provider_outage"
+      ],
+      "resolved_by": []
+    },
+    {
+      "id": "cached",
+      "label": "Cached",
+      "kind": "capability",
+      "description": "Responses are served from an intermediate cache layer, reducing load on the origin and improving read latency.",
+      "targeted_by": [
+        "cache_invalidation_storm"
+      ],
+      "resolved_by": []
+    },
+    {
+      "id": "rate_limited",
+      "label": "Rate limited",
+      "kind": "capability",
+      "description": "Inbound request volume is capped per client or globally, protecting downstream components from being overwhelmed.",
+      "targeted_by": [],
+      "resolved_by": []
+    },
+    {
+      "id": "encrypted_at_rest",
+      "label": "Encrypted at rest",
+      "kind": "capability",
+      "description": "Persisted data is encrypted on disk, so physical access to storage media does not expose plaintext content.",
+      "targeted_by": [],
+      "resolved_by": []
+    },
+    {
+      "id": "encrypted_in_transit",
+      "label": "Encrypted in transit",
+      "kind": "capability",
+      "description": "Data is wrapped in TLS before leaving the component, preventing eavesdropping on the network path.",
+      "targeted_by": [
+        "tls_handshake_error"
+      ],
+      "resolved_by": []
+    },
+    {
+      "id": "has_dlq",
+      "label": "Has dead-letter queue",
+      "kind": "capability",
+      "description": "Failed messages are routed to a dead-letter queue rather than dropped, enabling inspection and replay after the root cause is fixed.",
+      "targeted_by": [
+        "dlq_overflow"
+      ],
+      "resolved_by": []
+    },
+    {
+      "id": "has_rollback",
+      "label": "Has rollback",
+      "kind": "capability",
+      "description": "Deployments can be reversed to the previous known-good version without a full re-deploy, shortening mean time to recovery.",
+      "targeted_by": [],
+      "resolved_by": []
+    },
+    {
+      "id": "canary_capable",
+      "label": "Canary capable",
+      "kind": "capability",
+      "description": "Traffic can be split between versions, so a bad release is detected on a small percentage of users before full rollout.",
+      "targeted_by": [
+        "canary_anomaly"
+      ],
+      "resolved_by": []
+    },
+    {
+      "id": "backed_up",
+      "label": "Backed up",
+      "kind": "capability",
+      "description": "Regular snapshots of data are stored durably, providing a recovery point in the event of deletion or corruption.",
+      "targeted_by": [
+        "backup_corruption"
+      ],
+      "resolved_by": []
+    },
+    {
+      "id": "observable",
+      "label": "Observable",
+      "kind": "capability",
+      "description": "Metrics, logs, and traces are emitted and collected, giving operators full visibility into the component's internal state.",
+      "targeted_by": [],
+      "resolved_by": []
+    },
+    {
+      "id": "alerting_enabled",
+      "label": "Alerting enabled",
+      "kind": "capability",
+      "description": "Threshold rules fire notifications when key metrics breach acceptable bounds, triggering on-call response automatically.",
+      "targeted_by": [
+        "alert_storm"
+      ],
+      "resolved_by": []
+    },
+    {
+      "id": "stateful",
+      "label": "Stateful",
+      "kind": "property",
+      "description": "Holds data that cannot be recreated by restarting, so scaling and failover require state migration or replication.",
+      "targeted_by": [],
+      "resolved_by": []
+    },
+    {
+      "id": "stateless",
+      "label": "Stateless",
+      "kind": "property",
+      "description": "Carries no persistent state between requests, so any instance can be killed and replaced without data loss.",
+      "targeted_by": [],
+      "resolved_by": []
+    },
+    {
+      "id": "in_memory",
+      "label": "In-memory",
+      "kind": "property",
+      "description": "All working data is held in RAM rather than on disk, so the component's state is bounded by available memory and exists only while the process is running.",
+      "targeted_by": [
+        "process_restart",
+        "oom_kill"
+      ],
+      "resolved_by": []
+    },
+    {
+      "id": "volatile",
+      "label": "Volatile",
+      "kind": "property",
+      "description": "State does not survive a process restart, making this component unsuitable for holding data that must outlive the running process.",
+      "targeted_by": [
+        "oom_kill",
+        "process_restart"
+      ],
+      "resolved_by": []
+    },
+    {
+      "id": "durable",
+      "label": "Durable",
+      "kind": "property",
+      "description": "Data survives process restarts and hardware failures because it is flushed to persistent storage before acknowledgement.",
+      "targeted_by": [],
+      "resolved_by": []
+    },
+    {
+      "id": "horizontally_scalable",
+      "label": "Horizontally scalable",
+      "kind": "property",
+      "description": "Additional instances can be added to increase capacity linearly, without architectural changes or downtime.",
+      "targeted_by": [],
+      "resolved_by": []
+    },
+    {
+      "id": "async",
+      "label": "Asynchronous",
+      "kind": "property",
+      "description": "Processing is decoupled from the request path via a queue or event stream, so slowdowns do not block callers directly.",
+      "targeted_by": [],
+      "resolved_by": []
+    },
+    {
+      "id": "scheduled",
+      "label": "Scheduled",
+      "kind": "property",
+      "description": "Work is triggered by a timer rather than by an inbound request, so execution depends on the scheduler being available and the system clock being accurate.",
+      "targeted_by": [
+        "scheduler_drift",
+        "clock_skew"
+      ],
+      "resolved_by": []
+    },
+    {
+      "id": "third_party",
+      "label": "Third-party dependency",
+      "kind": "property",
+      "description": "This component delegates a function to a service operated outside the team's direct control, meaning its availability and behaviour are governed by the vendor rather than internal engineering.",
+      "targeted_by": [
+        "vendor_outage",
+        "api_deprecation"
+      ],
+      "resolved_by": []
+    },
+    {
+      "id": "audit_logged",
+      "label": "Audit logged",
+      "kind": "posture",
+      "description": "Access and mutations are recorded with actor, timestamp, and affected resource, satisfying compliance audit trails.",
+      "targeted_by": [],
+      "resolved_by": []
+    },
+    {
+      "id": "least_privilege",
+      "label": "Least privilege",
+      "kind": "posture",
+      "description": "The component operates with the minimum permissions needed, limiting the blast radius of a credential compromise.",
+      "targeted_by": [],
+      "resolved_by": []
+    },
+    {
+      "id": "secrets_rotated",
+      "label": "Secrets rotated",
+      "kind": "posture",
+      "description": "Credentials and secrets are rotated on a schedule, ensuring that any leaked secret becomes invalid before it can be exploited.",
+      "targeted_by": [],
+      "resolved_by": []
+    }
+  ]
+}

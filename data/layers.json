@@ -1,0 +1,53 @@
+{
+  "layers": [
+    {
+      "id": "edge",
+      "name": "Edge",
+      "layer_index": 1,
+      "on_request_path": true,
+      "description": "Where traffic first meets your system: name resolution, caching, and filtering."
+    },
+    {
+      "id": "ingress",
+      "name": "Ingress",
+      "layer_index": 2,
+      "on_request_path": true,
+      "description": "Distributes and governs traffic before it reaches application code."
+    },
+    {
+      "id": "compute",
+      "name": "Compute",
+      "layer_index": 3,
+      "on_request_path": true,
+      "description": "Runs your application code, synchronously and asynchronously."
+    },
+    {
+      "id": "data",
+      "name": "Data",
+      "layer_index": 4,
+      "on_request_path": true,
+      "description": "Stores and serves state. The hardest layer to scale and the most expensive to lose."
+    },
+    {
+      "id": "reliability",
+      "name": "Reliability",
+      "layer_index": null,
+      "on_request_path": false,
+      "description": "Does nothing until something breaks, then decides how much the break costs you."
+    },
+    {
+      "id": "observability",
+      "name": "Observability",
+      "layer_index": null,
+      "on_request_path": false,
+      "description": "Determines whether an incident arrives with diagnostic information or as a mystery."
+    },
+    {
+      "id": "delivery",
+      "name": "Delivery",
+      "layer_index": null,
+      "on_request_path": false,
+      "description": "How change reaches production, and how fast you can undo it."
+    }
+  ]
+}

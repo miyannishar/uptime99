@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["instances"],
+  "properties": {
+    "instances": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["instance_id", "def_id", "tier", "region", "health", "utilization_pct",
+                     "down", "tags_runtime", "action_cooldowns", "active_incidents", "edges_out",
+                     "provisioning_until_tick", "created_tick"],
+        "properties": {
+          "instance_id": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+          "def_id": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
+          "tier": { "type": "integer", "minimum": 1, "maximum": 4 },
+          "region": { "type": "string", "minLength": 1 },
+          "health": { "type": "number", "minimum": 0, "maximum": 100 },
+          "utilization_pct": { "type": "number", "minimum": 0 },
+          "down": { "type": "boolean" },
+          "tags_runtime": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+          "action_cooldowns": { "type": "object", "additionalProperties": { "type": "number", "minimum": 0 } },
+          "active_incidents": { "type": "array", "items": { "type": "string" } },
+          "edges_out": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+          "provisioning_until_tick": { "type": ["integer", "null"], "minimum": 0 },
+          "created_tick": { "type": "integer", "minimum": 0 }
+        }
+      }
+    }
+  }
+}

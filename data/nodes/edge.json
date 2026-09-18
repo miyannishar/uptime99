@@ -1,0 +1,270 @@
+{
+  "nodes": [
+    {
+      "id": "dns",
+      "name": "DNS",
+      "layer": "edge",
+      "role": "name_resolution",
+      "description": "Translates hostnames into IP addresses for every request. When DNS is misconfigured or your provider goes down, no client can reach any of your services — blast radius is total.",
+      "singleton": true,
+      "max_instances": 1,
+      "provides": ["dns_resolution"],
+      "requires": [],
+      "overridable_edges": true,
+      "tiers": [
+        {
+          "tier": 1,
+          "name": "Single provider",
+          "stats": {
+            "capacity": 5000,
+            "capacity_unit": "lookups_sec",
+            "base_latency_ms": 40,
+            "availability_pct": 99.5,
+            "cost_month": 5,
+            "provision_time_s": 10,
+            "blast_radius": 1.0,
+            "propagation_s": 3600,
+            "ttl_s": 3600
+          },
+          "tags": ["third_party", "spof", "single_region", "no_monitoring"]
+        },
+        {
+          "tier": 2,
+          "name": "Managed DNS, low TTL",
+          "stats": {
+            "capacity": 50000,
+            "capacity_unit": "lookups_sec",
+            "base_latency_ms": 20,
+            "availability_pct": 99.9,
+            "cost_month": 25,
+            "provision_time_s": 15,
+            "blast_radius": 0.95,
+            "propagation_s": 300,
+            "ttl_s": 300
+          },
+          "tags": ["third_party", "managed", "observable"]
+        },
+        {
+          "tier": 3,
+          "name": "Anycast, two providers",
+          "stats": {
+            "capacity": 500000,
+            "capacity_unit": "lookups_sec",
+            "base_latency_ms": 8,
+            "availability_pct": 99.99,
+            "cost_month": 120,
+            "provision_time_s": 30,
+            "blast_radius": 0.4,
+            "propagation_s": 60,
+            "ttl_s": 60
+          },
+          "tags": ["third_party", "managed", "multi_region", "auto_failover", "observable"],
+          "actions_deny": ["upgrade_tier"]
+        }
+      ]
+    },
+    {
+      "id": "cdn",
+      "name": "CDN",
+      "layer": "edge",
+      "role": "edge_cache",
+      "description": "Caches responses at edge locations close to users, absorbing traffic surges before they reach your origin. Cache invalidation bugs and origin misconfigurations can turn a CDN from a shield into a bottleneck.",
+      "singleton": false,
+      "max_instances": 2,
+      "provides": ["edge_cache"],
+      "requires": [
+        {
+          "port": "origin",
+          "accepts": ["origin"],
+          "min": 1,
+          "max": 3
+        }
+      ],
+      "overridable_edges": true,
+      "tiers": [
+        {
+          "tier": 1,
+          "name": "Basic CDN",
+          "stats": {
+            "capacity": 10000,
+            "capacity_unit": "rps",
+            "base_latency_ms": 15,
+            "availability_pct": 99.9,
+            "cost_month": 20,
+            "provision_time_s": 10,
+            "blast_radius": 0.3,
+            "edge_locations": 20,
+            "hit_ratio_pct": 70
+          },
+          "cost_variable": {
+            "per_gb_transfer": 0.08
+          },
+          "tags": ["third_party", "stateless", "cached", "single_region"]
+        },
+        {
+          "tier": 2,
+          "name": "Global CDN + shield",
+          "stats": {
+            "capacity": 100000,
+            "capacity_unit": "rps",
+            "base_latency_ms": 8,
+            "availability_pct": 99.95,
+            "cost_month": 90,
+            "provision_time_s": 15,
+            "blast_radius": 0.25,
+            "edge_locations": 120,
+            "hit_ratio_pct": 88,
+            "bandwidth_gbps": 40
+          },
+          "cost_variable": {
+            "per_gb_transfer": 0.05
+          },
+          "tags": ["third_party", "stateless", "cached", "multi_region", "managed"]
+        },
+        {
+          "tier": 3,
+          "name": "Multi-CDN",
+          "stats": {
+            "capacity": 1000000,
+            "capacity_unit": "rps",
+            "base_latency_ms": 5,
+            "availability_pct": 99.99,
+            "cost_month": 400,
+            "provision_time_s": 30,
+            "blast_radius": 0.15,
+            "edge_locations": 300,
+            "hit_ratio_pct": 94,
+            "bandwidth_gbps": 400
+          },
+          "cost_variable": {
+            "per_gb_transfer": 0.03
+          },
+          "tags": ["third_party", "stateless", "cached", "multi_region", "managed", "auto_failover", "rate_limited"],
+          "actions_deny": ["upgrade_tier"]
+        }
+      ]
+    },
+    {
+      "id": "waf",
+      "name": "WAF",
+      "layer": "edge",
+      "role": "traffic_filter",
+      "description": "Web Application Firewall that inspects every inbound request against configurable rulesets. Over-broad rules block legitimate users; under-tuned rules let attacks saturate your backend before you know there is an incident.",
+      "singleton": true,
+      "max_instances": 1,
+      "provides": ["traffic_filter"],
+      "requires": [],
+      "overridable_edges": true,
+      "tiers": [
+        {
+          "tier": 1,
+          "name": "Managed ruleset",
+          "stats": {
+            "capacity": 20000,
+            "capacity_unit": "rps",
+            "base_latency_ms": 6,
+            "availability_pct": 99.9,
+            "cost_month": 30,
+            "provision_time_s": 10,
+            "blast_radius": 0.5,
+            "rule_count": 50
+          },
+          "tags": ["third_party", "managed", "rate_limited"]
+        },
+        {
+          "tier": 2,
+          "name": "Tuned rules",
+          "stats": {
+            "capacity": 100000,
+            "capacity_unit": "rps",
+            "base_latency_ms": 4,
+            "availability_pct": 99.95,
+            "cost_month": 120,
+            "provision_time_s": 20,
+            "blast_radius": 0.4,
+            "rule_count": 200
+          },
+          "tags": ["third_party", "managed", "rate_limited", "audit_logged"]
+        },
+        {
+          "tier": 3,
+          "name": "WAF + DDoS shield",
+          "stats": {
+            "capacity": 2000000,
+            "capacity_unit": "rps",
+            "base_latency_ms": 3,
+            "availability_pct": 99.99,
+            "cost_month": 600,
+            "provision_time_s": 30,
+            "blast_radius": 0.2,
+            "rule_count": 500
+          },
+          "tags": ["third_party", "managed", "rate_limited", "audit_logged", "multi_region"],
+          "actions_deny": ["upgrade_tier"]
+        }
+      ]
+    },
+    {
+      "id": "tls_cert",
+      "name": "TLS Certificate",
+      "layer": "edge",
+      "role": "tls_termination",
+      "description": "Wraps all connections in TLS so traffic cannot be intercepted in transit. An expired or manually managed certificate causes every client to hard-fail with no graceful degradation until the cert is replaced.",
+      "singleton": true,
+      "max_instances": 1,
+      "provides": ["tls"],
+      "requires": [],
+      "overridable_edges": true,
+      "tiers": [
+        {
+          "tier": 1,
+          "name": "Manual certificate",
+          "stats": {
+            "capacity": 0,
+            "capacity_unit": "none",
+            "base_latency_ms": 1,
+            "availability_pct": 99.0,
+            "cost_month": 1,
+            "provision_time_s": 5,
+            "blast_radius": 1.0,
+            "cert_expiry_days": 90
+          },
+          "tags": ["encrypted_in_transit", "stale_cert", "spof", "no_monitoring"]
+        },
+        {
+          "tier": 2,
+          "name": "ACME auto-renew",
+          "stats": {
+            "capacity": 0,
+            "capacity_unit": "none",
+            "base_latency_ms": 1,
+            "availability_pct": 99.9,
+            "cost_month": 5,
+            "provision_time_s": 10,
+            "blast_radius": 0.8,
+            "cert_expiry_days": 90,
+            "rotation_days": 60
+          },
+          "tags": ["encrypted_in_transit", "managed", "secrets_rotated"]
+        },
+        {
+          "tier": 3,
+          "name": "Managed cert + expiry alerts",
+          "stats": {
+            "capacity": 0,
+            "capacity_unit": "none",
+            "base_latency_ms": 1,
+            "availability_pct": 99.99,
+            "cost_month": 15,
+            "provision_time_s": 10,
+            "blast_radius": 0.3,
+            "cert_expiry_days": 365,
+            "rotation_days": 30
+          },
+          "tags": ["encrypted_in_transit", "managed", "secrets_rotated", "observable", "alerting_enabled"],
+          "actions_deny": ["upgrade_tier"]
+        }
+      ]
+    }
+  ]
+}

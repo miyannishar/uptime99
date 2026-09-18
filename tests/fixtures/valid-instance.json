@@ -1,0 +1,19 @@
+{
+  "instances": [
+    {
+      "instance_id": "pg-primary",
+      "def_id": "postgres",
+      "tier": 2,
+      "region": "us-east-1",
+      "health": 78,
+      "utilization_pct": 88,
+      "down": false,
+      "tags_runtime": ["stateful", "durable", "has_replica", "manual_failover", "single_az"],
+      "action_cooldowns": { "failover": 40 },
+      "active_incidents": ["inc_0142"],
+      "edges_out": ["redis-01"],
+      "provisioning_until_tick": null,
+      "created_tick": 120
+    }
+  ]
+}

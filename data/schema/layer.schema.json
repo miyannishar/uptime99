@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["layers"],
+  "properties": {
+    "layers": {
+      "type": "array",
+      "minItems": 7,
+      "maxItems": 7,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "name", "layer_index", "on_request_path", "description"],
+        "properties": {
+          "id": { "enum": ["edge", "ingress", "compute", "data", "reliability", "observability", "delivery"] },
+          "name": { "type": "string", "minLength": 1 },
+          "layer_index": { "type": ["integer", "null"], "minimum": 1, "maximum": 4 },
+          "on_request_path": { "type": "boolean" },
+          "description": { "type": "string", "minLength": 10 }
+        }
+      }
+    }
+  }
+}

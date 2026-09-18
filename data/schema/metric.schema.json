@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["metrics", "economy"],
+  "properties": {
+    "metrics": {
+      "type": "array",
+      "minItems": 7,
+      "maxItems": 7,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "name", "kind", "derived_from", "formula", "unit",
+                     "healthy_range", "clamp", "direction"],
+        "properties": {
+          "id": { "enum": ["uptime_pct", "p95_latency_ms", "error_rate_pct", "reputation",
+                           "users", "cost_month", "profit_month"] },
+          "name": { "type": "string", "minLength": 1 },
+          "kind": { "enum": ["technical", "business"] },
+          "derived_from": { "enum": ["graph", "history", "instances", "technical", "business"] },
+          "formula": { "type": "string", "minLength": 3 },
+          "unit": { "enum": ["percent", "ms", "count", "currency_month", "score"] },
+          "healthy_range": { "type": "array", "minItems": 2, "maxItems": 2, "items": { "type": "number" } },
+          "clamp": { "type": "array", "minItems": 2, "maxItems": 2, "items": { "type": "number" } },
+          "direction": { "enum": ["higher_is_better", "lower_is_better"] }
+        }
+      }
+    },
+    "economy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["arpu", "starting_budget", "credit_rate", "emergency_premium_multiplier",
+                   "reputation_decay_per_tick", "reputation_recovery_per_tick", "tick_seconds",
+                   "reputation_growth_rate", "latency_churn_rate", "outage_churn_rate",
+                   "saturation_knee", "saturation_exponent",
+                   "ledger_event_kinds"],
+      "properties": {
+        "arpu": { "type": "number", "minimum": 0 },
+        "starting_budget": { "type": "number", "minimum": 0 },
+        "credit_rate": { "type": "number", "minimum": 0 },
+        "emergency_premium_multiplier": { "type": "number", "minimum": 1 },
+        "reputation_decay_per_tick": { "type": "number", "minimum": 0 },
+        "reputation_recovery_per_tick": { "type": "number", "minimum": 0 },
+        "tick_seconds": { "type": "number", "minimum": 1 },
+        "reputation_growth_rate": { "type": "number", "minimum": 0 },
+        "latency_churn_rate": { "type": "number", "minimum": 0 },
+        "outage_churn_rate": { "type": "number", "minimum": 0 },
+        "saturation_knee": { "type": "number", "minimum": 0, "maximum": 1 },
+        "saturation_exponent": { "type": "number", "minimum": 1 },
+        "ledger_event_kinds": {
+          "type": "array",
+          "items": { "enum": ["provision", "action", "sla_credit", "overage",
+                              "emergency_premium", "data_egress", "incident_remediation"] }
+        }
+      }
+    }
+  }
+}

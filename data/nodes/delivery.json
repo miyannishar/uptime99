@@ -1,0 +1,193 @@
+{
+  "nodes": [
+    {
+      "id": "ci_cd",
+      "name": "CI/CD Pipeline",
+      "layer": "delivery",
+      "role": "delivery_pipeline",
+      "description": "Automates the build, test, and deploy cycle so that code reaches production consistently and without manual hand-offs. Skipping automation is cheap until a bad deploy at 3 AM requires a manual rollback by someone reading instructions for the first time.",
+      "singleton": true,
+      "max_instances": 1,
+      "provides": [],
+      "requires": [],
+      "overridable_edges": false,
+      "tiers": [
+        {
+          "tier": 1,
+          "name": "Manual deploy from a laptop",
+          "stats": {
+            "capacity": 0,
+            "capacity_unit": "none",
+            "base_latency_ms": 0,
+            "availability_pct": 90.0,
+            "cost_month": 1,
+            "provision_time_s": 5,
+            "blast_radius": 0,
+            "pipeline_minutes": 45,
+            "rollback_time_s": 1800
+          },
+          "tags": ["no_rollback", "shared_credentials"]
+        },
+        {
+          "tier": 2,
+          "name": "CI pipeline with tests",
+          "stats": {
+            "capacity": 0,
+            "capacity_unit": "none",
+            "base_latency_ms": 0,
+            "availability_pct": 99.0,
+            "cost_month": 50,
+            "provision_time_s": 60,
+            "blast_radius": 0,
+            "pipeline_minutes": 15,
+            "rollback_time_s": 300
+          },
+          "cost_variable": {
+            "per_build_minute": 0.008
+          },
+          "tags": ["has_rollback", "audit_logged"]
+        },
+        {
+          "tier": 3,
+          "name": "Continuous delivery + canary + auto-rollback",
+          "stats": {
+            "capacity": 0,
+            "capacity_unit": "none",
+            "base_latency_ms": 0,
+            "availability_pct": 99.5,
+            "cost_month": 200,
+            "provision_time_s": 120,
+            "blast_radius": 0,
+            "pipeline_minutes": 8,
+            "rollback_time_s": 60
+          },
+          "cost_variable": {
+            "per_build_minute": 0.008
+          },
+          "tags": ["has_rollback", "canary_capable", "audit_logged", "observable"],
+          "actions_deny": ["upgrade_tier"]
+        }
+      ]
+    },
+    {
+      "id": "feature_flags",
+      "name": "Feature Flags",
+      "layer": "delivery",
+      "role": "release_control",
+      "description": "Decouples code deployment from feature activation, allowing gradual rollouts and instant kill-switches without a new deploy. Without flags, every release is all-or-nothing, and the only way to undo a bad feature is a full redeploy at the worst possible time.",
+      "singleton": true,
+      "max_instances": 1,
+      "provides": [],
+      "requires": [],
+      "overridable_edges": false,
+      "tiers": [
+        {
+          "tier": 1,
+          "name": "Environment variables",
+          "stats": {
+            "capacity": 0,
+            "capacity_unit": "none",
+            "base_latency_ms": 0,
+            "availability_pct": 95.0,
+            "cost_month": 1,
+            "provision_time_s": 10,
+            "blast_radius": 0,
+            "flag_count": 5
+          },
+          "tags": ["no_rollback"]
+        },
+        {
+          "tier": 2,
+          "name": "Flag service",
+          "stats": {
+            "capacity": 0,
+            "capacity_unit": "none",
+            "base_latency_ms": 0,
+            "availability_pct": 99.5,
+            "cost_month": 40,
+            "provision_time_s": 20,
+            "blast_radius": 0,
+            "flag_count": 50
+          },
+          "tags": ["has_rollback", "managed", "audit_logged"]
+        },
+        {
+          "tier": 3,
+          "name": "Gradual rollout + kill switch",
+          "stats": {
+            "capacity": 0,
+            "capacity_unit": "none",
+            "base_latency_ms": 0,
+            "availability_pct": 99.9,
+            "cost_month": 150,
+            "provision_time_s": 30,
+            "blast_radius": 0,
+            "flag_count": 300
+          },
+          "tags": ["has_rollback", "managed", "audit_logged", "canary_capable"],
+          "actions_deny": ["upgrade_tier"]
+        }
+      ]
+    },
+    {
+      "id": "secrets_manager",
+      "name": "Secrets Manager",
+      "layer": "delivery",
+      "role": "secret_store",
+      "description": "Stores and distributes credentials, API keys, and certificates so that secrets never appear in source code or environment files. Tier-1 secrets in dotfiles feel harmless until a repository is made public or a developer's laptop is lost, at which point every service sharing those credentials is simultaneously compromised.",
+      "singleton": true,
+      "max_instances": 1,
+      "provides": [],
+      "requires": [],
+      "overridable_edges": false,
+      "tiers": [
+        {
+          "tier": 1,
+          "name": "Secrets in env files",
+          "stats": {
+            "capacity": 0,
+            "capacity_unit": "none",
+            "base_latency_ms": 0,
+            "availability_pct": 95.0,
+            "cost_month": 1,
+            "provision_time_s": 5,
+            "blast_radius": 0,
+            "rotation_days": 0
+          },
+          "tags": ["shared_credentials", "unencrypted"]
+        },
+        {
+          "tier": 2,
+          "name": "Managed secret store",
+          "stats": {
+            "capacity": 0,
+            "capacity_unit": "none",
+            "base_latency_ms": 0,
+            "availability_pct": 99.9,
+            "cost_month": 30,
+            "provision_time_s": 25,
+            "blast_radius": 0,
+            "rotation_days": 90
+          },
+          "tags": ["encrypted_at_rest", "least_privilege", "managed", "audit_logged"]
+        },
+        {
+          "tier": 3,
+          "name": "Auto-rotating, least privilege",
+          "stats": {
+            "capacity": 0,
+            "capacity_unit": "none",
+            "base_latency_ms": 0,
+            "availability_pct": 99.95,
+            "cost_month": 120,
+            "provision_time_s": 45,
+            "blast_radius": 0,
+            "rotation_days": 30
+          },
+          "tags": ["encrypted_at_rest", "least_privilege", "managed", "audit_logged", "secrets_rotated"],
+          "actions_deny": ["upgrade_tier"]
+        }
+      ]
+    }
+  ]
+}

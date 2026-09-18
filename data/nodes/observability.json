@@ -1,0 +1,388 @@
+{
+  "nodes": [
+    {
+      "id": "metrics_pipeline",
+      "name": "Metrics Pipeline",
+      "layer": "observability",
+      "role": "metrics_collection",
+      "description": "Collects, stores, and queries numeric time-series data so that operators can track system behaviour over time. The hard part is controlling cardinality: an explosion of unique label combinations exhausts storage and query capacity faster than any other failure mode.",
+      "singleton": true,
+      "max_instances": 1,
+      "provides": [],
+      "requires": [],
+      "overridable_edges": false,
+      "tiers": [
+        {
+          "tier": 1,
+          "name": "Host metrics only",
+          "stats": {
+            "capacity": 10000,
+            "capacity_unit": "events_sec",
+            "base_latency_ms": 0,
+            "availability_pct": 99.0,
+            "cost_month": 10,
+            "provision_time_s": 20,
+            "blast_radius": 0,
+            "retention_days": 7,
+            "cardinality_max": 10000,
+            "sample_rate_pct": 100
+          },
+          "tags": ["observable", "no_alerting"]
+        },
+        {
+          "tier": 2,
+          "name": "Application and infrastructure metrics",
+          "stats": {
+            "capacity": 200000,
+            "capacity_unit": "events_sec",
+            "base_latency_ms": 0,
+            "availability_pct": 99.5,
+            "cost_month": 80,
+            "provision_time_s": 40,
+            "blast_radius": 0,
+            "retention_days": 30,
+            "cardinality_max": 500000,
+            "sample_rate_pct": 100
+          },
+          "cost_variable": {
+            "per_million_ops": 0.10
+          },
+          "tags": ["observable", "managed", "alerting_enabled"]
+        },
+        {
+          "tier": 3,
+          "name": "SLO metrics and dashboards",
+          "stats": {
+            "capacity": 2000000,
+            "capacity_unit": "events_sec",
+            "base_latency_ms": 0,
+            "availability_pct": 99.9,
+            "cost_month": 350,
+            "provision_time_s": 60,
+            "blast_radius": 0,
+            "retention_days": 400,
+            "cardinality_max": 10000000,
+            "sample_rate_pct": 100
+          },
+          "cost_variable": {
+            "per_million_ops": 0.08
+          },
+          "tags": ["observable", "managed", "alerting_enabled", "multi_region"],
+          "actions_deny": ["upgrade_tier"]
+        }
+      ]
+    },
+    {
+      "id": "log_pipeline",
+      "name": "Log Pipeline",
+      "layer": "observability",
+      "role": "log_collection",
+      "description": "Aggregates, ships, and indexes text events so that engineers can reconstruct what happened inside a system at any point in time. Ingestion cost scales with volume in a way that surprises teams whose services become unexpectedly chatty under load.",
+      "singleton": true,
+      "max_instances": 1,
+      "provides": [],
+      "requires": [],
+      "overridable_edges": false,
+      "tiers": [
+        {
+          "tier": 1,
+          "name": "Log files on the host",
+          "stats": {
+            "capacity": 5000,
+            "capacity_unit": "events_sec",
+            "base_latency_ms": 0,
+            "availability_pct": 95.0,
+            "cost_month": 1,
+            "provision_time_s": 10,
+            "blast_radius": 0,
+            "retention_days": 3,
+            "sample_rate_pct": 100
+          },
+          "tags": ["no_monitoring"]
+        },
+        {
+          "tier": 2,
+          "name": "Centralised logging",
+          "stats": {
+            "capacity": 100000,
+            "capacity_unit": "events_sec",
+            "base_latency_ms": 0,
+            "availability_pct": 99.5,
+            "cost_month": 120,
+            "provision_time_s": 30,
+            "blast_radius": 0,
+            "retention_days": 30,
+            "sample_rate_pct": 100
+          },
+          "cost_variable": {
+            "per_gb_ingested": 0.50
+          },
+          "tags": ["observable", "managed", "audit_logged"]
+        },
+        {
+          "tier": 3,
+          "name": "Structured logs with search",
+          "stats": {
+            "capacity": 1000000,
+            "capacity_unit": "events_sec",
+            "base_latency_ms": 0,
+            "availability_pct": 99.9,
+            "cost_month": 450,
+            "provision_time_s": 60,
+            "blast_radius": 0,
+            "retention_days": 365,
+            "sample_rate_pct": 100
+          },
+          "cost_variable": {
+            "per_gb_ingested": 0.35
+          },
+          "tags": ["observable", "managed", "audit_logged", "encrypted_at_rest"],
+          "actions_deny": ["upgrade_tier"]
+        }
+      ]
+    },
+    {
+      "id": "tracing",
+      "name": "Distributed Tracing",
+      "layer": "observability",
+      "role": "distributed_tracing",
+      "description": "Propagates trace context across service boundaries so that a single user request can be followed end-to-end through every hop in the system. Without it, latency outliers are nearly impossible to attribute to the correct service in a microservices architecture.",
+      "singleton": true,
+      "max_instances": 1,
+      "provides": [],
+      "requires": [],
+      "overridable_edges": false,
+      "tiers": [
+        {
+          "tier": 1,
+          "name": "Head sampling at one percent",
+          "stats": {
+            "capacity": 20000,
+            "capacity_unit": "events_sec",
+            "base_latency_ms": 0,
+            "availability_pct": 99.0,
+            "cost_month": 40,
+            "provision_time_s": 45,
+            "blast_radius": 0,
+            "sample_rate_pct": 1,
+            "retention_days": 7
+          },
+          "tags": ["observable"]
+        },
+        {
+          "tier": 2,
+          "name": "Tail-based sampling",
+          "stats": {
+            "capacity": 200000,
+            "capacity_unit": "events_sec",
+            "base_latency_ms": 0,
+            "availability_pct": 99.5,
+            "cost_month": 180,
+            "provision_time_s": 60,
+            "blast_radius": 0,
+            "sample_rate_pct": 10,
+            "retention_days": 30
+          },
+          "tags": ["observable", "managed"]
+        },
+        {
+          "tier": 3,
+          "name": "Full distributed tracing",
+          "stats": {
+            "capacity": 2000000,
+            "capacity_unit": "events_sec",
+            "base_latency_ms": 0,
+            "availability_pct": 99.9,
+            "cost_month": 600,
+            "provision_time_s": 90,
+            "blast_radius": 0,
+            "sample_rate_pct": 100,
+            "retention_days": 90
+          },
+          "tags": ["observable", "managed", "multi_region"],
+          "actions_deny": ["upgrade_tier"]
+        }
+      ]
+    },
+    {
+      "id": "alerting",
+      "name": "Alerting",
+      "layer": "observability",
+      "role": "alert_routing",
+      "description": "Evaluates metric and log conditions against configured thresholds and routes notifications to the correct person or team. The failure mode is alert fatigue: too many low-signal alerts train engineers to ignore pages, so the first real incident gets missed.",
+      "singleton": true,
+      "max_instances": 1,
+      "provides": [],
+      "requires": [],
+      "overridable_edges": false,
+      "tiers": [
+        {
+          "tier": 1,
+          "name": "Email alerts",
+          "stats": {
+            "capacity": 0,
+            "capacity_unit": "none",
+            "base_latency_ms": 0,
+            "availability_pct": 95.0,
+            "cost_month": 1,
+            "provision_time_s": 10,
+            "blast_radius": 0,
+            "rule_count": 5
+          },
+          "tags": ["alerting_enabled", "no_monitoring"]
+        },
+        {
+          "tier": 2,
+          "name": "Paging with escalation",
+          "stats": {
+            "capacity": 0,
+            "capacity_unit": "none",
+            "base_latency_ms": 0,
+            "availability_pct": 99.5,
+            "cost_month": 60,
+            "provision_time_s": 20,
+            "blast_radius": 0,
+            "rule_count": 40
+          },
+          "tags": ["alerting_enabled", "managed", "observable"]
+        },
+        {
+          "tier": 3,
+          "name": "SLO burn alerts with routing",
+          "stats": {
+            "capacity": 0,
+            "capacity_unit": "none",
+            "base_latency_ms": 0,
+            "availability_pct": 99.9,
+            "cost_month": 200,
+            "provision_time_s": 30,
+            "blast_radius": 0,
+            "rule_count": 150
+          },
+          "tags": ["alerting_enabled", "managed", "observable", "audit_logged"],
+          "actions_deny": ["upgrade_tier"]
+        }
+      ]
+    },
+    {
+      "id": "status_page",
+      "name": "Status Page",
+      "layer": "observability",
+      "role": "public_comms",
+      "description": "Publishes the current operational state of the system to users and stakeholders outside the engineering team. A missing or stale status page turns a contained incident into a trust crisis, because customers fill the information vacuum with worst-case assumptions.",
+      "singleton": true,
+      "max_instances": 1,
+      "provides": [],
+      "requires": [],
+      "overridable_edges": false,
+      "tiers": [
+        {
+          "tier": 1,
+          "name": "Updated by hand",
+          "stats": {
+            "capacity": 0,
+            "capacity_unit": "none",
+            "base_latency_ms": 0,
+            "availability_pct": 98.0,
+            "cost_month": 1,
+            "provision_time_s": 10,
+            "blast_radius": 0
+          },
+          "tags": ["third_party"]
+        },
+        {
+          "tier": 2,
+          "name": "Hosted status page",
+          "stats": {
+            "capacity": 0,
+            "capacity_unit": "none",
+            "base_latency_ms": 0,
+            "availability_pct": 99.9,
+            "cost_month": 30,
+            "provision_time_s": 15,
+            "blast_radius": 0
+          },
+          "tags": ["third_party", "managed", "multi_region"]
+        },
+        {
+          "tier": 3,
+          "name": "Driven automatically by monitors",
+          "stats": {
+            "capacity": 0,
+            "capacity_unit": "none",
+            "base_latency_ms": 0,
+            "availability_pct": 99.95,
+            "cost_month": 100,
+            "provision_time_s": 30,
+            "blast_radius": 0
+          },
+          "tags": ["third_party", "managed", "multi_region", "observable", "alerting_enabled"],
+          "actions_deny": ["upgrade_tier"]
+        }
+      ]
+    },
+    {
+      "id": "oncall_rotation",
+      "name": "On-call Rotation",
+      "layer": "observability",
+      "role": "human_response",
+      "description": "Defines which engineer is paged for an incident and how quickly the alert escalates if there is no acknowledgement. It is the only node that models human capacity rather than machine capacity, and fatigue accumulates with each incident until the rotation is large enough to spread the load.",
+      "singleton": true,
+      "max_instances": 1,
+      "provides": [],
+      "requires": [],
+      "overridable_edges": false,
+      "tiers": [
+        {
+          "tier": 1,
+          "name": "One engineer, always",
+          "stats": {
+            "capacity": 0,
+            "capacity_unit": "none",
+            "base_latency_ms": 0,
+            "availability_pct": 90.0,
+            "cost_month": 1,
+            "provision_time_s": 5,
+            "blast_radius": 0,
+            "oncall_engineers": 1,
+            "fatigue_rate": 3.0
+          },
+          "tags": ["spof", "manual_failover"]
+        },
+        {
+          "tier": 2,
+          "name": "Three-person rotation",
+          "stats": {
+            "capacity": 0,
+            "capacity_unit": "none",
+            "base_latency_ms": 0,
+            "availability_pct": 99.0,
+            "cost_month": 400,
+            "provision_time_s": 20,
+            "blast_radius": 0,
+            "oncall_engineers": 3,
+            "fatigue_rate": 1.0
+          },
+          "tags": ["observable"]
+        },
+        {
+          "tier": 3,
+          "name": "Follow-the-sun rotation",
+          "stats": {
+            "capacity": 0,
+            "capacity_unit": "none",
+            "base_latency_ms": 0,
+            "availability_pct": 99.9,
+            "cost_month": 900,
+            "provision_time_s": 40,
+            "blast_radius": 0,
+            "oncall_engineers": 6,
+            "fatigue_rate": 0.4
+          },
+          "tags": ["observable", "multi_region"],
+          "actions_deny": ["upgrade_tier"]
+        }
+      ]
+    }
+  ]
+}

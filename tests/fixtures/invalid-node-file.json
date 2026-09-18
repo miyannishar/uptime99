@@ -1,0 +1,34 @@
+{
+  "nodes": [
+    {
+      "id": "fixture_store",
+      "name": "Fixture Store",
+      "layer": "data",
+      "role": "relational_store",
+      "description": "A fixture node used only by schema tests.",
+      "singleton": false,
+      "max_instances": 4,
+      "provides": ["sql_query"],
+      "requires": [],
+      "overridable_edges": true,
+      "tiers": [
+        { "tier": 1, "name": "Small",
+          "stats": { "capacity": 100, "capacity_unit": "qps", "base_latency_ms": 10,
+                     "availability_pct": 99.0, "cost_month": 10, "provision_time_s": 30,
+                     "blast_radius": 0.8, "max_connections": 50, "cpu_cores": 2, "ram_gb": 4 },
+          "cost_variable": { "per_gb_storage_month": 0.1 },
+          "tags": ["stateful", "spof"] },
+        { "tier": 2, "name": "Medium",
+          "stats": { "capacity": 400, "capacity_unit": "qps", "base_latency_ms": 9,
+                     "availability_pct": 99.5, "cost_month": 5, "provision_time_s": 60,
+                     "blast_radius": 0.6, "max_connections": 200, "cpu_cores": 4, "ram_gb": 8 },
+          "tags": ["stateful", "has_replica"] },
+        { "tier": 3, "name": "Large",
+          "stats": { "capacity": 2000, "capacity_unit": "qps", "base_latency_ms": 8,
+                     "availability_pct": 99.95, "cost_month": 160, "provision_time_s": 120,
+                     "blast_radius": 0.4, "max_connections": 800, "cpu_cores": 8, "ram_gb": 32 },
+          "tags": ["stateful", "has_replica", "managed", "multi_az"] }
+      ]
+    }
+  ]
+}

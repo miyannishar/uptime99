@@ -1,0 +1,175 @@
+{
+  "nodes": [
+    {
+      "id": "backup_system",
+      "name": "Backup System",
+      "layer": "reliability",
+      "role": "backup",
+      "description": "Stores durable copies of persistent data so that accidental deletion, corruption, or a ransomware attack can be reversed. The failure mode is invisible: backups appear healthy until a restore is attempted under pressure and the procedure has never been exercised.",
+      "singleton": true,
+      "max_instances": 1,
+      "provides": [],
+      "requires": [],
+      "overridable_edges": false,
+      "tiers": [
+        {
+          "tier": 1,
+          "name": "Manual snapshots",
+          "stats": {
+            "capacity": 0,
+            "capacity_unit": "none",
+            "base_latency_ms": 0,
+            "availability_pct": 95.0,
+            "cost_month": 10,
+            "provision_time_s": 15,
+            "blast_radius": 0,
+            "rpo_minutes": 1440,
+            "rto_minutes": 480,
+            "backup_frequency_h": 24
+          },
+          "cost_variable": {
+            "per_gb_storage_month": 0.05
+          },
+          "tags": [
+            "untested_restore",
+            "no_monitoring"
+          ]
+        },
+        {
+          "tier": 2,
+          "name": "Automated daily, restore tested",
+          "stats": {
+            "capacity": 0,
+            "capacity_unit": "none",
+            "base_latency_ms": 0,
+            "availability_pct": 99.5,
+            "cost_month": 45,
+            "provision_time_s": 30,
+            "blast_radius": 0,
+            "rpo_minutes": 1440,
+            "rto_minutes": 120,
+            "backup_frequency_h": 24,
+            "retention_days": 30
+          },
+          "cost_variable": {
+            "per_gb_storage_month": 0.05
+          },
+          "tags": [
+            "backed_up",
+            "managed",
+            "observable"
+          ]
+        },
+        {
+          "tier": 3,
+          "name": "Point-in-time, cross-region, drilled",
+          "stats": {
+            "capacity": 0,
+            "capacity_unit": "none",
+            "base_latency_ms": 0,
+            "availability_pct": 99.9,
+            "cost_month": 180,
+            "provision_time_s": 60,
+            "blast_radius": 0,
+            "rpo_minutes": 5,
+            "rto_minutes": 20,
+            "backup_frequency_h": 1,
+            "retention_days": 90
+          },
+          "cost_variable": {
+            "per_gb_storage_month": 0.08
+          },
+          "tags": [
+            "backed_up",
+            "managed",
+            "observable",
+            "multi_region",
+            "encrypted_at_rest",
+            "alerting_enabled"
+          ],
+          "actions_deny": [
+            "upgrade_tier"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "dr_region",
+      "name": "Disaster Recovery Region",
+      "layer": "reliability",
+      "role": "disaster_recovery",
+      "description": "Maintains a copy of the system in a separate geographic region so that a full regional failure does not end availability permanently. Cold and warm standby tiers look cheap on paper until an actual disaster reveals that the runbook has never been tested and the replication lag is months behind.",
+      "singleton": true,
+      "max_instances": 1,
+      "provides": [],
+      "requires": [],
+      "overridable_edges": false,
+      "tiers": [
+        {
+          "tier": 1,
+          "name": "Cold standby, runbook only",
+          "stats": {
+            "capacity": 0,
+            "capacity_unit": "none",
+            "base_latency_ms": 0,
+            "availability_pct": 90.0,
+            "cost_month": 20,
+            "provision_time_s": 300,
+            "blast_radius": 0,
+            "rpo_minutes": 1440,
+            "rto_minutes": 1440
+          },
+          "tags": [
+            "untested_restore",
+            "manual_failover",
+            "single_region"
+          ]
+        },
+        {
+          "tier": 2,
+          "name": "Warm standby",
+          "stats": {
+            "capacity": 0,
+            "capacity_unit": "none",
+            "base_latency_ms": 0,
+            "availability_pct": 99.0,
+            "cost_month": 350,
+            "provision_time_s": 600,
+            "blast_radius": 0,
+            "rpo_minutes": 60,
+            "rto_minutes": 120
+          },
+          "tags": [
+            "multi_region",
+            "manual_failover",
+            "backed_up"
+          ]
+        },
+        {
+          "tier": 3,
+          "name": "Hot active-active",
+          "stats": {
+            "capacity": 0,
+            "capacity_unit": "none",
+            "base_latency_ms": 0,
+            "availability_pct": 99.9,
+            "cost_month": 1200,
+            "provision_time_s": 1200,
+            "blast_radius": 0,
+            "rpo_minutes": 1,
+            "rto_minutes": 5
+          },
+          "tags": [
+            "multi_region",
+            "auto_failover",
+            "backed_up",
+            "observable"
+          ],
+          "actions_deny": [
+            "upgrade_tier"
+          ]
+        }
+      ]
+    }
+  ]
+}

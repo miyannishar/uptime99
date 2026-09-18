@@ -1,0 +1,975 @@
+{
+  "actions": [
+    {
+      "id": "restart",
+      "name": "Restart Service",
+      "description": "Kill and restart the service process to clear transient faults and restore responsiveness.",
+      "minigame": "log_triage",
+      "difficulty": 1,
+      "time_cost_s": 20,
+      "money_cost": 0,
+      "cooldown_s": 90,
+      "constraint": {
+        "max_health": 60
+      },
+      "on_success": {
+        "health_delta": 25
+      },
+      "on_fail": {
+        "health_delta": -10,
+        "metrics": {
+          "error_rate_pct": "+1.0"
+        }
+      }
+    },
+    {
+      "id": "vertical_scale",
+      "name": "Vertical Scale",
+      "description": "Increase CPU and memory allocation on the current instance to handle higher load.",
+      "minigame": "resource_sizing",
+      "difficulty": 2,
+      "time_cost_s": 60,
+      "money_cost": 0,
+      "cooldown_s": 180,
+      "constraint": {
+        "layers": [
+          "compute",
+          "data"
+        ]
+      },
+      "on_success": {
+        "stats_delta": {
+          "capacity": "+50%"
+        },
+        "cost_delta": 30
+      },
+      "on_fail": {
+        "health_delta": -15,
+        "metrics": {
+          "error_rate_pct": "+1.5"
+        }
+      }
+    },
+    {
+      "id": "scale_out",
+      "name": "Scale Out",
+      "description": "Add more instances horizontally to distribute load and eliminate the single point of failure.",
+      "minigame": "yaml_manifest",
+      "difficulty": 2,
+      "time_cost_s": 45,
+      "money_cost": 0,
+      "cooldown_s": 120,
+      "constraint": {
+        "tags_all": [
+          "horizontally_scalable"
+        ]
+      },
+      "on_success": {
+        "stats_delta": {
+          "capacity": "+60%"
+        },
+        "cost_delta": 40,
+        "tags_remove": [
+          "spof"
+        ]
+      },
+      "on_fail": {
+        "metrics": {
+          "error_rate_pct": "+2.0",
+          "uptime_pct": "-0.02"
+        }
+      }
+    },
+    {
+      "id": "enable_autoscaling",
+      "name": "Enable Autoscaling",
+      "description": "Configure the platform autoscaler to automatically add or remove instances based on load metrics.",
+      "minigame": "threshold_tuning",
+      "difficulty": 3,
+      "time_cost_s": 90,
+      "money_cost": 60,
+      "cooldown_s": 300,
+      "constraint": {
+        "tags_all": [
+          "horizontally_scalable"
+        ],
+        "tags_none": [
+          "autoscaling"
+        ]
+      },
+      "on_success": {
+        "tags_add": [
+          "autoscaling"
+        ],
+        "tags_remove": [
+          "no_autoscale"
+        ],
+        "cost_delta": 60
+      },
+      "on_fail": {
+        "metrics": {
+          "error_rate_pct": "+1.0"
+        }
+      }
+    },
+    {
+      "id": "add_replica",
+      "name": "Add Read Replica",
+      "description": "Provision a replica and route read traffic to it, increasing capacity and removing the single-node risk.",
+      "minigame": "query_plan_puzzle",
+      "difficulty": 3,
+      "time_cost_s": 45,
+      "money_cost": 80,
+      "cooldown_s": 120,
+      "constraint": {
+        "layers": [
+          "data"
+        ],
+        "tags_all": [
+          "stateful"
+        ],
+        "tags_none": [
+          "has_replica"
+        ]
+      },
+      "on_success": {
+        "tags_add": [
+          "has_replica"
+        ],
+        "tags_remove": [
+          "spof"
+        ],
+        "stats_delta": {
+          "capacity": "+40%"
+        },
+        "cost_delta": 80
+      },
+      "on_fail": {
+        "health_delta": -20,
+        "metrics": {
+          "error_rate_pct": "+2.0",
+          "uptime_pct": "-0.05"
+        }
+      }
+    },
+    {
+      "id": "failover",
+      "name": "Manual Failover",
+      "description": "Promote the standby replica to primary and redirect all traffic to it to recover from primary failure.",
+      "minigame": "dns_cutover",
+      "difficulty": 4,
+      "time_cost_s": 120,
+      "money_cost": 0,
+      "cooldown_s": 600,
+      "constraint": {
+        "tags_all": [
+          "has_replica"
+        ],
+        "tags_none": [
+          "auto_failover"
+        ]
+      },
+      "on_success": {
+        "health_delta": 40,
+        "metrics": {
+          "uptime_pct": "-0.01"
+        }
+      },
+      "on_fail": {
+        "health_delta": -30,
+        "metrics": {
+          "uptime_pct": "-0.5",
+          "error_rate_pct": "+8.0"
+        }
+      }
+    },
+    {
+      "id": "enable_auto_failover",
+      "name": "Enable Auto-Failover",
+      "description": "Configure the cluster to detect primary failure and automatically promote a replica without manual intervention.",
+      "minigame": "threshold_tuning",
+      "difficulty": 3,
+      "time_cost_s": 120,
+      "money_cost": 100,
+      "cooldown_s": 300,
+      "constraint": {
+        "tags_all": [
+          "has_replica"
+        ],
+        "tags_none": [
+          "auto_failover"
+        ]
+      },
+      "on_success": {
+        "tags_add": [
+          "auto_failover"
+        ],
+        "tags_remove": [
+          "manual_failover"
+        ],
+        "cost_delta": 50
+      },
+      "on_fail": {
+        "metrics": {
+          "error_rate_pct": "+0.5"
+        }
+      }
+    },
+    {
+      "id": "enable_multi_az",
+      "name": "Enable Multi-AZ",
+      "description": "Deploy the node across two availability zones so a single datacenter outage does not take it down.",
+      "minigame": "topology_puzzle",
+      "difficulty": 3,
+      "time_cost_s": 180,
+      "money_cost": 150,
+      "cooldown_s": 600,
+      "constraint": {
+        "layers": [
+          "edge",
+          "ingress",
+          "compute",
+          "data"
+        ],
+        "tags_none": [
+          "multi_az",
+          "multi_region"
+        ]
+      },
+      "on_success": {
+        "tags_add": [
+          "multi_az"
+        ],
+        "tags_remove": [
+          "single_az",
+          "spof"
+        ],
+        "cost_delta": 120
+      },
+      "on_fail": {
+        "metrics": {
+          "error_rate_pct": "+1.0",
+          "uptime_pct": "-0.05"
+        }
+      }
+    },
+    {
+      "id": "enable_multi_region",
+      "name": "Enable Multi-Region",
+      "description": "Replicate the node across geographically distinct regions to survive a full regional outage.",
+      "minigame": "topology_puzzle",
+      "difficulty": 5,
+      "time_cost_s": 300,
+      "money_cost": 500,
+      "cooldown_s": 1200,
+      "constraint": {
+        "layers": [
+          "edge",
+          "ingress",
+          "compute",
+          "data"
+        ],
+        "tags_all": [
+          "multi_az"
+        ],
+        "tags_none": [
+          "multi_region"
+        ]
+      },
+      "on_success": {
+        "tags_add": [
+          "multi_region"
+        ],
+        "tags_remove": [
+          "single_region"
+        ],
+        "cost_delta": 400
+      },
+      "on_fail": {
+        "metrics": {
+          "error_rate_pct": "+2.0",
+          "uptime_pct": "-0.1"
+        }
+      }
+    },
+    {
+      "id": "enable_backup",
+      "name": "Enable Automated Backups",
+      "description": "Schedule regular point-in-time snapshots so data can be recovered after a failure or corruption event.",
+      "minigame": "restore_drill",
+      "difficulty": 2,
+      "time_cost_s": 60,
+      "money_cost": 20,
+      "cooldown_s": 240,
+      "constraint": {
+        "tags_any": [
+          "stateful",
+          "durable"
+        ],
+        "tags_none": [
+          "backed_up"
+        ]
+      },
+      "on_success": {
+        "tags_add": [
+          "backed_up"
+        ],
+        "tags_remove": [
+          "no_backup"
+        ],
+        "cost_delta": 25
+      },
+      "on_fail": {
+        "metrics": {
+          "error_rate_pct": "+0.2"
+        }
+      }
+    },
+    {
+      "id": "restore_from_backup",
+      "name": "Restore from Backup",
+      "description": "Initiate a full data restore from the latest clean backup to recover from data loss or severe corruption.",
+      "minigame": "restore_drill",
+      "difficulty": 5,
+      "time_cost_s": 600,
+      "money_cost": 0,
+      "cooldown_s": 1800,
+      "constraint": {
+        "tags_all": [
+          "backed_up"
+        ]
+      },
+      "on_success": {
+        "health_delta": 60,
+        "metrics": {
+          "uptime_pct": "-0.2"
+        }
+      },
+      "on_fail": {
+        "health_delta": -40,
+        "metrics": {
+          "uptime_pct": "-2.0",
+          "error_rate_pct": "+15.0"
+        }
+      }
+    },
+    {
+      "id": "verify_restore",
+      "name": "Verify Restore Procedure",
+      "description": "Run a test restore into an isolated environment to confirm backups are valid and the runbook works.",
+      "minigame": "restore_drill",
+      "difficulty": 3,
+      "time_cost_s": 240,
+      "money_cost": 0,
+      "cooldown_s": 900,
+      "constraint": {
+        "tags_all": [
+          "untested_restore"
+        ]
+      },
+      "on_success": {
+        "tags_remove": [
+          "untested_restore"
+        ]
+      },
+      "on_fail": {
+        "metrics": {
+          "reputation": "-1.0"
+        }
+      }
+    },
+    {
+      "id": "flush_cache",
+      "name": "Flush Cache",
+      "description": "Invalidate all cached entries to force a clean reload and eliminate stale or corrupted cache data.",
+      "minigame": "cache_key_match",
+      "difficulty": 2,
+      "time_cost_s": 15,
+      "money_cost": 0,
+      "cooldown_s": 120,
+      "constraint": {
+        "tags_all": [
+          "cached"
+        ]
+      },
+      "on_success": {
+        "health_delta": 15,
+        "tags_add": [
+          "cold_cache"
+        ]
+      },
+      "on_fail": {
+        "metrics": {
+          "error_rate_pct": "+3.0"
+        }
+      }
+    },
+    {
+      "id": "warm_cache",
+      "name": "Warm Cache",
+      "description": "Pre-populate the cache with hot keys so the system stops serving cold misses and latency returns to baseline.",
+      "minigame": "cache_key_match",
+      "difficulty": 2,
+      "time_cost_s": 60,
+      "money_cost": 0,
+      "cooldown_s": 180,
+      "constraint": {
+        "tags_all": [
+          "cached",
+          "cold_cache"
+        ]
+      },
+      "on_success": {
+        "tags_remove": [
+          "cold_cache"
+        ],
+        "metrics": {
+          "p95_latency_ms": "-20%"
+        }
+      },
+      "on_fail": {
+        "metrics": {
+          "p95_latency_ms": "+10%"
+        }
+      }
+    },
+    {
+      "id": "rollback_deploy",
+      "name": "Rollback Deployment",
+      "description": "Revert to the previous known-good artifact and redeploy it to undo a bad release that introduced errors.",
+      "minigame": "diff_review",
+      "difficulty": 3,
+      "time_cost_s": 90,
+      "money_cost": 0,
+      "cooldown_s": 300,
+      "constraint": {
+        "tags_all": [
+          "has_rollback"
+        ]
+      },
+      "on_success": {
+        "health_delta": 45,
+        "metrics": {
+          "error_rate_pct": "-80%"
+        }
+      },
+      "on_fail": {
+        "health_delta": -25,
+        "metrics": {
+          "error_rate_pct": "+5.0",
+          "uptime_pct": "-0.3"
+        }
+      }
+    },
+    {
+      "id": "rotate_credentials",
+      "name": "Rotate Credentials",
+      "description": "Generate new secrets and update all consumers so compromised or shared credentials can no longer be used.",
+      "minigame": "iam_policy_puzzle",
+      "difficulty": 4,
+      "time_cost_s": 120,
+      "money_cost": 0,
+      "cooldown_s": 600,
+      "constraint": {
+        "tags_any": [
+          "shared_credentials",
+          "secrets_rotated",
+          "encrypted_at_rest"
+        ]
+      },
+      "on_success": {
+        "tags_add": [
+          "secrets_rotated"
+        ],
+        "tags_remove": [
+          "shared_credentials"
+        ]
+      },
+      "on_fail": {
+        "metrics": {
+          "uptime_pct": "-0.2",
+          "error_rate_pct": "+4.0"
+        }
+      }
+    },
+    {
+      "id": "enable_rate_limit",
+      "name": "Enable Rate Limiting",
+      "description": "Apply per-client request caps at the edge or ingress layer to prevent abuse from overwhelming the origin.",
+      "minigame": "threshold_tuning",
+      "difficulty": 2,
+      "time_cost_s": 60,
+      "money_cost": 30,
+      "cooldown_s": 240,
+      "constraint": {
+        "layers": [
+          "edge",
+          "ingress"
+        ],
+        "tags_none": [
+          "rate_limited"
+        ]
+      },
+      "on_success": {
+        "tags_add": [
+          "rate_limited"
+        ],
+        "tags_remove": [
+          "no_ratelimit"
+        ],
+        "cost_delta": 30
+      },
+      "on_fail": {
+        "metrics": {
+          "error_rate_pct": "+2.5"
+        }
+      }
+    },
+    {
+      "id": "add_dlq",
+      "name": "Add Dead-Letter Queue",
+      "description": "Attach a dead-letter queue to the async processor so undeliverable messages are captured rather than dropped.",
+      "minigame": "queue_triage",
+      "difficulty": 2,
+      "time_cost_s": 45,
+      "money_cost": 20,
+      "cooldown_s": 240,
+      "constraint": {
+        "tags_all": [
+          "async"
+        ],
+        "tags_none": [
+          "has_dlq"
+        ]
+      },
+      "on_success": {
+        "tags_add": [
+          "has_dlq"
+        ],
+        "tags_remove": [
+          "no_dlq"
+        ],
+        "cost_delta": 15
+      },
+      "on_fail": {
+        "metrics": {
+          "error_rate_pct": "+0.5"
+        }
+      }
+    },
+    {
+      "id": "drain_queue",
+      "name": "Drain Message Queue",
+      "description": "Process all pending messages in the queue to clear the backlog and remove the unbounded-growth condition.",
+      "minigame": "queue_triage",
+      "difficulty": 3,
+      "time_cost_s": 90,
+      "money_cost": 0,
+      "cooldown_s": 180,
+      "constraint": {
+        "tags_all": [
+          "async"
+        ]
+      },
+      "on_success": {
+        "health_delta": 30,
+        "tags_remove": [
+          "unbounded_queue"
+        ]
+      },
+      "on_fail": {
+        "health_delta": -15,
+        "metrics": {
+          "error_rate_pct": "+3.0"
+        }
+      }
+    },
+    {
+      "id": "renew_cert",
+      "name": "Renew TLS Certificate",
+      "description": "Issue and install a fresh TLS certificate before the current one expires and clients begin rejecting connections.",
+      "minigame": "cert_chain_puzzle",
+      "difficulty": 2,
+      "time_cost_s": 45,
+      "money_cost": 0,
+      "cooldown_s": 300,
+      "constraint": {
+        "node_ids": [
+          "tls_cert"
+        ]
+      },
+      "on_success": {
+        "tags_remove": [
+          "stale_cert"
+        ],
+        "health_delta": 50
+      },
+      "on_fail": {
+        "metrics": {
+          "uptime_pct": "-1.0",
+          "error_rate_pct": "+20.0"
+        }
+      }
+    },
+    {
+      "id": "change_ttl",
+      "name": "Change DNS TTL",
+      "description": "Lower the DNS TTL so downstream resolvers pick up record changes faster during incident cutover.",
+      "minigame": "dns_cutover",
+      "difficulty": 2,
+      "time_cost_s": 30,
+      "money_cost": 0,
+      "cooldown_s": 300,
+      "constraint": {
+        "node_ids": [
+          "dns"
+        ]
+      },
+      "on_success": {
+        "stats_delta": {
+          "ttl_s": "-50%"
+        }
+      },
+      "on_fail": {
+        "metrics": {
+          "uptime_pct": "-0.1"
+        }
+      }
+    },
+    {
+      "id": "add_index",
+      "name": "Add Database Index",
+      "description": "Create a targeted index on the hot query path to eliminate full-table scans and reduce query latency.",
+      "minigame": "query_plan_puzzle",
+      "difficulty": 3,
+      "time_cost_s": 120,
+      "money_cost": 0,
+      "cooldown_s": 300,
+      "constraint": {
+        "node_ids": [
+          "postgres",
+          "search_index"
+        ]
+      },
+      "on_success": {
+        "stats_delta": {
+          "capacity": "+25%"
+        },
+        "metrics": {
+          "p95_latency_ms": "-15%"
+        }
+      },
+      "on_fail": {
+        "health_delta": -20,
+        "metrics": {
+          "p95_latency_ms": "+20%"
+        }
+      }
+    },
+    {
+      "id": "increase_connections",
+      "name": "Increase Connection Pool",
+      "description": "Raise the maximum connection limit so the service stops queuing requests behind an exhausted pool.",
+      "minigame": "resource_sizing",
+      "difficulty": 2,
+      "time_cost_s": 30,
+      "money_cost": 0,
+      "cooldown_s": 120,
+      "constraint": {
+        "node_ids": [
+          "postgres",
+          "redis",
+          "load_balancer",
+          "api_gateway"
+        ]
+      },
+      "on_success": {
+        "stats_delta": {
+          "max_connections": "+100%"
+        }
+      },
+      "on_fail": {
+        "health_delta": -10,
+        "metrics": {
+          "error_rate_pct": "+2.0"
+        }
+      }
+    },
+    {
+      "id": "publish_status_update",
+      "name": "Publish Status Update",
+      "description": "Post a clear incident update on the status page so affected users know the team is actively working the problem.",
+      "minigame": "incident_comms",
+      "difficulty": 1,
+      "time_cost_s": 60,
+      "money_cost": 0,
+      "cooldown_s": 300,
+      "constraint": {
+        "node_ids": [
+          "status_page"
+        ]
+      },
+      "on_success": {
+        "metrics": {
+          "reputation": "+3.0"
+        }
+      },
+      "on_fail": {
+        "metrics": {
+          "reputation": "-5.0"
+        }
+      }
+    },
+    {
+      "id": "upgrade_tier",
+      "name": "Upgrade Tier",
+      "description": "Move the node to the next hardware or service tier to unlock higher capacity and availability guarantees.",
+      "minigame": "capacity_planning",
+      "difficulty": 3,
+      "time_cost_s": 0,
+      "money_cost": 0,
+      "cooldown_s": 60,
+      "constraint": {},
+      "on_success": {
+        "tier_delta": 1
+      },
+      "on_fail": {
+        "metrics": {
+          "error_rate_pct": "+1.0",
+          "uptime_pct": "-0.05"
+        }
+      }
+    },
+    {
+      "id": "enable_encryption",
+      "name": "Enable Encryption at Rest",
+      "description": "Enable disk-level encryption so data stored on the node is protected against unauthorized physical access.",
+      "minigame": "iam_policy_puzzle",
+      "difficulty": 3,
+      "time_cost_s": 120,
+      "money_cost": 40,
+      "cooldown_s": 600,
+      "constraint": {
+        "tags_all": [
+          "unencrypted"
+        ]
+      },
+      "on_success": {
+        "tags_add": [
+          "encrypted_at_rest"
+        ],
+        "tags_remove": [
+          "unencrypted"
+        ],
+        "cost_delta": 20
+      },
+      "on_fail": {
+        "metrics": {
+          "uptime_pct": "-0.2",
+          "error_rate_pct": "+3.0"
+        }
+      }
+    },
+    {
+      "id": "restrict_access",
+      "name": "Restrict Public Access",
+      "description": "Remove the public network exposure and enforce least-privilege access controls so the node is no longer reachable without authentication.",
+      "minigame": "iam_policy_puzzle",
+      "difficulty": 3,
+      "time_cost_s": 90,
+      "money_cost": 0,
+      "cooldown_s": 300,
+      "constraint": {
+        "tags_all": [
+          "public_exposed"
+        ]
+      },
+      "on_success": {
+        "tags_add": [
+          "least_privilege"
+        ],
+        "tags_remove": [
+          "public_exposed"
+        ]
+      },
+      "on_fail": {
+        "metrics": {
+          "error_rate_pct": "+5.0",
+          "uptime_pct": "-0.3"
+        }
+      }
+    },
+    {
+      "id": "enable_observability",
+      "name": "Enable Observability",
+      "description": "Instrument the node with metrics collection and alerting so failures are detected and escalated automatically.",
+      "minigame": "threshold_tuning",
+      "difficulty": 2,
+      "time_cost_s": 90,
+      "money_cost": 50,
+      "cooldown_s": 300,
+      "constraint": {
+        "tags_any": [
+          "no_monitoring",
+          "no_alerting"
+        ]
+      },
+      "on_success": {
+        "tags_add": [
+          "observable",
+          "alerting_enabled"
+        ],
+        "tags_remove": [
+          "no_monitoring",
+          "no_alerting"
+        ],
+        "cost_delta": 40
+      },
+      "on_fail": {
+        "metrics": {
+          "reputation": "-1.0"
+        }
+      }
+    },
+    {
+      "id": "enable_rollback",
+      "name": "Enable Rollback Capability",
+      "description": "Configure the deployment pipeline to retain previous artifact versions so bad deploys can be reverted quickly.",
+      "minigame": "diff_review",
+      "difficulty": 3,
+      "time_cost_s": 150,
+      "money_cost": 60,
+      "cooldown_s": 600,
+      "constraint": {
+        "tags_all": [
+          "no_rollback"
+        ]
+      },
+      "on_success": {
+        "tags_add": [
+          "has_rollback"
+        ],
+        "tags_remove": [
+          "no_rollback"
+        ],
+        "cost_delta": 40
+      },
+      "on_fail": {
+        "metrics": {
+          "error_rate_pct": "+1.0"
+        }
+      }
+    },
+    {
+      "id": "refactor_for_scale_out",
+      "name": "Refactor for Horizontal Scale",
+      "description": "Redesign the service to remove shared-state coupling so it can run as multiple independent instances.",
+      "minigame": "yaml_manifest",
+      "difficulty": 5,
+      "time_cost_s": 300,
+      "money_cost": 0,
+      "cooldown_s": 1200,
+      "constraint": {
+        "tags_all": [
+          "vertically_scalable_only"
+        ]
+      },
+      "on_success": {
+        "tags_add": [
+          "horizontally_scalable"
+        ],
+        "tags_remove": [
+          "vertically_scalable_only"
+        ]
+      },
+      "on_fail": {
+        "health_delta": -25,
+        "metrics": {
+          "error_rate_pct": "+4.0",
+          "uptime_pct": "-0.2"
+        }
+      }
+    },
+    {
+      "id": "tune_rules",
+      "name": "Tune Rules",
+      "description": "Refine the active rule set for WAF, API gateway, or alerting to improve detection accuracy and reduce noise.",
+      "minigame": "threshold_tuning",
+      "difficulty": 3,
+      "time_cost_s": 60,
+      "money_cost": 0,
+      "cooldown_s": 180,
+      "constraint": {
+        "node_ids": [
+          "waf",
+          "api_gateway",
+          "alerting"
+        ]
+      },
+      "on_success": {
+        "stats_delta": {
+          "rule_count": "+20%"
+        },
+        "health_delta": 15
+      },
+      "on_fail": {
+        "metrics": {
+          "error_rate_pct": "+3.0"
+        }
+      }
+    },
+    {
+      "id": "tune_sampling",
+      "name": "Tune Sampling Rate",
+      "description": "Reduce the telemetry sampling rate to cut pipeline costs at the expense of lower diagnostic fidelity.",
+      "minigame": "threshold_tuning",
+      "difficulty": 2,
+      "time_cost_s": 45,
+      "money_cost": 0,
+      "cooldown_s": 180,
+      "constraint": {
+        "node_ids": [
+          "metrics_pipeline",
+          "log_pipeline",
+          "tracing"
+        ]
+      },
+      "on_success": {
+        "stats_delta": {
+          "sample_rate_pct": "-50%"
+        },
+        "cost_delta": -25
+      },
+      "on_fail": {
+        "metrics": {
+          "reputation": "-0.5"
+        }
+      }
+    },
+    {
+      "id": "rebalance_oncall",
+      "name": "Rebalance On-Call Rotation",
+      "description": "Redistribute alert assignments across the on-call roster to reduce per-engineer fatigue and prevent missed pages.",
+      "minigame": "incident_comms",
+      "difficulty": 2,
+      "time_cost_s": 120,
+      "money_cost": 0,
+      "cooldown_s": 600,
+      "constraint": {
+        "node_ids": [
+          "oncall_rotation"
+        ]
+      },
+      "on_success": {
+        "stats_delta": {
+          "fatigue_rate": "-30%"
+        }
+      },
+      "on_fail": {
+        "metrics": {
+          "reputation": "-1.0"
+        }
+      }
+    }
+  ]
+}

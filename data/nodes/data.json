@@ -1,0 +1,544 @@
+{
+  "nodes": [
+    {
+      "id": "postgres",
+      "name": "PostgreSQL",
+      "layer": "data",
+      "role": "relational_store",
+      "description": "Primary relational datastore. Stateful, and the hardest thing in your system to scale under load.",
+      "singleton": false,
+      "max_instances": 6,
+      "provides": [
+        "sql_query"
+      ],
+      "requires": [],
+      "overridable_edges": true,
+      "tiers": [
+        {
+          "tier": 1,
+          "name": "Single instance",
+          "stats": {
+            "capacity": 500,
+            "capacity_unit": "qps",
+            "base_latency_ms": 8,
+            "availability_pct": 99.0,
+            "cost_month": 50,
+            "provision_time_s": 30,
+            "blast_radius": 0.9,
+            "max_connections": 100,
+            "iops": 3000,
+            "storage_gb": 100,
+            "cpu_cores": 2,
+            "ram_gb": 8,
+            "durability_nines": 2
+          },
+          "cost_variable": {
+            "per_gb_storage_month": 0.1
+          },
+          "tags": [
+            "stateful",
+            "durable",
+            "spof",
+            "no_backup",
+            "single_az"
+          ]
+        },
+        {
+          "tier": 2,
+          "name": "Primary + read replica",
+          "stats": {
+            "capacity": 900,
+            "capacity_unit": "qps",
+            "base_latency_ms": 9,
+            "availability_pct": 99.5,
+            "cost_month": 130,
+            "provision_time_s": 90,
+            "blast_radius": 0.7,
+            "max_connections": 200,
+            "iops": 3000,
+            "storage_gb": 250,
+            "cpu_cores": 4,
+            "ram_gb": 16,
+            "durability_nines": 3,
+            "replication_lag_ms": 250,
+            "failover_time_s": 180
+          },
+          "cost_variable": {
+            "per_gb_storage_month": 0.1
+          },
+          "tags": [
+            "stateful",
+            "durable",
+            "has_replica",
+            "manual_failover",
+            "single_az"
+          ]
+        },
+        {
+          "tier": 3,
+          "name": "Managed HA (multi-AZ)",
+          "stats": {
+            "capacity": 2500,
+            "capacity_unit": "qps",
+            "base_latency_ms": 7,
+            "availability_pct": 99.95,
+            "cost_month": 400,
+            "provision_time_s": 240,
+            "blast_radius": 0.5,
+            "max_connections": 500,
+            "iops": 12000,
+            "storage_gb": 500,
+            "cpu_cores": 8,
+            "ram_gb": 32,
+            "durability_nines": 4,
+            "replication_lag_ms": 80,
+            "failover_time_s": 30
+          },
+          "cost_variable": {
+            "per_gb_storage_month": 0.12
+          },
+          "tags": [
+            "stateful",
+            "durable",
+            "has_replica",
+            "auto_failover",
+            "multi_az",
+            "managed",
+            "backed_up",
+            "encrypted_at_rest"
+          ]
+        },
+        {
+          "tier": 4,
+          "name": "Multi-region cluster",
+          "stats": {
+            "capacity": 12000,
+            "capacity_unit": "qps",
+            "base_latency_ms": 6,
+            "availability_pct": 99.99,
+            "cost_month": 1600,
+            "provision_time_s": 600,
+            "blast_radius": 0.3,
+            "max_connections": 2000,
+            "iops": 40000,
+            "storage_gb": 2000,
+            "cpu_cores": 16,
+            "ram_gb": 128,
+            "durability_nines": 6,
+            "replication_lag_ms": 250,
+            "failover_time_s": 10
+          },
+          "cost_variable": {
+            "per_gb_storage_month": 0.18
+          },
+          "tags": [
+            "stateful",
+            "durable",
+            "has_replica",
+            "auto_failover",
+            "multi_region",
+            "managed",
+            "backed_up",
+            "encrypted_at_rest",
+            "audit_logged"
+          ],
+          "actions_deny": [
+            "upgrade_tier"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "redis",
+      "name": "Redis",
+      "layer": "data",
+      "role": "cache_store",
+      "description": "In-memory key-value store used as a cache and session layer. Fast but volatile \u2014 a restart or eviction storm blows through your hit-ratio and sends every request to the database.",
+      "singleton": false,
+      "max_instances": 4,
+      "provides": [
+        "cache"
+      ],
+      "requires": [],
+      "overridable_edges": true,
+      "tiers": [
+        {
+          "tier": 1,
+          "name": "Single node",
+          "stats": {
+            "capacity": 20000,
+            "capacity_unit": "qps",
+            "base_latency_ms": 1,
+            "availability_pct": 99.0,
+            "cost_month": 15,
+            "provision_time_s": 20,
+            "blast_radius": 0.4,
+            "cache_size_gb": 1,
+            "hit_ratio_pct": 75,
+            "ttl_s": 300,
+            "eviction_policy": "allkeys_lru",
+            "max_connections": 1000
+          },
+          "tags": [
+            "in_memory",
+            "volatile",
+            "cached",
+            "spof",
+            "single_az",
+            "no_backup"
+          ]
+        },
+        {
+          "tier": 2,
+          "name": "Replicated + persistence",
+          "stats": {
+            "capacity": 60000,
+            "capacity_unit": "qps",
+            "base_latency_ms": 1,
+            "availability_pct": 99.5,
+            "cost_month": 60,
+            "provision_time_s": 40,
+            "blast_radius": 0.3,
+            "cache_size_gb": 4,
+            "hit_ratio_pct": 85,
+            "ttl_s": 600,
+            "eviction_policy": "allkeys_lru",
+            "max_connections": 5000,
+            "replication_lag_ms": 50
+          },
+          "tags": [
+            "in_memory",
+            "cached",
+            "durable",
+            "has_replica",
+            "multi_az",
+            "backed_up"
+          ]
+        },
+        {
+          "tier": 3,
+          "name": "Managed cluster",
+          "stats": {
+            "capacity": 300000,
+            "capacity_unit": "qps",
+            "base_latency_ms": 1,
+            "availability_pct": 99.95,
+            "cost_month": 240,
+            "provision_time_s": 60,
+            "blast_radius": 0.2,
+            "cache_size_gb": 16,
+            "hit_ratio_pct": 92,
+            "ttl_s": 900,
+            "eviction_policy": "allkeys_lfu",
+            "max_connections": 50000,
+            "replication_lag_ms": 20,
+            "failover_time_s": 20
+          },
+          "tags": [
+            "in_memory",
+            "cached",
+            "has_replica",
+            "auto_failover",
+            "multi_az",
+            "managed",
+            "backed_up",
+            "encrypted_at_rest"
+          ],
+          "actions_deny": [
+            "upgrade_tier"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "object_store",
+      "name": "Object Storage",
+      "layer": "data",
+      "role": "blob_store",
+      "description": "Cloud object storage for blobs, assets, and backups. Durable and infinitely scalable, but misconfigured access policies are a frequent source of data breaches.",
+      "singleton": false,
+      "max_instances": 3,
+      "provides": [
+        "blob_storage"
+      ],
+      "requires": [],
+      "overridable_edges": true,
+      "tiers": [
+        {
+          "tier": 1,
+          "name": "Single bucket",
+          "stats": {
+            "capacity": 1000,
+            "capacity_unit": "rps",
+            "base_latency_ms": 60,
+            "availability_pct": 99.9,
+            "cost_month": 5,
+            "provision_time_s": 10,
+            "blast_radius": 0.3,
+            "storage_gb": 100,
+            "durability_nines": 9
+          },
+          "cost_variable": {
+            "per_gb_storage_month": 0.023,
+            "per_gb_transfer": 0.09
+          },
+          "tags": [
+            "durable",
+            "third_party",
+            "managed",
+            "single_region",
+            "public_exposed"
+          ]
+        },
+        {
+          "tier": 2,
+          "name": "Private bucket + lifecycle",
+          "stats": {
+            "capacity": 5000,
+            "capacity_unit": "rps",
+            "base_latency_ms": 50,
+            "availability_pct": 99.95,
+            "cost_month": 20,
+            "provision_time_s": 15,
+            "blast_radius": 0.25,
+            "storage_gb": 1000,
+            "durability_nines": 11,
+            "retention_days": 90
+          },
+          "cost_variable": {
+            "per_gb_storage_month": 0.023,
+            "per_gb_transfer": 0.09
+          },
+          "tags": [
+            "durable",
+            "third_party",
+            "managed",
+            "encrypted_at_rest",
+            "least_privilege",
+            "backed_up"
+          ]
+        },
+        {
+          "tier": 3,
+          "name": "Multi-region replicated",
+          "stats": {
+            "capacity": 20000,
+            "capacity_unit": "rps",
+            "base_latency_ms": 40,
+            "availability_pct": 99.99,
+            "cost_month": 90,
+            "provision_time_s": 30,
+            "blast_radius": 0.15,
+            "storage_gb": 5000,
+            "durability_nines": 11,
+            "retention_days": 365
+          },
+          "cost_variable": {
+            "per_gb_storage_month": 0.046,
+            "per_gb_transfer": 0.05
+          },
+          "tags": [
+            "durable",
+            "third_party",
+            "managed",
+            "encrypted_at_rest",
+            "least_privilege",
+            "backed_up",
+            "multi_region",
+            "audit_logged"
+          ],
+          "actions_deny": [
+            "upgrade_tier"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "search_index",
+      "name": "Search Index",
+      "layer": "data",
+      "role": "search_store",
+      "description": "Full-text search index built from your primary data. Expensive to rebuild after a failure and easily overwhelmed when indexing throughput spikes.",
+      "singleton": false,
+      "max_instances": 2,
+      "provides": [
+        "search_query"
+      ],
+      "requires": [],
+      "overridable_edges": true,
+      "tiers": [
+        {
+          "tier": 1,
+          "name": "Single node index",
+          "stats": {
+            "capacity": 200,
+            "capacity_unit": "qps",
+            "base_latency_ms": 90,
+            "availability_pct": 99.0,
+            "cost_month": 40,
+            "provision_time_s": 120,
+            "blast_radius": 0.25,
+            "index_size_gb": 10,
+            "rebuild_time_s": 3600,
+            "cpu_cores": 2,
+            "ram_gb": 8
+          },
+          "tags": [
+            "stateful",
+            "spof",
+            "single_az",
+            "no_backup"
+          ]
+        },
+        {
+          "tier": 2,
+          "name": "Three-node cluster",
+          "stats": {
+            "capacity": 1200,
+            "capacity_unit": "qps",
+            "base_latency_ms": 70,
+            "availability_pct": 99.5,
+            "cost_month": 180,
+            "provision_time_s": 240,
+            "blast_radius": 0.2,
+            "index_size_gb": 50,
+            "rebuild_time_s": 1800,
+            "replicas": 3,
+            "cpu_cores": 4,
+            "ram_gb": 16
+          },
+          "tags": [
+            "stateful",
+            "has_replica",
+            "multi_az",
+            "horizontally_scalable"
+          ]
+        },
+        {
+          "tier": 3,
+          "name": "Managed search",
+          "stats": {
+            "capacity": 8000,
+            "capacity_unit": "qps",
+            "base_latency_ms": 50,
+            "availability_pct": 99.95,
+            "cost_month": 600,
+            "provision_time_s": 300,
+            "blast_radius": 0.15,
+            "index_size_gb": 250,
+            "rebuild_time_s": 900,
+            "replicas": 3,
+            "cpu_cores": 8,
+            "ram_gb": 32
+          },
+          "tags": [
+            "stateful",
+            "has_replica",
+            "auto_failover",
+            "multi_az",
+            "managed",
+            "backed_up",
+            "encrypted_at_rest"
+          ],
+          "actions_deny": [
+            "upgrade_tier"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "message_queue",
+      "name": "Message Queue",
+      "layer": "data",
+      "role": "queue_broker",
+      "description": "Async message broker decoupling producers from consumers. Backpressure and poison messages are the two ways this component causes an incident.",
+      "singleton": false,
+      "max_instances": 3,
+      "provides": [
+        "queue"
+      ],
+      "requires": [],
+      "overridable_edges": true,
+      "tiers": [
+        {
+          "tier": 1,
+          "name": "Single broker",
+          "stats": {
+            "capacity": 500,
+            "capacity_unit": "msgs_sec",
+            "base_latency_ms": 5,
+            "availability_pct": 99.0,
+            "cost_month": 15,
+            "provision_time_s": 30,
+            "blast_radius": 0.5,
+            "queue_depth_max": 10000
+          },
+          "tags": [
+            "async",
+            "stateful",
+            "spof",
+            "single_az",
+            "no_dlq"
+          ]
+        },
+        {
+          "tier": 2,
+          "name": "Managed queue + DLQ",
+          "stats": {
+            "capacity": 5000,
+            "capacity_unit": "msgs_sec",
+            "base_latency_ms": 4,
+            "availability_pct": 99.9,
+            "cost_month": 60,
+            "provision_time_s": 20,
+            "blast_radius": 0.3,
+            "queue_depth_max": 200000,
+            "retention_days": 4
+          },
+          "cost_variable": {
+            "per_million_ops": 0.4
+          },
+          "tags": [
+            "async",
+            "stateful",
+            "durable",
+            "managed",
+            "multi_az",
+            "has_dlq"
+          ]
+        },
+        {
+          "tier": 3,
+          "name": "Managed streaming",
+          "stats": {
+            "capacity": 100000,
+            "capacity_unit": "msgs_sec",
+            "base_latency_ms": 3,
+            "availability_pct": 99.95,
+            "cost_month": 300,
+            "provision_time_s": 45,
+            "blast_radius": 0.2,
+            "queue_depth_max": 10000000,
+            "retention_days": 14
+          },
+          "cost_variable": {
+            "per_million_ops": 0.25
+          },
+          "tags": [
+            "async",
+            "stateful",
+            "durable",
+            "managed",
+            "multi_az",
+            "has_dlq",
+            "horizontally_scalable",
+            "encrypted_at_rest"
+          ],
+          "actions_deny": [
+            "upgrade_tier"
+          ]
+        }
+      ]
+    }
+  ]
+}

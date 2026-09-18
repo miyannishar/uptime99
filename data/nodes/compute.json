@@ -1,0 +1,459 @@
+{
+  "nodes": [
+    {
+      "id": "app_cluster",
+      "name": "Application Cluster",
+      "layer": "compute",
+      "role": "app_runtime",
+      "description": "Runs your application code and serves synchronous HTTP requests. Every request must pass through here, so memory leaks, CPU saturation, and bad deploys all manifest as immediate user-visible errors.",
+      "singleton": false,
+      "max_instances": 8,
+      "provides": [
+        "app_backend"
+      ],
+      "requires": [
+        {
+          "port": "datastore",
+          "accepts": [
+            "sql_query"
+          ],
+          "min": 0,
+          "max": 4
+        },
+        {
+          "port": "cache",
+          "accepts": [
+            "cache"
+          ],
+          "min": 0,
+          "max": 2
+        },
+        {
+          "port": "storage",
+          "accepts": [
+            "blob_storage"
+          ],
+          "min": 0,
+          "max": 2
+        },
+        {
+          "port": "search",
+          "accepts": [
+            "search_query"
+          ],
+          "min": 0,
+          "max": 2
+        },
+        {
+          "port": "queue",
+          "accepts": [
+            "queue"
+          ],
+          "min": 0,
+          "max": 3
+        }
+      ],
+      "overridable_edges": true,
+      "tiers": [
+        {
+          "tier": 1,
+          "name": "Single VM",
+          "stats": {
+            "capacity": 300,
+            "capacity_unit": "rps",
+            "base_latency_ms": 45,
+            "availability_pct": 99.0,
+            "cost_month": 25,
+            "provision_time_s": 60,
+            "blast_radius": 0.8,
+            "cpu_cores": 2,
+            "ram_gb": 4,
+            "replicas": 1
+          },
+          "tags": [
+            "stateless",
+            "spof",
+            "single_az",
+            "no_autoscale",
+            "vertically_scalable_only"
+          ]
+        },
+        {
+          "tier": 2,
+          "name": "Three-node cluster",
+          "stats": {
+            "capacity": 1500,
+            "capacity_unit": "rps",
+            "base_latency_ms": 38,
+            "availability_pct": 99.5,
+            "cost_month": 110,
+            "provision_time_s": 120,
+            "blast_radius": 0.5,
+            "cpu_cores": 4,
+            "ram_gb": 8,
+            "replicas": 3
+          },
+          "tags": [
+            "stateless",
+            "horizontally_scalable",
+            "multi_az"
+          ]
+        },
+        {
+          "tier": 3,
+          "name": "Autoscaling group",
+          "stats": {
+            "capacity": 8000,
+            "capacity_unit": "rps",
+            "base_latency_ms": 32,
+            "availability_pct": 99.9,
+            "cost_month": 380,
+            "provision_time_s": 180,
+            "blast_radius": 0.35,
+            "cpu_cores": 4,
+            "ram_gb": 8,
+            "replicas": 3,
+            "autoscale_max": 20
+          },
+          "tags": [
+            "stateless",
+            "horizontally_scalable",
+            "multi_az",
+            "autoscaling",
+            "canary_capable"
+          ]
+        },
+        {
+          "tier": 4,
+          "name": "Managed Kubernetes, multi-region",
+          "stats": {
+            "capacity": 40000,
+            "capacity_unit": "rps",
+            "base_latency_ms": 28,
+            "availability_pct": 99.99,
+            "cost_month": 1400,
+            "provision_time_s": 300,
+            "blast_radius": 0.2,
+            "cpu_cores": 8,
+            "ram_gb": 16,
+            "replicas": 6,
+            "autoscale_max": 100
+          },
+          "tags": [
+            "stateless",
+            "horizontally_scalable",
+            "multi_region",
+            "autoscaling",
+            "managed",
+            "canary_capable",
+            "has_rollback"
+          ],
+          "actions_deny": [
+            "upgrade_tier"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "worker_pool",
+      "name": "Worker Pool",
+      "layer": "compute",
+      "role": "async_runtime",
+      "description": "Pulls jobs from a queue and processes them off the synchronous request path. Consumer lag is the primary failure mode \u2014 a slow or crashed pool lets backlogs grow silently until upstream queues overflow.",
+      "singleton": false,
+      "max_instances": 6,
+      "provides": [
+        "async_processing"
+      ],
+      "requires": [
+        {
+          "port": "queue",
+          "accepts": [
+            "queue"
+          ],
+          "min": 1,
+          "max": 3
+        },
+        {
+          "port": "datastore",
+          "accepts": [
+            "sql_query"
+          ],
+          "min": 0,
+          "max": 4
+        }
+      ],
+      "overridable_edges": true,
+      "tiers": [
+        {
+          "tier": 1,
+          "name": "Single worker",
+          "stats": {
+            "capacity": 50,
+            "capacity_unit": "msgs_sec",
+            "base_latency_ms": 0,
+            "availability_pct": 99.0,
+            "cost_month": 15,
+            "provision_time_s": 45,
+            "blast_radius": 0.3,
+            "concurrency": 4,
+            "replicas": 1
+          },
+          "tags": [
+            "async",
+            "spof",
+            "single_az",
+            "no_autoscale"
+          ]
+        },
+        {
+          "tier": 2,
+          "name": "Worker pool",
+          "stats": {
+            "capacity": 300,
+            "capacity_unit": "msgs_sec",
+            "base_latency_ms": 0,
+            "availability_pct": 99.5,
+            "cost_month": 70,
+            "provision_time_s": 90,
+            "blast_radius": 0.2,
+            "concurrency": 12,
+            "replicas": 3
+          },
+          "tags": [
+            "async",
+            "horizontally_scalable",
+            "multi_az"
+          ]
+        },
+        {
+          "tier": 3,
+          "name": "Autoscaling workers",
+          "stats": {
+            "capacity": 2000,
+            "capacity_unit": "msgs_sec",
+            "base_latency_ms": 0,
+            "availability_pct": 99.9,
+            "cost_month": 260,
+            "provision_time_s": 120,
+            "blast_radius": 0.15,
+            "concurrency": 48,
+            "replicas": 3,
+            "autoscale_max": 30
+          },
+          "tags": [
+            "async",
+            "horizontally_scalable",
+            "multi_az",
+            "autoscaling"
+          ],
+          "actions_deny": [
+            "upgrade_tier"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cron_scheduler",
+      "name": "Scheduler",
+      "layer": "compute",
+      "role": "job_scheduler",
+      "description": "Triggers jobs on a time-based schedule rather than in response to requests. Silent failures are the primary hazard \u2014 a missed or skipped run often goes undetected until data is stale or a downstream process times out.",
+      "singleton": true,
+      "max_instances": 1,
+      "provides": [
+        "scheduled_execution"
+      ],
+      "requires": [
+        {
+          "port": "target",
+          "accepts": [
+            "app_backend",
+            "queue"
+          ],
+          "min": 0,
+          "max": 4
+        }
+      ],
+      "overridable_edges": true,
+      "tiers": [
+        {
+          "tier": 1,
+          "name": "Crontab on a box",
+          "stats": {
+            "capacity": 0,
+            "capacity_unit": "none",
+            "base_latency_ms": 0,
+            "availability_pct": 98.0,
+            "cost_month": 5,
+            "provision_time_s": 15,
+            "blast_radius": 0.4,
+            "concurrency": 1
+          },
+          "tags": [
+            "scheduled",
+            "spof",
+            "single_az",
+            "no_monitoring"
+          ]
+        },
+        {
+          "tier": 2,
+          "name": "Managed scheduler",
+          "stats": {
+            "capacity": 0,
+            "capacity_unit": "none",
+            "base_latency_ms": 0,
+            "availability_pct": 99.9,
+            "cost_month": 20,
+            "provision_time_s": 20,
+            "blast_radius": 0.25,
+            "concurrency": 10
+          },
+          "tags": [
+            "scheduled",
+            "managed",
+            "multi_az",
+            "observable"
+          ]
+        },
+        {
+          "tier": 3,
+          "name": "Scheduler + retries + alerts",
+          "stats": {
+            "capacity": 0,
+            "capacity_unit": "none",
+            "base_latency_ms": 0,
+            "availability_pct": 99.95,
+            "cost_month": 60,
+            "provision_time_s": 25,
+            "blast_radius": 0.15,
+            "concurrency": 50
+          },
+          "tags": [
+            "scheduled",
+            "managed",
+            "multi_az",
+            "observable",
+            "alerting_enabled",
+            "has_dlq"
+          ],
+          "actions_deny": [
+            "upgrade_tier"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "serverless_fn",
+      "name": "Serverless Functions",
+      "layer": "compute",
+      "role": "app_runtime",
+      "description": "Executes application logic on demand without managing servers. Cold starts introduce unpredictable latency spikes at the first request after idle periods, and vendor-side incidents are outside the operator's control.",
+      "singleton": false,
+      "max_instances": 6,
+      "provides": [
+        "app_backend"
+      ],
+      "requires": [
+        {
+          "port": "datastore",
+          "accepts": [
+            "sql_query"
+          ],
+          "min": 0,
+          "max": 4
+        },
+        {
+          "port": "queue",
+          "accepts": [
+            "queue"
+          ],
+          "min": 0,
+          "max": 3
+        }
+      ],
+      "overridable_edges": true,
+      "tiers": [
+        {
+          "tier": 1,
+          "name": "Functions, default config",
+          "stats": {
+            "capacity": 1000,
+            "capacity_unit": "rps",
+            "base_latency_ms": 120,
+            "availability_pct": 99.9,
+            "cost_month": 1,
+            "provision_time_s": 10,
+            "blast_radius": 0.3,
+            "cold_start_ms": 800,
+            "concurrency": 100
+          },
+          "cost_variable": {
+            "per_million_requests": 0.2
+          },
+          "tags": [
+            "stateless",
+            "third_party",
+            "managed",
+            "autoscaling"
+          ]
+        },
+        {
+          "tier": 2,
+          "name": "Provisioned concurrency",
+          "stats": {
+            "capacity": 10000,
+            "capacity_unit": "rps",
+            "base_latency_ms": 35,
+            "availability_pct": 99.95,
+            "cost_month": 90,
+            "provision_time_s": 15,
+            "blast_radius": 0.25,
+            "cold_start_ms": 50,
+            "concurrency": 1000
+          },
+          "cost_variable": {
+            "per_million_requests": 0.2
+          },
+          "tags": [
+            "stateless",
+            "third_party",
+            "managed",
+            "autoscaling",
+            "multi_az"
+          ]
+        },
+        {
+          "tier": 3,
+          "name": "Multi-region functions",
+          "stats": {
+            "capacity": 100000,
+            "capacity_unit": "rps",
+            "base_latency_ms": 25,
+            "availability_pct": 99.99,
+            "cost_month": 400,
+            "provision_time_s": 30,
+            "blast_radius": 0.15,
+            "cold_start_ms": 20,
+            "concurrency": 10000
+          },
+          "cost_variable": {
+            "per_million_requests": 0.18
+          },
+          "tags": [
+            "stateless",
+            "third_party",
+            "managed",
+            "autoscaling",
+            "multi_region",
+            "canary_capable"
+          ],
+          "actions_deny": [
+            "upgrade_tier"
+          ]
+        }
+      ]
+    }
+  ]
+}

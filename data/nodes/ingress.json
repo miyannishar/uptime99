@@ -1,0 +1,154 @@
+{
+  "nodes": [
+    {
+      "id": "load_balancer",
+      "name": "Load Balancer",
+      "layer": "ingress",
+      "role": "traffic_distribution",
+      "description": "Distributes inbound traffic across upstream application instances and health-checks each one. A single load balancer is a hard single point of failure; without health checking it silently routes requests to dead backends.",
+      "singleton": false,
+      "max_instances": 3,
+      "provides": ["origin"],
+      "requires": [
+        {
+          "port": "upstream",
+          "accepts": ["app_backend"],
+          "min": 1,
+          "max": 12
+        }
+      ],
+      "overridable_edges": true,
+      "tiers": [
+        {
+          "tier": 1,
+          "name": "Single load balancer",
+          "stats": {
+            "capacity": 5000,
+            "capacity_unit": "rps",
+            "base_latency_ms": 4,
+            "availability_pct": 99.5,
+            "cost_month": 20,
+            "provision_time_s": 20,
+            "blast_radius": 0.9,
+            "max_connections": 10000
+          },
+          "tags": ["stateless", "spof", "single_az", "no_ratelimit"]
+        },
+        {
+          "tier": 2,
+          "name": "Managed, multi-AZ",
+          "stats": {
+            "capacity": 50000,
+            "capacity_unit": "rps",
+            "base_latency_ms": 3,
+            "availability_pct": 99.95,
+            "cost_month": 80,
+            "provision_time_s": 30,
+            "blast_radius": 0.5,
+            "max_connections": 100000
+          },
+          "tags": ["stateless", "managed", "multi_az", "auto_failover"]
+        },
+        {
+          "tier": 3,
+          "name": "Global load balancer",
+          "stats": {
+            "capacity": 500000,
+            "capacity_unit": "rps",
+            "base_latency_ms": 2,
+            "availability_pct": 99.99,
+            "cost_month": 350,
+            "provision_time_s": 60,
+            "blast_radius": 0.25,
+            "max_connections": 1000000
+          },
+          "cost_variable": {
+            "per_gb_transfer": 0.02
+          },
+          "tags": ["stateless", "managed", "multi_region", "auto_failover", "rate_limited"],
+          "actions_deny": ["upgrade_tier"]
+        }
+      ]
+    },
+    {
+      "id": "api_gateway",
+      "name": "API Gateway",
+      "layer": "ingress",
+      "role": "api_proxy",
+      "description": "Reverse proxy that enforces authentication, rate limits, and routing rules before requests reach your services. Misconfigured quotas or absent rate limiting allow one noisy client to saturate the entire backend undetected.",
+      "singleton": false,
+      "max_instances": 2,
+      "provides": ["origin"],
+      "requires": [
+        {
+          "port": "upstream",
+          "accepts": ["app_backend"],
+          "min": 1,
+          "max": 12
+        }
+      ],
+      "overridable_edges": true,
+      "tiers": [
+        {
+          "tier": 1,
+          "name": "Basic gateway",
+          "stats": {
+            "capacity": 10000,
+            "capacity_unit": "rps",
+            "base_latency_ms": 8,
+            "availability_pct": 99.5,
+            "cost_month": 40,
+            "provision_time_s": 20,
+            "blast_radius": 0.7,
+            "rule_count": 20,
+            "max_connections": 20000
+          },
+          "cost_variable": {
+            "per_million_requests": 3.50
+          },
+          "tags": ["stateless", "no_ratelimit", "single_az"]
+        },
+        {
+          "tier": 2,
+          "name": "Auth + rate limiting",
+          "stats": {
+            "capacity": 80000,
+            "capacity_unit": "rps",
+            "base_latency_ms": 6,
+            "availability_pct": 99.9,
+            "cost_month": 150,
+            "provision_time_s": 30,
+            "blast_radius": 0.5,
+            "rule_count": 100,
+            "max_connections": 200000
+          },
+          "cost_variable": {
+            "per_million_requests": 2.50
+          },
+          "tags": ["stateless", "managed", "multi_az", "rate_limited", "audit_logged"]
+        },
+        {
+          "tier": 3,
+          "name": "Caching + quotas",
+          "stats": {
+            "capacity": 400000,
+            "capacity_unit": "rps",
+            "base_latency_ms": 4,
+            "availability_pct": 99.95,
+            "cost_month": 500,
+            "provision_time_s": 45,
+            "blast_radius": 0.3,
+            "rule_count": 300,
+            "max_connections": 1000000,
+            "hit_ratio_pct": 45
+          },
+          "cost_variable": {
+            "per_million_requests": 1.50
+          },
+          "tags": ["stateless", "managed", "multi_region", "rate_limited", "cached", "audit_logged"],
+          "actions_deny": ["upgrade_tier"]
+        }
+      ]
+    }
+  ]
+}

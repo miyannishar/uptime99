@@ -1,0 +1,126 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["nodes"],
+  "properties": {
+    "nodes": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "name", "layer", "role", "description", "singleton",
+                     "max_instances", "provides", "requires", "overridable_edges", "tiers"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
+          "name": { "type": "string", "minLength": 1 },
+          "layer": { "enum": ["edge", "ingress", "compute", "data",
+                              "reliability", "observability", "delivery"] },
+          "role": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
+          "description": { "type": "string", "minLength": 20 },
+          "singleton": { "type": "boolean" },
+          "max_instances": { "type": "integer", "minimum": 1, "maximum": 12 },
+          "provides": { "type": "array", "items": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" } },
+          "requires": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["port", "accepts", "min", "max"],
+              "properties": {
+                "port": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
+                "accepts": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+                "min": { "type": "integer", "minimum": 0 },
+                "max": { "type": "integer", "minimum": 1 }
+              }
+            }
+          },
+          "overridable_edges": { "type": "boolean" },
+          "tiers": {
+            "type": "array",
+            "minItems": 3,
+            "maxItems": 4,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["tier", "name", "stats", "tags"],
+              "properties": {
+                "tier": { "type": "integer", "minimum": 1, "maximum": 4 },
+                "name": { "type": "string", "minLength": 1 },
+                "stats": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["capacity", "capacity_unit", "base_latency_ms",
+                               "availability_pct", "cost_month", "provision_time_s", "blast_radius"],
+                  "properties": {
+                    "capacity": { "type": "number", "minimum": 0 },
+                    "capacity_unit": { "enum": ["qps", "rps", "connections", "msgs_sec",
+                                                "events_sec", "lookups_sec", "builds_day", "gb", "none"] },
+                    "base_latency_ms": { "type": "number", "minimum": 0 },
+                    "availability_pct": { "type": "number", "minimum": 0, "maximum": 100 },
+                    "cost_month": { "type": "number", "minimum": 0 },
+                    "provision_time_s": { "type": "number", "minimum": 0 },
+                    "blast_radius": { "type": "number", "minimum": 0, "maximum": 1 },
+                    "max_connections": { "type": "number", "minimum": 0 },
+                    "iops": { "type": "number", "minimum": 0 },
+                    "storage_gb": { "type": "number", "minimum": 0 },
+                    "cpu_cores": { "type": "number", "minimum": 0 },
+                    "ram_gb": { "type": "number", "minimum": 0 },
+                    "durability_nines": { "type": "number", "minimum": 0 },
+                    "replication_lag_ms": { "type": ["number", "null"], "minimum": 0 },
+                    "failover_time_s": { "type": ["number", "null"], "minimum": 0 },
+                    "hit_ratio_pct": { "type": "number", "minimum": 0, "maximum": 100 },
+                    "ttl_s": { "type": "number", "minimum": 0 },
+                    "eviction_policy": { "enum": ["noeviction", "allkeys_lru", "allkeys_lfu", "volatile_ttl"] },
+                    "cache_size_gb": { "type": "number", "minimum": 0 },
+                    "concurrency": { "type": "number", "minimum": 0 },
+                    "cold_start_ms": { "type": "number", "minimum": 0 },
+                    "replicas": { "type": "number", "minimum": 1 },
+                    "autoscale_max": { "type": "number", "minimum": 1 },
+                    "queue_depth_max": { "type": "number", "minimum": 0 },
+                    "retention_days": { "type": "number", "minimum": 0 },
+                    "propagation_s": { "type": "number", "minimum": 0 },
+                    "rule_count": { "type": "number", "minimum": 0 },
+                    "cert_expiry_days": { "type": "number", "minimum": 0 },
+                    "edge_locations": { "type": "number", "minimum": 0 },
+                    "bandwidth_gbps": { "type": "number", "minimum": 0 },
+                    "sample_rate_pct": { "type": "number", "minimum": 0, "maximum": 100 },
+                    "cardinality_max": { "type": "number", "minimum": 0 },
+                    "index_size_gb": { "type": "number", "minimum": 0 },
+                    "rebuild_time_s": { "type": "number", "minimum": 0 },
+                    "rpo_minutes": { "type": "number", "minimum": 0 },
+                    "rto_minutes": { "type": "number", "minimum": 0 },
+                    "backup_frequency_h": { "type": "number", "minimum": 0 },
+                    "pipeline_minutes": { "type": "number", "minimum": 0 },
+                    "rollback_time_s": { "type": "number", "minimum": 0 },
+                    "flag_count": { "type": "number", "minimum": 0 },
+                    "rotation_days": { "type": "number", "minimum": 0 },
+                    "oncall_engineers": { "type": "number", "minimum": 0 },
+                    "fatigue_rate": { "type": "number", "minimum": 0 }
+                  }
+                },
+                "cost_variable": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "per_gb_transfer": { "type": "number", "minimum": 0 },
+                    "per_million_requests": { "type": "number", "minimum": 0 },
+                    "per_gb_storage_month": { "type": "number", "minimum": 0 },
+                    "per_million_queries": { "type": "number", "minimum": 0 },
+                    "per_million_ops": { "type": "number", "minimum": 0 },
+                    "per_gb_ingested": { "type": "number", "minimum": 0 },
+                    "per_build_minute": { "type": "number", "minimum": 0 }
+                  }
+                },
+                "tags": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+                "actions_extra": { "type": "array", "items": { "type": "string" } },
+                "actions_deny": { "type": "array", "items": { "type": "string" } }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
