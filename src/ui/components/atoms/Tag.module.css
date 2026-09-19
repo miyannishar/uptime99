@@ -1,0 +1,57 @@
+.root {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0 4px;
+  font-family: var(--font);
+  font-size: var(--fs-0);
+  line-height: 1.7;
+  border: 1px solid;
+  border-radius: var(--r-1);
+  white-space: nowrap;
+}
+
+.sm {
+  font-size: var(--fs-1);
+  padding: 1px 5px;
+}
+
+/* Colour carries the tag KIND, so red always means "this is what gets
+   exploited" and green always means "this is what protects me". */
+.weakness {
+  color: var(--tag-weakness);
+  border-color: var(--tag-weakness-line);
+  background: var(--bad-bg);
+}
+
+.capability {
+  color: var(--tag-capability);
+  border-color: var(--tag-capability-line);
+  background: var(--ok-bg);
+}
+
+.property {
+  color: var(--tag-property);
+  border-color: var(--tag-property-line);
+  background: var(--acc-bg);
+}
+
+.posture {
+  color: var(--tag-posture);
+  border-color: var(--tag-posture-line);
+  background: var(--mag-bg);
+}
+
+/* `cold_cache` / `unbounded_queue` — applied by an incident, not by a tier. */
+.runtime {
+  font-size: 7px;
+  opacity: 0.9;
+}
+
+.removed {
+  text-decoration: line-through;
+  opacity: 0.5;
+}
+
+button.root { cursor: pointer; }
+button.root:hover { filter: brightness(1.25); }

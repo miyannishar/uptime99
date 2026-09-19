@@ -1,0 +1,66 @@
+/* Hidden wholesale in FLAT — the token is `none` there. */
+.stage {
+  display: var(--rack-display);
+  perspective: 600px;
+  width: 112px;
+  height: 128px;
+  flex: 0 0 112px;
+}
+
+.rack {
+  position: relative;
+  width: 62px;
+  height: 110px;
+  margin: 9px auto;
+  transform-style: preserve-3d;
+  transform: rotateX(-12deg) rotateY(-24deg);
+  animation: var(--anim-spin-rack);
+}
+
+.face {
+  position: absolute;
+  inset: 0;
+  border: 1px solid var(--line-strong);
+}
+
+.front {
+  transform: translateZ(20px);
+  background: linear-gradient(#1b2635, #0e1520);
+  padding: 5px 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.side {
+  width: 40px;
+  left: auto;
+  right: 0;
+  background: #0d131c;
+  transform: rotateY(90deg) translateZ(40px);
+}
+
+.top {
+  height: 40px;
+  top: 0;
+  background: #131d29;
+  transform: rotateX(90deg) translateZ(20px);
+}
+
+.alarm .front { border-color: var(--bad); }
+
+.sled {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  height: 11px;
+  padding-left: 4px;
+  background: #16202d;
+  border: 1px solid #26333f;
+  border-radius: 2px;
+}
+
+.dead {
+  background: #1a1014;
+  border-color: #4a2028;
+}

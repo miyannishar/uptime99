@@ -1,0 +1,123 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-6);
+}
+
+.zones {
+  display: flex;
+  gap: var(--sp-5);
+  flex-wrap: wrap;
+}
+
+.zone {
+  flex: 1 1 200px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  padding: var(--sp-5);
+  text-align: left;
+  background: var(--bg-1);
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--r-3);
+  transition: border-color var(--transition), background var(--transition);
+}
+
+.zone:hover:not(:disabled) { border-color: var(--acc); }
+
+.zoneActive {
+  border-style: solid;
+  border-color: var(--acc);
+  background: color-mix(in srgb, var(--acc) 7%, var(--bg-1));
+}
+
+.zoneName {
+  font-size: var(--fs-1);
+  letter-spacing: var(--ls-mid);
+  color: var(--txt);
+}
+
+.residents {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-3);
+}
+
+.resident {
+  padding: var(--sp-2) var(--sp-4);
+  font-size: var(--fs-1);
+  color: var(--txt);
+  background: var(--card-bg);
+  border: 1px solid var(--line);
+  border-radius: var(--r-1);
+  box-shadow: var(--elev-1);
+}
+
+.placed {
+  color: var(--acc);
+  border-color: var(--acc);
+  border-style: dashed;
+}
+
+.emptyZone {
+  font-size: var(--fs-0);
+  color: var(--txt-faint);
+  font-style: italic;
+}
+
+.domain {
+  font-size: var(--fs-0);
+  color: var(--txt-faint);
+  letter-spacing: var(--ls-mid);
+}
+
+.connect {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+
+.connectLabel {
+  font-size: var(--fs-2);
+  color: var(--txt-dim);
+}
+
+.connectLabel b { color: var(--acc); font-weight: 500; }
+
+.targets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-3);
+}
+
+.target {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-4);
+  font-size: var(--fs-2);
+  color: var(--txt-dim);
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r-1);
+}
+
+.target:hover:not(:disabled) { border-color: var(--line-strong); color: var(--txt); }
+
+.targetOn {
+  color: var(--acc);
+  border-color: var(--acc);
+  background: var(--acc-bg);
+}
+
+.targetLabel { white-space: nowrap; }
+
+.targetZone {
+  font-size: var(--fs-0);
+  color: var(--txt-faint);
+}
+
+.existing {
+  font-size: var(--fs-0);
+  color: var(--txt-faint);
+}

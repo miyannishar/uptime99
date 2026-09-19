@@ -1,0 +1,15 @@
+.root {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+}
+
+.more {
+  font-size: var(--fs-0);
+  line-height: 1.7;
+  padding: 0 4px;
+  color: var(--txt-dim);
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--r-1);
+  cursor: help;
+}

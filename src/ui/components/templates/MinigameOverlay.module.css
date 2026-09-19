@@ -1,0 +1,11 @@
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-overlay);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--sp-6);
+  background: rgba(3, 6, 10, 0.78);
+  backdrop-filter: blur(2px);
+}

@@ -1,0 +1,26 @@
+.root {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-3);
+  font-size: var(--fs-0);
+  color: var(--txt-dim);
+}
+
+.label { color: var(--txt-dim); }
+
+.dots {
+  display: inline-flex;
+  gap: 2px;
+}
+
+.dot {
+  width: 3px;
+  height: 7px;
+  border-radius: 1px;
+  background: var(--line-strong);
+}
+
+.on { background: var(--acc); }
+
+/* 4 and 5 read as "this one can really hurt". */
+.hard { background: var(--warn); }

@@ -1,0 +1,15 @@
+.root { flex: 0 0 auto; }
+
+.track {
+  fill: none;
+  stroke: var(--line-strong);
+  stroke-width: 2;
+}
+
+.progress {
+  fill: none;
+  stroke: var(--warn);
+  stroke-width: 2;
+  stroke-linecap: round;
+  transition: stroke-dashoffset var(--transition);
+}

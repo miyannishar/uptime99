@@ -1,0 +1,39 @@
+.root {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-5);
+  padding: var(--sp-4) var(--sp-5);
+  background: var(--bg-1);
+  border-bottom: 1px solid var(--line);
+  flex-wrap: wrap;
+}
+
+.group {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-5);
+  flex-wrap: wrap;
+}
+
+.divider {
+  width: 1px;
+  align-self: stretch;
+  background: var(--line);
+}
+
+.spacer { flex: 1 1 auto; }
+
+.palette {
+  padding: 3px 7px;
+  font-size: var(--fs-0);
+  letter-spacing: var(--ls-mid);
+  color: var(--txt-dim);
+  border: 1px solid var(--line);
+  border-radius: var(--r-1);
+  background: var(--bg-2);
+}
+
+.palette:hover {
+  color: var(--txt);
+  border-color: var(--line-strong);
+}

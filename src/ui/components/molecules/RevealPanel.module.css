@@ -1,0 +1,14 @@
+.root {
+  padding: var(--sp-5);
+  background: var(--bg-1);
+  border: 1px solid var(--tag-property-line);
+  border-radius: var(--r-2);
+}
+
+.solution { margin-bottom: var(--sp-4); }
+
+.reveal {
+  font-size: var(--fs-2);
+  color: var(--txt);
+  line-height: 1.75;
+}

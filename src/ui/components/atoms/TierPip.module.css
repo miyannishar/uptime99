@@ -1,0 +1,29 @@
+.root {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  font-size: var(--fs-1);
+  color: var(--txt-dim);
+}
+
+.num {
+  color: var(--txt);
+  letter-spacing: 0.04em;
+}
+
+.pips {
+  display: inline-flex;
+  gap: 2px;
+}
+
+.pip {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--line-strong);
+}
+
+.on { background: var(--acc); }
+
+/* Top tier reached — nothing left to buy here. */
+.top { background: var(--mag); }

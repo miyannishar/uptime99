@@ -1,0 +1,44 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  min-width: 160px;
+}
+
+.top,
+.foot {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-4);
+}
+
+.label {
+  font-size: var(--fs-0);
+  letter-spacing: var(--ls-wide);
+  text-transform: uppercase;
+  color: var(--txt-faint);
+}
+
+.amount {
+  font-size: var(--fs-4);
+  color: var(--txt-strong);
+  font-variant-numeric: tabular-nums;
+}
+
+.foot { font-size: var(--fs-0); }
+
+.pending { color: var(--warn); }
+
+.profit { font-variant-numeric: tabular-nums; }
+
+.good { color: var(--ok); }
+.bad { color: var(--bad); }
+
+.inline {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--sp-3);
+}
+
+.inline .amount { font-size: var(--fs-2); }

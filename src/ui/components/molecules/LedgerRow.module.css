@@ -1,0 +1,50 @@
+.root {
+  display: grid;
+  grid-template-columns: 118px 1fr auto auto;
+  align-items: baseline;
+  gap: var(--sp-4);
+  padding: var(--sp-2) var(--sp-3);
+  font-size: var(--fs-1);
+  border-radius: var(--r-1);
+}
+
+.root:nth-child(odd) { background: var(--bg-1); }
+
+.kind {
+  font-size: var(--fs-0);
+  letter-spacing: var(--ls-mid);
+  padding: 0 4px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-1);
+  color: var(--txt-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* The seven ledger_event_kinds. */
+.provision { color: var(--acc); border-color: var(--tag-property-line); }
+.action { color: var(--txt); }
+.sla_credit { color: var(--bad); border-color: var(--tag-weakness-line); }
+.overage { color: var(--warn); border-color: #5e4c23; }
+.emergency_premium { color: var(--warn); border-color: #5e4c23; }
+.data_egress { color: var(--mag); border-color: var(--tag-posture-line); }
+.incident_remediation { color: var(--bad); border-color: var(--tag-weakness-line); }
+
+.label {
+  color: var(--txt-dim);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tick {
+  color: var(--txt-faint);
+  font-variant-numeric: tabular-nums;
+}
+
+.amount { font-variant-numeric: tabular-nums; }
+
+.charge { color: var(--bad); }
+.credit { color: var(--ok); }

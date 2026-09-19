@@ -1,0 +1,75 @@
+.root {
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-areas:
+    'header'
+    'main';
+  height: 100vh;
+  background: var(--bg-0);
+}
+
+.withPanel {
+  grid-template-columns: minmax(0, 1fr) 380px;
+  grid-template-areas:
+    'header header'
+    'main   side';
+}
+
+.withAside {
+  grid-template-columns: 290px minmax(0, 1fr);
+  grid-template-areas:
+    'header header'
+    'aside  main';
+}
+
+.withAside.withPanel {
+  grid-template-columns: 290px minmax(0, 1fr) 380px;
+  grid-template-areas:
+    'header header header'
+    'aside  main   side';
+}
+
+.header { grid-area: header; }
+
+.aside {
+  grid-area: aside;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.main {
+  grid-area: main;
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+}
+
+.side {
+  grid-area: side;
+  display: grid;
+  /* Panel gets the room; the feed keeps a readable floor. */
+  grid-template-rows: minmax(0, 1fr) minmax(180px, 38%);
+  min-height: 0;
+}
+
+.panel,
+.feed {
+  min-height: 0;
+  overflow: hidden;
+}
+
+@media (max-width: 1180px) {
+  .withAside.withPanel,
+  .withPanel {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-areas:
+      'header'
+      'main'
+      'side';
+  }
+
+  .withAside.withPanel .aside,
+  .withAside .aside { display: none; }
+}

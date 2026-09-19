@@ -1,0 +1,20 @@
+.root { display: block; overflow: visible; }
+
+.empty { display: inline-block; }
+
+.band {
+  fill: var(--ok);
+  opacity: 0.08;
+}
+
+.line {
+  fill: none;
+  stroke-width: 1.25;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.ok { stroke: var(--ok); }
+.warn { stroke: var(--warn); }
+.bad { stroke: var(--bad); }
+.unknown { stroke: var(--txt-faint); }

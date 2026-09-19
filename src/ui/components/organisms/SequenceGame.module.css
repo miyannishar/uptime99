@@ -1,0 +1,81 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  counter-reset: step;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+  padding: var(--sp-4) var(--sp-5);
+  background: var(--card-bg);
+  border: 1px solid var(--line);
+  border-radius: var(--r-2);
+  box-shadow: var(--elev-1);
+  cursor: grab;
+  transition: box-shadow var(--transition), transform var(--transition);
+}
+
+.row:hover { box-shadow: var(--elev-2); }
+
+.dragging {
+  opacity: 0.6;
+  cursor: grabbing;
+}
+
+.correct {
+  border-color: var(--tag-capability-line);
+  background: color-mix(in srgb, var(--ok) 6%, var(--bg-2));
+  cursor: default;
+}
+
+.ordinal {
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  display: grid;
+  place-items: center;
+  font-size: var(--fs-0);
+  color: var(--acc);
+  border: 1px solid var(--tag-property-line);
+  border-radius: 50%;
+  font-variant-numeric: tabular-nums;
+}
+
+.grip {
+  flex: 0 0 auto;
+  color: var(--txt-faint);
+  font-size: var(--fs-3);
+  letter-spacing: -2px;
+}
+
+.text {
+  flex: 1 1 auto;
+  font-size: var(--fs-2);
+  color: var(--txt);
+  line-height: 1.55;
+}
+
+.nudge {
+  flex: 0 0 auto;
+  display: inline-flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.arrow {
+  width: 18px;
+  height: 13px;
+  display: grid;
+  place-items: center;
+  font-size: var(--fs-0);
+  color: var(--txt-dim);
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  background: var(--bg-1);
+}
+
+.arrow:hover:not(:disabled) { color: var(--txt); border-color: var(--line-strong); }
+.arrow:disabled { opacity: 0.3; cursor: not-allowed; }

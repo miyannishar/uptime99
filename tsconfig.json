@@ -10,5 +10,7 @@
     "noEmit": true,
     "types": ["node"]
   },
-  "include": ["src", "tests"]
+  "include": ["src", "tests"],
+  "//": "src/ui is the browser app: it needs jsx + DOM libs and must not be typechecked with types:['node']. It has its own tsconfig at src/ui/tsconfig.json (npm run ui:typecheck).",
+  "exclude": ["src/ui"]
 }

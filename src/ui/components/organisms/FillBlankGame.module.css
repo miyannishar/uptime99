@@ -1,0 +1,50 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+}
+
+.facts {
+  padding: var(--sp-4) var(--sp-5);
+  font-size: var(--fs-2);
+  color: var(--txt);
+  line-height: 1.65;
+  background: var(--bg-1);
+  border-left: 2px solid var(--acc);
+  border-radius: 0 var(--r-1) var(--r-1) 0;
+}
+
+.factsLabel {
+  display: inline-block;
+  margin-right: var(--sp-4);
+  font-size: var(--fs-0);
+  letter-spacing: var(--ls-wide);
+  text-transform: uppercase;
+  color: var(--acc);
+}
+
+.select,
+.input {
+  font-family: var(--font);
+  font-size: var(--fs-2);
+  color: var(--acc);
+  background: var(--acc-bg);
+  border: 1px solid var(--acc);
+  border-radius: 2px;
+  padding: 0 3px;
+  min-width: 3ch;
+}
+
+.select:disabled,
+.input:disabled {
+  color: var(--ok);
+  background: var(--ok-bg);
+  border-color: var(--tag-capability-line);
+  opacity: 1;
+}
+
+.select:focus,
+.input:focus {
+  outline: 1px solid var(--acc);
+  outline-offset: 1px;
+}

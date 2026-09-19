@@ -1,0 +1,80 @@
+import type { DepthMode, MetricReading } from '../../types'
+import { BudgetMeter, DepthToggle, MetricTile, SpeedControl } from '../molecules'
+import type { Speed } from '../molecules'
+import s from './MetricsHeader.module.css'
+
+export interface MetricsHeaderProps {
+  readings: readonly MetricReading[]
+  tick: number
+  tickSeconds: number
+  speed: Speed
+  onSpeedChange: (speed: Speed) => void
+  budget: number
+  startingBudget: number
+  depthMode: DepthMode
+  onDepthChange: (mode: DepthMode) => void
+  /** Opens the ⌘K palette. */
+  onOpenPalette?: () => void
+}
+
+/**
+ * The always-visible metric strip.
+ *
+ * Technical metrics come first and business metrics second, which is the causal
+ * order the model actually works in: `users` is derived from the technical
+ * metrics, `cost_month` from the instances, and `profit_month` from both. A
+ * player who reads left to right reads cause before effect.
+ */
+export function MetricsHeader({
+  readings,
+  tick,
+  tickSeconds,
+  speed,
+  onSpeedChange,
+  budget,
+  startingBudget,
+  depthMode,
+  onDepthChange,
+  onOpenPalette,
+}: MetricsHeaderProps) {
+  const technical = readings.filter((r) => r.def.kind === 'technical')
+  const business = readings.filter((r) => r.def.kind === 'business')
+  const profit = business.find((r) => r.def.id === 'profit_month')
+
+  return (
+    <header className={s.root}>
+      <div className={s.group}>
+        {technical.map((r) => (
+          <MetricTile key={r.def.id} reading={r} inline />
+        ))}
+      </div>
+
+      <span className={s.divider} aria-hidden="true" />
+
+      <div className={s.group}>
+        {business.map((r) => (
+          <MetricTile key={r.def.id} reading={r} inline />
+        ))}
+      </div>
+
+      <span className={s.spacer} />
+
+      <BudgetMeter
+        budget={budget}
+        startingBudget={startingBudget}
+        profitMonth={profit?.value}
+        compact
+      />
+
+      <SpeedControl speed={speed} onChange={onSpeedChange} tick={tick} tickSeconds={tickSeconds} />
+
+      {onOpenPalette && (
+        <button type="button" className={s.palette} onClick={onOpenPalette} title="Command palette">
+          ⌘K
+        </button>
+      )}
+
+      <DepthToggle mode={depthMode} onChange={onDepthChange} />
+    </header>
+  )
+}

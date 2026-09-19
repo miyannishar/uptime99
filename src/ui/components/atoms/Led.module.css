@@ -1,0 +1,29 @@
+.root {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  flex: 0 0 auto;
+  animation: var(--anim-blink);
+}
+
+.ok {
+  background: var(--ok);
+  box-shadow: 0 0 5px var(--ok);
+}
+
+.warn {
+  background: var(--warn);
+  box-shadow: 0 0 5px var(--warn);
+}
+
+.bad {
+  background: var(--bad);
+  box-shadow: 0 0 7px var(--bad);
+  animation-duration: 0.55s;
+}
+
+.off {
+  background: #2a3542;
+  box-shadow: none;
+  animation: none;
+}

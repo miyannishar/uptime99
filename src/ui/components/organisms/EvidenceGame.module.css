@@ -1,0 +1,106 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-6);
+}
+
+.evidence {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+
+.evidenceHead {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-4);
+  flex-wrap: wrap;
+}
+
+.kind {
+  font-size: var(--fs-0);
+  letter-spacing: var(--ls-wide);
+  text-transform: uppercase;
+  color: var(--mag);
+  padding: 0 4px;
+  border: 1px solid var(--tag-posture-line);
+  border-radius: var(--r-1);
+}
+
+.context {
+  font-size: var(--fs-1);
+  color: var(--txt-dim);
+}
+
+.choices {
+  border: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+
+.legend {
+  padding: 0 0 var(--sp-3);
+  font-size: var(--fs-0);
+  letter-spacing: var(--ls-wide);
+  text-transform: uppercase;
+  color: var(--txt-faint);
+}
+
+.choice {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: start;
+  gap: var(--sp-4);
+  padding: var(--sp-4) var(--sp-5);
+  background: var(--card-bg);
+  border: 1px solid var(--line);
+  border-radius: var(--r-2);
+  cursor: pointer;
+  box-shadow: var(--elev-1);
+  transition: border-color var(--transition), box-shadow var(--transition);
+}
+
+.choice:hover { border-color: var(--line-strong); }
+
+.selected {
+  border-color: var(--acc);
+  box-shadow: var(--glow-acc), var(--elev-1);
+}
+
+.right {
+  border-color: var(--ok);
+  background: color-mix(in srgb, var(--ok) 7%, var(--bg-2));
+}
+
+.wrong {
+  border-color: var(--bad);
+  background: color-mix(in srgb, var(--bad) 7%, var(--bg-2));
+}
+
+.radio { margin-top: 3px; accent-color: var(--acc); }
+
+.choiceText {
+  font-size: var(--fs-2);
+  color: var(--txt);
+  line-height: 1.6;
+}
+
+.why {
+  grid-column: 2;
+  font-size: var(--fs-1);
+  color: var(--txt-dim);
+  line-height: 1.6;
+  padding-top: var(--sp-2);
+  border-top: 1px dashed var(--line);
+  margin-top: var(--sp-2);
+}
+
+.correctMark {
+  font-size: var(--fs-0);
+  letter-spacing: var(--ls-mid);
+  color: var(--ok);
+  white-space: nowrap;
+}

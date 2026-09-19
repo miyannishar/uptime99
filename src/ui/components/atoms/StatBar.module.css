@@ -1,0 +1,42 @@
+.root {
+  position: relative;
+  height: 3px;
+  background: var(--line-soft);
+  border-radius: var(--r-pill);
+  overflow: hidden;
+}
+
+.md { height: 6px; }
+
+.fill {
+  display: block;
+  height: 100%;
+  border-radius: var(--r-pill);
+  transition: width var(--transition);
+}
+
+.ok { background: var(--ok); }
+.warn { background: var(--warn); }
+.bad { background: var(--bad); }
+.unknown { background: var(--txt-faint); }
+
+/* utilisation past 100% — striped so it reads as overflow, not more capacity */
+.over {
+  position: absolute;
+  inset: 0 0 0 auto;
+  height: 100%;
+  background: repeating-linear-gradient(
+    135deg,
+    var(--bad) 0 2px,
+    #7a1f2a 2px 4px
+  );
+}
+
+.marker {
+  position: absolute;
+  top: -1px;
+  bottom: -1px;
+  width: 1px;
+  background: var(--txt-dim);
+  opacity: 0.7;
+}

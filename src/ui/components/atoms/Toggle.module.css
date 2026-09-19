@@ -1,0 +1,31 @@
+.root {
+  display: inline-flex;
+  border: 1px solid var(--line);
+  border-radius: var(--r-1);
+  overflow: hidden;
+  background: var(--bg-1);
+}
+
+.seg {
+  padding: 3px 9px;
+  font-family: var(--font);
+  font-size: var(--fs-0);
+  letter-spacing: 0.1em;
+  color: var(--txt-dim);
+  background: none;
+  transition: background var(--transition), color var(--transition);
+}
+
+.sm .seg {
+  padding: 4px 11px;
+  font-size: var(--fs-1);
+}
+
+.seg:hover { color: var(--txt); }
+
+.seg + .seg { border-left: 1px solid var(--line); }
+
+.on {
+  background: var(--acc-bg);
+  color: var(--acc);
+}

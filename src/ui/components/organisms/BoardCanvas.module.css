@@ -1,0 +1,87 @@
+.root {
+  position: relative;
+  padding: var(--sp-6) var(--sp-5);
+  background: var(--board-wash), var(--bg-0);
+  min-height: 100%;
+  overflow: auto;
+}
+
+/* Link layer sits behind the cards. */
+.links {
+  position: absolute;
+  inset: 0;
+  z-index: var(--z-link);
+  pointer-events: none;
+  overflow: visible;
+}
+
+.path,
+.tray {
+  position: relative;
+  z-index: var(--z-board);
+  display: flex;
+  gap: var(--sp-7);
+  align-items: flex-start;
+}
+
+.tray { gap: var(--sp-6); }
+
+.column {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+}
+
+.layerHead {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding-bottom: var(--sp-2);
+  border-bottom: 1px solid color-mix(in srgb, var(--layer) 35%, transparent);
+}
+
+.layerName {
+  font-size: var(--fs-0);
+  letter-spacing: var(--ls-wide);
+  text-transform: uppercase;
+  color: var(--layer);
+}
+
+.layerIndex {
+  font-size: var(--fs-0);
+  color: var(--txt-faint);
+  font-variant-numeric: tabular-nums;
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+}
+
+.empty {
+  width: 116px;
+  padding: var(--sp-4);
+  font-size: var(--fs-0);
+  color: var(--txt-faint);
+  text-align: center;
+  border: 1px dashed var(--line);
+  border-radius: var(--r-2);
+}
+
+.trayRule {
+  position: relative;
+  z-index: var(--z-board);
+  margin: var(--sp-7) 0 var(--sp-5);
+  border-top: 1px dashed var(--line);
+}
+
+.trayLabel {
+  position: relative;
+  top: -0.7em;
+  padding-right: var(--sp-4);
+  background: var(--bg-0);
+  font-size: var(--fs-0);
+  letter-spacing: var(--ls-mid);
+  color: var(--txt-faint);
+}

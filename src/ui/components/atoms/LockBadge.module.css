@@ -1,0 +1,14 @@
+.root {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  font-size: var(--fs-1);
+  color: var(--txt-faint);
+  font-style: italic;
+}
+
+.icon {
+  font-style: normal;
+  letter-spacing: -1px;
+  color: var(--txt-faint);
+}

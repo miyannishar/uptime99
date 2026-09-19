@@ -1,0 +1,47 @@
+.root {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-4);
+}
+
+.tick {
+  font-size: var(--fs-1);
+  color: var(--txt-dim);
+  letter-spacing: var(--ls-mid);
+  cursor: help;
+}
+
+.tick b {
+  color: var(--txt);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+.steps {
+  display: inline-flex;
+  border: 1px solid var(--line);
+  border-radius: var(--r-1);
+  overflow: hidden;
+  background: var(--bg-1);
+}
+
+.step {
+  min-width: 26px;
+  padding: 3px 6px;
+  font-size: var(--fs-0);
+  color: var(--txt-faint);
+  transition: background var(--transition), color var(--transition);
+}
+
+.step + .step { border-left: 1px solid var(--line); }
+.step:hover { color: var(--txt); }
+
+.on {
+  background: var(--acc-bg);
+  color: var(--acc);
+}
+
+.pause.on {
+  background: var(--warn-bg);
+  color: var(--warn);
+}

@@ -1,0 +1,46 @@
+.root {
+  position: relative;
+  background: var(--card-bg);
+  border: 1px solid var(--line);
+  border-radius: var(--r-2);
+  box-shadow: var(--elev-1);
+  transition: transform var(--transition), box-shadow var(--transition);
+}
+
+.sunken {
+  background: var(--bg-1);
+  box-shadow: none;
+}
+
+.flush {
+  background: none;
+  border-color: transparent;
+  box-shadow: none;
+}
+
+.interactive { cursor: pointer; }
+
+.interactive:hover {
+  transform: var(--lift);
+  box-shadow: var(--elev-2);
+}
+
+.selected {
+  outline: 1px solid var(--acc);
+  outline-offset: 2px;
+}
+
+.alarm {
+  border-color: var(--bad);
+  box-shadow: var(--glow-bad), var(--elev-1);
+  animation: var(--anim-pulse-bad);
+}
+
+.accented::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 2px;
+  background: var(--panel-accent);
+  border-radius: var(--r-2) 0 0 var(--r-2);
+}

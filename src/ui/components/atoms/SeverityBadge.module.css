@@ -1,0 +1,19 @@
+.root {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: 1px 5px;
+  font-size: var(--fs-0);
+  letter-spacing: var(--ls-mid);
+  color: var(--sev);
+  border: 1px solid var(--sev);
+  border-radius: var(--r-1);
+  background: color-mix(in srgb, var(--sev) 12%, transparent);
+  white-space: nowrap;
+}
+
+.family {
+  color: var(--txt-dim);
+  border-left: 1px solid color-mix(in srgb, var(--sev) 40%, transparent);
+  padding-left: var(--sp-3);
+}

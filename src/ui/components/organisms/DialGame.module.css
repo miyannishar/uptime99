@@ -1,0 +1,46 @@
+.root {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--sp-7);
+  align-items: start;
+}
+
+@media (max-width: 720px) {
+  .root { grid-template-columns: 1fr; }
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--fs-2);
+}
+
+.table tr { border-bottom: 1px solid var(--line-soft); }
+
+.label {
+  text-align: left;
+  font-weight: 400;
+  color: var(--txt-dim);
+  padding: var(--sp-3) var(--sp-4) var(--sp-3) 0;
+  white-space: nowrap;
+}
+
+.value {
+  text-align: right;
+  color: var(--txt-strong);
+  padding: var(--sp-3) 0;
+  font-variant-numeric: tabular-nums;
+}
+
+/* `table_complete: false` — the player has to estimate this one. */
+.withheld .value {
+  color: var(--txt-faint);
+  font-style: italic;
+}
+
+.dial {
+  padding: var(--sp-5);
+  background: var(--bg-1);
+  border: 1px solid var(--line);
+  border-radius: var(--r-2);
+}

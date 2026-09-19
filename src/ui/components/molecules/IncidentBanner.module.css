@@ -1,0 +1,83 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  padding: var(--sp-4) var(--sp-5);
+  border-left: 2px solid var(--bad);
+  background: color-mix(in srgb, var(--bad) 5%, transparent);
+  border-radius: 0 var(--r-1) var(--r-1) 0;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+}
+
+.selected {
+  background: color-mix(in srgb, var(--bad) 11%, transparent);
+  box-shadow: inset 0 0 0 1px var(--tag-weakness-line);
+}
+
+.top {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-4);
+}
+
+.name {
+  flex: 1 1 auto;
+  font-size: var(--fs-3);
+  color: var(--txt-strong);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.clock {
+  font-size: var(--fs-2);
+  color: var(--txt-dim);
+  font-variant-numeric: tabular-nums;
+}
+
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-3);
+  font-size: var(--fs-0);
+}
+
+.scope,
+.chip {
+  padding: 0 4px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-1);
+  color: var(--txt-dim);
+  letter-spacing: var(--ls-mid);
+  line-height: 1.7;
+  cursor: help;
+}
+
+.instance { color: var(--acc); border-color: var(--tag-property-line); }
+.group { color: var(--warn); border-color: #5e4c23; }
+/* No node is targeted at all — the gap IS the incident. */
+.architecture { color: var(--mag); border-color: var(--tag-posture-line); }
+
+.survive {
+  padding: 0 4px;
+  color: var(--bad);
+  border: 1px solid var(--tag-weakness-line);
+  border-radius: var(--r-1);
+  letter-spacing: var(--ls-mid);
+  line-height: 1.7;
+  cursor: help;
+}
+
+.escalate {
+  color: var(--warn);
+  letter-spacing: var(--ls-mid);
+}
+
+.escalateSoon {
+  color: var(--bad);
+  animation: var(--anim-blink);
+}

@@ -1,0 +1,43 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  padding: var(--sp-4) var(--sp-5);
+  border-left: 2px solid var(--bad);
+  background: color-mix(in srgb, var(--bad) 6%, transparent);
+  border-radius: 0 var(--r-1) var(--r-1) 0;
+}
+
+.head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-4);
+}
+
+.attempt {
+  font-size: var(--fs-0);
+  letter-spacing: var(--ls-wide);
+  text-transform: uppercase;
+  color: var(--bad);
+}
+
+.when {
+  font-size: var(--fs-0);
+  color: var(--txt-faint);
+  letter-spacing: var(--ls-mid);
+}
+
+/* The consequence, in numbers. */
+.shows {
+  font-size: var(--fs-2);
+  color: var(--txt-strong);
+  line-height: 1.65;
+}
+
+/* The reasoning error behind it. */
+.why {
+  font-size: var(--fs-2);
+  color: var(--txt-dim);
+  line-height: 1.65;
+}

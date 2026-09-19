@@ -1,0 +1,21 @@
+.root {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--sp-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.sm { font-size: var(--fs-2); }
+.md { font-size: var(--fs-4); }
+.lg { font-size: var(--fs-6); letter-spacing: -0.01em; }
+
+.value { color: var(--txt-strong); }
+
+.ok { color: var(--txt-strong); }
+.warn { color: var(--warn); }
+.bad { color: var(--bad); }
+.unknown { color: var(--txt-dim); }
+
+.trend { font-size: 0.8em; }
+.good { color: var(--ok); }
+.poor { color: var(--bad); }

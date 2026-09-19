@@ -1,0 +1,103 @@
+.root {
+  width: min(900px, 94vw);
+  max-height: 92vh;
+  overflow-y: auto;
+  padding: var(--sp-7);
+  background: var(--bg-1);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-3);
+  box-shadow: var(--elev-3);
+}
+
+.head {
+  padding-left: var(--sp-5);
+  border-left: 3px solid;
+}
+
+.cleared { border-left-color: var(--ok); }
+.failed { border-left-color: var(--bad); }
+
+.verdict {
+  font-size: var(--fs-0);
+  letter-spacing: var(--ls-wide);
+  text-transform: uppercase;
+}
+
+.cleared .verdict { color: var(--ok); }
+.failed .verdict { color: var(--bad); }
+
+.title {
+  margin-top: var(--sp-2);
+  font-size: var(--fs-6);
+  color: var(--txt-strong);
+}
+
+.sub {
+  margin-top: var(--sp-2);
+  font-size: var(--fs-2);
+  color: var(--txt-dim);
+}
+
+.section { padding-top: var(--sp-5); }
+
+.none {
+  font-size: var(--fs-1);
+  color: var(--txt-faint);
+}
+
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
+  gap: var(--sp-3);
+}
+
+.lessons {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+
+.incidents {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+.incident {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+  padding: var(--sp-2) var(--sp-3);
+  border-radius: var(--r-1);
+  font-size: var(--fs-2);
+}
+
+.incident:nth-child(odd) { background: var(--bg-2); }
+
+.incidentOpen { box-shadow: inset 2px 0 0 var(--bad); }
+
+.incidentName { flex: 1 1 auto; color: var(--txt); }
+
+.outcome {
+  font-size: var(--fs-0);
+  letter-spacing: var(--ls-mid);
+}
+
+.resolved { color: var(--ok); }
+.unresolved { color: var(--bad); }
+
+.ledger {
+  display: flex;
+  flex-direction: column;
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--sp-4);
+  padding-top: var(--sp-6);
+  margin-top: var(--sp-5);
+  border-top: 1px solid var(--line);
+}

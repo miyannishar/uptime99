@@ -1,0 +1,64 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  min-width: 128px;
+  padding: var(--sp-4) var(--sp-5);
+  background: var(--card-bg);
+  border: 1px solid var(--line);
+  border-radius: var(--r-2);
+  box-shadow: var(--elev-1);
+}
+
+.clickable { cursor: pointer; }
+.clickable:hover { box-shadow: var(--elev-2); transform: var(--lift); }
+
+.top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-4);
+}
+
+.label {
+  font-size: var(--fs-1);
+  color: var(--txt-dim);
+}
+
+.kind {
+  font-size: var(--fs-0);
+  letter-spacing: var(--ls-mid);
+  color: var(--txt-faint);
+}
+
+.business { color: var(--mag); }
+
+.range {
+  font-size: var(--fs-0);
+  color: var(--txt-faint);
+}
+
+.formula {
+  margin-top: var(--sp-2);
+  padding: var(--sp-2) var(--sp-3);
+  font-size: var(--fs-0);
+  color: var(--txt-dim);
+  background: var(--bg-1);
+  border-radius: var(--r-1);
+  word-break: break-word;
+}
+
+/* ---- inline (header strip) ---- */
+
+.inline {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--sp-3);
+  white-space: nowrap;
+}
+
+.inlineLabel {
+  font-size: var(--fs-1);
+  color: var(--txt-dim);
+  letter-spacing: var(--ls-mid);
+}

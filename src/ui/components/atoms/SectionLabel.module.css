@@ -1,0 +1,25 @@
+.root {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-4);
+  margin-bottom: var(--sp-3);
+}
+
+.rule {
+  padding-top: var(--sp-4);
+  border-top: 1px solid var(--line);
+  margin-top: var(--sp-4);
+}
+
+.text {
+  font-size: var(--fs-0);
+  letter-spacing: var(--ls-wide);
+  text-transform: uppercase;
+  color: var(--txt-faint);
+}
+
+.aside {
+  font-size: var(--fs-1);
+  color: var(--txt-dim);
+}

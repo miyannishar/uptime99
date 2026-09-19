@@ -1,0 +1,31 @@
+.root { transition: opacity var(--transition); }
+
+.dimmed { opacity: 0.25; }
+
+.base {
+  fill: none;
+  stroke: var(--line);
+  stroke-width: 1;
+}
+
+.flow {
+  fill: none;
+  stroke-width: 1.5;
+  stroke-dasharray: 3 11;
+  stroke-linecap: round;
+  animation: var(--anim-flow);
+}
+
+.ok { stroke: var(--acc); }
+.warn { stroke: var(--warn); }
+.bad { stroke: var(--bad); }
+.unknown { stroke: var(--txt-faint); }
+
+/* Downstream node is down: no traffic reaches it at all. */
+.severed {
+  fill: none;
+  stroke: var(--bad);
+  stroke-width: 1.5;
+  stroke-dasharray: 2 4;
+  opacity: 0.55;
+}
