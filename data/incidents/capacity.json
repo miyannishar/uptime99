@@ -1,0 +1,622 @@
+{
+  "incidents": [
+    {
+      "id": "load_surge",
+      "name": "Load surge",
+      "family": "capacity",
+      "severity": 3,
+      "scope": "group",
+      "group_by": "layer",
+      "target": {
+        "tags_none": [
+          "autoscaling"
+        ],
+        "layers": [
+          "compute"
+        ]
+      },
+      "fires_when": null,
+      "gates": {
+        "min_tick": 40,
+        "min_users": 2000,
+        "cooldown_ticks": 180
+      },
+      "base_weight": 9,
+      "weight_per_target": 4,
+      "damage": {
+        "utilization_delta_pct": 60
+      },
+      "resolved_by": [
+        "enable_autoscaling",
+        "scale_out"
+      ],
+      "duration_ticks": null,
+      "escalates_to": null,
+      "escalate_after_ticks": null,
+      "ledger_events": [
+        {
+          "kind": "emergency_premium",
+          "when": "on_resolve",
+          "basis": "severity * 20 * emergency_premium_multiplier"
+        }
+      ],
+      "signals": [
+        {
+          "level": 0,
+          "requires": null,
+          "text": "CEO: \"The website is crawling. Our sales team cannot load the dashboard and a prospect just asked why everything is broken. What is going on?\""
+        },
+        {
+          "level": 1,
+          "requires": {
+            "node_ids": [
+              "metrics_pipeline"
+            ],
+            "min_tier": 1
+          },
+          "text": "CPU utilization on the compute layer climbed from 22% to 81% over the last 18 minutes. p95 latency has risen from 70ms to 940ms in the same window."
+        },
+        {
+          "level": 2,
+          "requires": {
+            "node_ids": [
+              "alerting"
+            ],
+            "min_tier": 2
+          },
+          "text": "app-us-01 and app-us-02 are both above 95% CPU. Request queue depth is climbing on both nodes and neither is shedding load."
+        },
+        {
+          "level": 3,
+          "requires": {
+            "node_ids": [
+              "tracing"
+            ],
+            "min_tier": 2
+          },
+          "text": "Neither app-us-01 nor app-us-02 has autoscaling enabled. Inbound request rate tripled in 15 minutes and no additional compute capacity was provisioned to absorb it."
+        }
+      ]
+    },
+    {
+      "id": "traffic_spike",
+      "name": "Traffic spike",
+      "family": "capacity",
+      "severity": 2,
+      "scope": "instance",
+      "group_by": null,
+      "target": {
+        "layers": [
+          "edge",
+          "ingress",
+          "compute"
+        ]
+      },
+      "fires_when": null,
+      "gates": {
+        "min_tick": 15,
+        "min_users": 500,
+        "cooldown_ticks": 90
+      },
+      "base_weight": 16,
+      "weight_per_target": 2,
+      "damage": {
+        "utilization_delta_pct": 45
+      },
+      "resolved_by": [
+        "scale_out",
+        "vertical_scale"
+      ],
+      "duration_ticks": null,
+      "escalates_to": null,
+      "escalate_after_ticks": null,
+      "ledger_events": [
+        {
+          "kind": "emergency_premium",
+          "when": "on_resolve",
+          "basis": "severity * 20 * emergency_premium_multiplier"
+        }
+      ],
+      "signals": [
+        {
+          "level": 0,
+          "requires": null,
+          "text": "Support inbox: eight tickets in the last ten minutes. Users are saying pages are taking forever to load and some are giving up entirely."
+        },
+        {
+          "level": 1,
+          "requires": {
+            "node_ids": [
+              "metrics_pipeline"
+            ],
+            "min_tier": 1
+          },
+          "text": "Request rate on the compute layer jumped 2.6× in five minutes. p95 latency crossed 600ms and is still climbing."
+        },
+        {
+          "level": 2,
+          "requires": {
+            "node_ids": [
+              "alerting"
+            ],
+            "min_tier": 2
+          },
+          "text": "app-us-01 is at 89% CPU. The instance is still serving requests but latency has crossed the 500ms alert threshold and is not recovering."
+        },
+        {
+          "level": 3,
+          "requires": {
+            "node_ids": [
+              "tracing"
+            ],
+            "min_tier": 2
+          },
+          "text": "A single enterprise customer triggered a bulk data export at 14:30 UTC, sending 24,000 API requests in four minutes. app-us-01 absorbed all of it and is saturating; no additional capacity is available to share the load."
+        }
+      ]
+    },
+    {
+      "id": "ddos_attack",
+      "name": "DDoS attack",
+      "family": "capacity",
+      "severity": 4,
+      "scope": "group",
+      "group_by": "layer",
+      "target": {
+        "tags_none": [
+          "rate_limited"
+        ],
+        "layers": [
+          "edge",
+          "ingress"
+        ],
+        "tags_any": [
+          "no_ratelimit"
+        ]
+      },
+      "fires_when": null,
+      "gates": {
+        "min_tick": 90,
+        "min_users": 10000,
+        "cooldown_ticks": 300
+      },
+      "base_weight": 5,
+      "weight_per_target": 4,
+      "damage": {
+        "utilization_delta_pct": 150,
+        "health_delta": -40
+      },
+      "resolved_by": [
+        "enable_rate_limit"
+      ],
+      "duration_ticks": null,
+      "escalates_to": null,
+      "escalate_after_ticks": null,
+      "ledger_events": [
+        {
+          "kind": "overage",
+          "when": "per_tick",
+          "basis": "affected_instances * 4"
+        },
+        {
+          "kind": "data_egress",
+          "when": "on_resolve",
+          "basis": "severity * 30"
+        }
+      ],
+      "signals": [
+        {
+          "level": 0,
+          "requires": null,
+          "text": "Customers are posting on social media that the site is completely unreachable. The support queue has tripled in five minutes and account managers are getting calls from enterprise clients."
+        },
+        {
+          "level": 1,
+          "requires": {
+            "node_ids": [
+              "metrics_pipeline"
+            ],
+            "min_tier": 1
+          },
+          "text": "Traffic volume on the edge and ingress layers is 19× the daily average and still rising. Ingress error rate has reached 38% and health is deteriorating."
+        },
+        {
+          "level": 2,
+          "requires": {
+            "node_ids": [
+              "alerting"
+            ],
+            "min_tier": 2
+          },
+          "text": "cdn-us-01 and lb-us-01 are both at 100% utilization with health scores below 60%. Both nodes are rejecting new connections and returning 503 on a growing share of requests."
+        },
+        {
+          "level": 3,
+          "requires": {
+            "node_ids": [
+              "tracing"
+            ],
+            "min_tier": 2
+          },
+          "text": "91% of inbound requests originate from 17 IP addresses, each sending 700–900 req/s with no session cookies and identical query strings targeting /api/search. No organic user generates this pattern; this is coordinated synthetic traffic and rate limiting would stop it."
+        }
+      ]
+    },
+    {
+      "id": "instance_size_cap",
+      "name": "Instance size cap",
+      "family": "capacity",
+      "severity": 3,
+      "scope": "instance",
+      "group_by": null,
+      "target": {
+        "tags_all": [
+          "vertically_scalable_only"
+        ]
+      },
+      "fires_when": null,
+      "gates": {
+        "min_tick": 50,
+        "min_users": 3000,
+        "cooldown_ticks": 200
+      },
+      "base_weight": 7,
+      "weight_per_target": 5,
+      "damage": {
+        "utilization_delta_pct": 35
+      },
+      "resolved_by": [
+        "refactor_for_scale_out"
+      ],
+      "duration_ticks": null,
+      "escalates_to": null,
+      "escalate_after_ticks": null,
+      "ledger_events": [
+        {
+          "kind": "overage",
+          "when": "per_tick",
+          "basis": "affected_instances * 2"
+        }
+      ],
+      "signals": [
+        {
+          "level": 0,
+          "requires": null,
+          "text": "Account managers are hearing from customers that the product feels sluggish every afternoon. Three large accounts mentioned it in their last check-in calls."
+        },
+        {
+          "level": 1,
+          "requires": {
+            "node_ids": [
+              "metrics_pipeline"
+            ],
+            "min_tier": 1
+          },
+          "text": "CPU on the compute layer runs above 85% every weekday afternoon. Response times are degraded during the window but never quite fail."
+        },
+        {
+          "level": 2,
+          "requires": {
+            "node_ids": [
+              "alerting"
+            ],
+            "min_tier": 2
+          },
+          "text": "app-us-01 consistently hits 92% CPU between 13:00 and 17:00 UTC. The node cannot keep up with afternoon load and latency climbs throughout the window."
+        },
+        {
+          "level": 3,
+          "requires": {
+            "node_ids": [
+              "tracing"
+            ],
+            "min_tier": 2
+          },
+          "text": "app-us-01 is already at the largest available instance size on this tier. No larger vertical option exists on this platform; the node has reached its hardware ceiling and cannot be upsized without refactoring to support horizontal scale."
+        }
+      ]
+    },
+    {
+      "id": "vertical_limit_reached",
+      "name": "Vertical limit reached",
+      "family": "capacity",
+      "severity": 3,
+      "scope": "instance",
+      "group_by": null,
+      "target": {
+        "tags_all": [
+          "vertically_scalable_only"
+        ]
+      },
+      "fires_when": null,
+      "gates": {
+        "min_tick": 70,
+        "min_users": 6000,
+        "cooldown_ticks": 240
+      },
+      "base_weight": 6,
+      "weight_per_target": 5,
+      "damage": {
+        "utilization_delta_pct": 50,
+        "health_delta": -20
+      },
+      "resolved_by": [
+        "refactor_for_scale_out"
+      ],
+      "duration_ticks": null,
+      "escalates_to": null,
+      "escalate_after_ticks": null,
+      "ledger_events": [
+        {
+          "kind": "overage",
+          "when": "per_tick",
+          "basis": "affected_instances * 2"
+        }
+      ],
+      "signals": [
+        {
+          "level": 0,
+          "requires": null,
+          "text": "We are getting a growing number of errors during peak hours. Three enterprise customers have complained in the last week that the product is unreliable under load."
+        },
+        {
+          "level": 1,
+          "requires": {
+            "node_ids": [
+              "metrics_pipeline"
+            ],
+            "min_tier": 1
+          },
+          "text": "Utilization on the compute layer exceeds 96% at peak. Error rate spikes to 7% during the same window and has been worsening each week."
+        },
+        {
+          "level": 2,
+          "requires": {
+            "node_ids": [
+              "alerting"
+            ],
+            "min_tier": 2
+          },
+          "text": "app-us-01 is at 97% CPU and dropping 5% of requests with 503 errors. Vertical scaling cannot be applied; the instance is already at the maximum available tier."
+        },
+        {
+          "level": 3,
+          "requires": {
+            "node_ids": [
+              "tracing"
+            ],
+            "min_tier": 2
+          },
+          "text": "app-us-01 has been progressively upgraded to the maximum tier size this platform offers. No larger VM SKU is available. The node is exhausting all allocated vCPUs and the only path to more headroom is refactoring the service to support horizontal scale-out."
+        }
+      ]
+    },
+    {
+      "id": "scale_event_latency",
+      "name": "Scale event latency",
+      "family": "capacity",
+      "severity": 1,
+      "scope": "instance",
+      "group_by": null,
+      "target": {
+        "tags_all": [
+          "autoscaling"
+        ]
+      },
+      "fires_when": null,
+      "gates": {
+        "min_tick": 60,
+        "min_users": 4000,
+        "cooldown_ticks": 120
+      },
+      "base_weight": 5,
+      "weight_per_target": 2,
+      "damage": {
+        "utilization_delta_pct": 20
+      },
+      "resolved_by": [
+        "upgrade_tier",
+        "vertical_scale"
+      ],
+      "duration_ticks": null,
+      "escalates_to": null,
+      "escalate_after_ticks": null,
+      "ledger_events": [
+        {
+          "kind": "overage",
+          "when": "per_tick",
+          "basis": "affected_instances * 2"
+        }
+      ],
+      "signals": [
+        {
+          "level": 0,
+          "requires": null,
+          "text": "A handful of users noticed a brief slowdown about fifteen minutes ago — maybe 60 to 90 seconds. It seems to have resolved itself and nobody is sure what caused it."
+        },
+        {
+          "level": 1,
+          "requires": {
+            "node_ids": [
+              "metrics_pipeline"
+            ],
+            "min_tier": 1
+          },
+          "text": "Compute layer latency spiked from 55ms to 340ms for 85 seconds starting at 11:47 UTC, then returned to baseline without intervention. Utilization briefly peaked before the spike."
+        },
+        {
+          "level": 2,
+          "requires": {
+            "node_ids": [
+              "alerting"
+            ],
+            "min_tier": 2
+          },
+          "text": "app-us-01 triggered a scale-out event at 11:47 UTC. New instances were provisioned but there was an 85-second window before they completed warm-up and entered the load balancer rotation."
+        },
+        {
+          "level": 3,
+          "requires": {
+            "node_ids": [
+              "tracing"
+            ],
+            "min_tier": 2
+          },
+          "text": "The autoscaler provisioned two replacement nodes when CPU crossed 70%, but both required a 75-second health-check warm-up period before receiving traffic. During that window, app-us-01 alone handled all requests and saturated. Upgrading the base tier would reduce the frequency of autoscale events."
+        }
+      ]
+    },
+    {
+      "id": "performance_degradation",
+      "name": "Performance degradation",
+      "family": "capacity",
+      "severity": 2,
+      "scope": "instance",
+      "group_by": null,
+      "target": {
+        "tags_all": [
+          "cold_cache"
+        ]
+      },
+      "fires_when": null,
+      "gates": {
+        "min_tick": 20,
+        "min_users": 0,
+        "cooldown_ticks": 100
+      },
+      "base_weight": 10,
+      "weight_per_target": 4,
+      "damage": {
+        "utilization_delta_pct": 30,
+        "health_delta": -15
+      },
+      "resolved_by": [
+        "warm_cache"
+      ],
+      "duration_ticks": null,
+      "escalates_to": null,
+      "escalate_after_ticks": null,
+      "ledger_events": [
+        {
+          "kind": "overage",
+          "when": "per_tick",
+          "basis": "affected_instances * 2"
+        }
+      ],
+      "signals": [
+        {
+          "level": 0,
+          "requires": null,
+          "text": "Users say everything feels painfully slow since that brief maintenance window earlier. Pages that used to load instantly are now taking four to six seconds."
+        },
+        {
+          "level": 1,
+          "requires": {
+            "node_ids": [
+              "metrics_pipeline"
+            ],
+            "min_tier": 1
+          },
+          "text": "Cache miss rate on the data layer is at 97%. Average database query time has jumped from 5ms to 420ms and is not recovering."
+        },
+        {
+          "level": 2,
+          "requires": {
+            "node_ids": [
+              "alerting"
+            ],
+            "min_tier": 2
+          },
+          "text": "redis-01 was restarted and its working set is empty. Every application request is falling through to pg-primary, which is now handling 45× its normal query volume."
+        },
+        {
+          "level": 3,
+          "requires": {
+            "node_ids": [
+              "tracing"
+            ],
+            "min_tier": 2
+          },
+          "text": "redis-01 lost all in-memory state during its restart. Traces show 100% of reads bypassing the cache and hitting pg-primary directly. At this query rate the database will become the new bottleneck; the cache must be warmed before query load increases further."
+        }
+      ]
+    },
+    {
+      "id": "alert_storm",
+      "name": "Alert storm",
+      "family": "capacity",
+      "severity": 1,
+      "scope": "architecture",
+      "group_by": null,
+      "target": null,
+      "fires_when": {
+        "any_node": {
+          "tags_all": [
+            "no_alerting"
+          ]
+        }
+      },
+      "gates": {
+        "min_tick": 50,
+        "min_users": 0,
+        "cooldown_ticks": 200
+      },
+      "base_weight": 6,
+      "weight_per_target": 0,
+      "damage": {
+        "health_delta": -5
+      },
+      "resolved_by": [
+        "enable_observability",
+        "tune_rules"
+      ],
+      "duration_ticks": null,
+      "escalates_to": null,
+      "escalate_after_ticks": null,
+      "ledger_events": [
+        {
+          "kind": "incident_remediation",
+          "when": "on_resolve",
+          "basis": "severity * 15"
+        }
+      ],
+      "signals": [
+        {
+          "level": 0,
+          "requires": null,
+          "text": "We had no idea anything was wrong until three customers called in. The on-call engineer was the last person to find out there was a problem."
+        },
+        {
+          "level": 1,
+          "requires": {
+            "node_ids": [
+              "metrics_pipeline"
+            ],
+            "min_tier": 1
+          },
+          "text": "Health on the observability layer declined below 55% without triggering any alert. Two nodes have been degraded for over 20 minutes with no page fired."
+        },
+        {
+          "level": 2,
+          "requires": {
+            "node_ids": [
+              "alerting"
+            ],
+            "min_tier": 2
+          },
+          "text": "metrics-pipeline-01 has been degraded for 24 minutes. No alerting rule is configured on this node, so the on-call team received no notification and the issue compounded undetected."
+        },
+        {
+          "level": 3,
+          "requires": {
+            "node_ids": [
+              "tracing"
+            ],
+            "min_tier": 2
+          },
+          "text": "Trace data shows metrics-pipeline-01 began degrading at 09:12 UTC. The first human notification came from a customer complaint at 09:35 UTC — a 23-minute blind window caused entirely by the absence of an alerting rule on that node."
+        }
+      ]
+    }
+  ]
+}

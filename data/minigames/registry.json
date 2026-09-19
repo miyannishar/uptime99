@@ -1,0 +1,94 @@
+{
+  "minigames": [
+    {
+      "id": "dns_cutover",
+      "name": "DNS Cutover",
+      "format": "ordered_sequence",
+      "description": "Arrange the steps of a traffic cutover in the order they must be performed so no request lands on a dead target during the transition."
+    },
+    {
+      "id": "restore_drill",
+      "name": "Restore Drill",
+      "format": "ordered_sequence",
+      "description": "Order the restore procedure correctly — verify integrity before promoting, promote before cutting over — to prove the runbook works under pressure."
+    },
+    {
+      "id": "cert_chain_puzzle",
+      "name": "Certificate Chain",
+      "format": "ordered_sequence",
+      "description": "Assemble the certificate chain from leaf to root in the exact order a TLS client validates it, so the handshake completes without errors."
+    },
+    {
+      "id": "yaml_manifest",
+      "name": "YAML Manifest",
+      "format": "fill_blank",
+      "description": "Fill in the missing fields of a deployment manifest — replica count, resource limits, image tag — that actually govern capacity and rollout behavior."
+    },
+    {
+      "id": "cache_key_match",
+      "name": "Cache Key Match",
+      "format": "fill_blank",
+      "description": "Write the key pattern that invalidates exactly the stale entries you meant to clear, without nuking unrelated hot data and causing unnecessary misses."
+    },
+    {
+      "id": "iam_policy_puzzle",
+      "name": "IAM Policy",
+      "format": "fill_blank",
+      "description": "Complete the policy document to grant least-privilege access — narrow enough to block over-reach, broad enough that the calling service still functions."
+    },
+    {
+      "id": "incident_comms",
+      "name": "Incident Comms",
+      "format": "fill_blank",
+      "description": "Draft the missing fields of a status-page update that informs affected users without speculating beyond what has been confirmed."
+    },
+    {
+      "id": "threshold_tuning",
+      "name": "Threshold Tuning",
+      "format": "dial",
+      "description": "Set a numeric trigger point — scale threshold, failover timeout, rate limit, alert rule, or sampling rate — that fires before damage occurs but not on routine noise, drilling the skill of reading a signal and picking a value that is tight enough to be useful yet loose enough to avoid constant false positives."
+    },
+    {
+      "id": "resource_sizing",
+      "name": "Resource Sizing",
+      "format": "dial",
+      "description": "Size an instance or connection pool against measured load data rather than guessing, hitting the target range that handles current traffic without wasting money on idle capacity."
+    },
+    {
+      "id": "queue_triage",
+      "name": "Queue Triage",
+      "format": "dial",
+      "description": "Set the worker count high enough to drain a backlog at the current arrival rate without over-provisioning consumers that sit idle once the queue is clear."
+    },
+    {
+      "id": "capacity_planning",
+      "name": "Capacity Planning",
+      "format": "dial",
+      "description": "Choose the service tier whose headroom matches projected growth so the architecture is neither over-provisioned today nor underpowered in the next quarter."
+    },
+    {
+      "id": "topology_puzzle",
+      "name": "Topology Puzzle",
+      "format": "wiring",
+      "description": "Wire the architecture components so redundancy spans availability zones or regions, ensuring a single zone or region failure does not take the service down."
+    },
+    {
+      "id": "log_triage",
+      "name": "Log Triage",
+      "format": "evidence",
+      "description": "Scan a log tail and select exactly the lines that prove the root cause of the current failure, distinguishing signal from surrounding noise and correlation-only noise."
+    },
+    {
+      "id": "query_plan_puzzle",
+      "name": "Query Plan",
+      "format": "evidence",
+      "description": "Reads a query plan to find why it is slow, then picks the change — index, rewrite, or join order — that fixes the bottleneck without introducing a new one."
+    },
+    {
+      "id": "diff_review",
+      "name": "Diff Review",
+      "format": "evidence",
+      "description": "Read the deploy history and identify the specific change that introduced the regression, distinguishing the culprit diff from unrelated commits deployed in the same window."
+    }
+  ]
+}

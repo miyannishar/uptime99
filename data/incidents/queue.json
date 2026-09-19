@@ -1,0 +1,263 @@
+{
+  "incidents": [
+    {
+      "id": "consumer_crash",
+      "name": "Consumer crash",
+      "family": "queue",
+      "severity": 3,
+      "scope": "instance",
+      "group_by": null,
+      "target": { "tags_all": ["async"] },
+      "fires_when": null,
+      "gates": { "min_tick": 25, "min_users": 500, "cooldown_ticks": 90 },
+      "base_weight": 11,
+      "weight_per_target": 4,
+      "damage": { "health_delta": -60, "tags_add": ["unbounded_queue"] },
+      "resolved_by": ["restart", "scale_out"],
+      "duration_ticks": null,
+      "escalates_to": "consumer_lag_spike",
+      "escalate_after_ticks": 30,
+      "ledger_events": [
+        { "kind": "sla_credit", "when": "per_tick", "basis": "affected_users * credit_rate" }
+      ],
+      "signals": [
+        {
+          "level": 0,
+          "requires": null,
+          "text": "We're getting emails from customers saying their batch jobs and exports have been stuck for hours with no result. One enterprise account is asking if there was an outage they weren't told about."
+        },
+        {
+          "level": 1,
+          "requires": { "node_ids": ["metrics_pipeline"], "min_tier": 1 },
+          "text": "Error rate on the async processing layer spiked to 28% at 11:14 UTC and has not recovered. Job completion throughput has dropped to zero in the same window."
+        },
+        {
+          "level": 2,
+          "requires": { "node_ids": ["alerting"], "min_tier": 2 },
+          "text": "worker-us-01 is down. The node failed its health check at 11:14 UTC and is no longer pulling messages from the queue. Pending job count is climbing steadily."
+        },
+        {
+          "level": 3,
+          "requires": { "node_ids": ["tracing"], "min_tier": 2 },
+          "text": "worker-us-01's consumer process crashed with an unhandled NullPointerException in the job deserializer at 11:14 UTC. The queue has no active consumer and is now growing without bound — every new job enqueued adds to a backlog that will not drain until the consumer is restored or an additional worker absorbs it."
+        }
+      ]
+    },
+    {
+      "id": "consumer_lag_spike",
+      "name": "Consumer lag spike",
+      "family": "queue",
+      "severity": 2,
+      "scope": "instance",
+      "group_by": null,
+      "target": { "tags_all": ["unbounded_queue"] },
+      "fires_when": null,
+      "gates": { "min_tick": 0, "min_users": 0, "cooldown_ticks": 60 },
+      "base_weight": 3,
+      "weight_per_target": 6,
+      "damage": { "utilization_delta_pct": 40 },
+      "resolved_by": ["drain_queue", "scale_out"],
+      "duration_ticks": null,
+      "escalates_to": "queue_overflow",
+      "escalate_after_ticks": 40,
+      "ledger_events": [
+        { "kind": "incident_remediation", "when": "on_resolve", "basis": "severity * 18" }
+      ],
+      "signals": [
+        {
+          "level": 0,
+          "requires": null,
+          "text": "Users are complaining that background tasks are taking far longer than normal. Things that usually complete in seconds have been stuck for 10 to 20 minutes and some are still waiting."
+        },
+        {
+          "level": 1,
+          "requires": { "node_ids": ["metrics_pipeline"], "min_tier": 1 },
+          "text": "Consumer lag on the async processing layer has climbed from under 50 messages to 14,200 messages over the past 30 minutes. Processing throughput has not kept pace with the inbound job rate."
+        },
+        {
+          "level": 2,
+          "requires": { "node_ids": ["alerting"], "min_tier": 2 },
+          "text": "worker-us-01's consumer lag is at 14,200 messages and growing at approximately 180 messages per minute. The worker is processing jobs but cannot close the gap with the current arrival rate."
+        },
+        {
+          "level": 3,
+          "requires": { "node_ids": ["tracing"], "min_tier": 2 },
+          "text": "worker-us-01 is consuming at 40 messages/sec while inbound rate is 43 messages/sec. The gap compounded after the earlier consumer crash was not addressed — the surviving instance is undersized for the current load, and the backlog grows by roughly 180 messages every minute it goes unresolved."
+        }
+      ]
+    },
+    {
+      "id": "queue_overflow",
+      "name": "Queue overflow",
+      "family": "queue",
+      "severity": 3,
+      "scope": "instance",
+      "group_by": null,
+      "target": { "tags_all": ["unbounded_queue"] },
+      "fires_when": null,
+      "gates": { "min_tick": 0, "min_users": 0, "cooldown_ticks": 80 },
+      "base_weight": 3,
+      "weight_per_target": 6,
+      "damage": { "health_delta": -45, "utilization_delta_pct": 70 },
+      "resolved_by": ["drain_queue", "add_dlq"],
+      "duration_ticks": null,
+      "escalates_to": "dlq_overflow",
+      "escalate_after_ticks": 40,
+      "ledger_events": [
+        { "kind": "sla_credit", "when": "per_tick", "basis": "affected_users * credit_rate" },
+        { "kind": "overage", "when": "per_tick", "basis": "affected_instances * 3" }
+      ],
+      "signals": [
+        {
+          "level": 0,
+          "requires": null,
+          "text": "Customers are saying their uploads and exports are silently failing — no error message, just nothing happening. Our support queue has jumped from 3 tickets to 22 in the last hour and account managers are getting calls."
+        },
+        {
+          "level": 1,
+          "requires": { "node_ids": ["metrics_pipeline"], "min_tier": 1 },
+          "text": "Queue depth on the async processing layer hit its configured ceiling 18 minutes ago. New message submissions are being rejected at 100% and no writes are completing."
+        },
+        {
+          "level": 2,
+          "requires": { "node_ids": ["alerting"], "min_tier": 2 },
+          "text": "mq-us-01 is at capacity — queue depth is 10,000 of 10,000 and rejecting all new enqueue attempts. The broker has been returning QUEUE_FULL on every producer write since 14:22 UTC."
+        },
+        {
+          "level": 3,
+          "requires": { "node_ids": ["tracing"], "min_tier": 2 },
+          "text": "mq-us-01 reached its hard depth ceiling because the consumer backlog was never drained after the earlier crash. The queue grew unbounded for 40 minutes with no intervention applied. At this point no new work can enter the system; the backlog must be drained before producers can write again."
+        }
+      ]
+    },
+    {
+      "id": "dlq_overflow",
+      "name": "Dead-letter queue overflow",
+      "family": "queue",
+      "severity": 3,
+      "scope": "instance",
+      "group_by": null,
+      "target": { "tags_all": ["has_dlq"] },
+      "fires_when": null,
+      "gates": { "min_tick": 0, "min_users": 0, "cooldown_ticks": 100 },
+      "base_weight": 2,
+      "weight_per_target": 5,
+      "damage": { "health_delta": -35 },
+      "resolved_by": ["drain_queue"],
+      "duration_ticks": null,
+      "escalates_to": null,
+      "escalate_after_ticks": null,
+      "ledger_events": [
+        { "kind": "incident_remediation", "when": "on_resolve", "basis": "severity * 18" }
+      ],
+      "signals": [
+        {
+          "level": 0,
+          "requires": null,
+          "text": "Several enterprise customers have escalated, saying their failed job alerts are flooding their notification feeds and their workflows are stuck in a broken state that they cannot clear."
+        },
+        {
+          "level": 1,
+          "requires": { "node_ids": ["metrics_pipeline"], "min_tier": 1 },
+          "text": "Dead-letter queue depth on the async processing layer is at 98% of its limit and has been filling at an abnormal rate for the past 40 minutes."
+        },
+        {
+          "level": 2,
+          "requires": { "node_ids": ["alerting"], "min_tier": 2 },
+          "text": "mq-us-01's DLQ is at 19,600 messages out of a 20,000-message limit, growing by approximately 200 messages per minute. The DLQ itself will be full within five minutes."
+        },
+        {
+          "level": 3,
+          "requires": { "node_ids": ["tracing"], "min_tier": 2 },
+          "text": "mq-us-01's DLQ filled because the earlier queue overflow routed every rejected producer message there rather than dropping it. With consumers still running below throughput, the DLQ is absorbing overflow faster than it can be inspected or replayed. Once it hits its 20,000-message ceiling, the broker will begin silently dropping messages with no recovery path."
+        }
+      ]
+    },
+    {
+      "id": "poison_message",
+      "name": "Poison message",
+      "family": "queue",
+      "severity": 2,
+      "scope": "instance",
+      "group_by": null,
+      "target": { "tags_all": ["no_dlq"] },
+      "fires_when": null,
+      "gates": { "min_tick": 30, "min_users": 500, "cooldown_ticks": 120 },
+      "base_weight": 9,
+      "weight_per_target": 4,
+      "damage": { "health_delta": -40 },
+      "resolved_by": ["add_dlq", "drain_queue"],
+      "duration_ticks": null,
+      "escalates_to": null,
+      "escalate_after_ticks": null,
+      "ledger_events": [
+        { "kind": "incident_remediation", "when": "on_resolve", "basis": "severity * 18" }
+      ],
+      "signals": [
+        {
+          "level": 0,
+          "requires": null,
+          "text": "Users say a specific type of export has been completely broken all afternoon. Three large accounts have filed support tickets and one is threatening to escalate to their contract terms."
+        },
+        {
+          "level": 1,
+          "requires": { "node_ids": ["metrics_pipeline"], "min_tier": 1 },
+          "text": "The async processing layer is showing a persistent 9% error rate on job completions since 15:40 UTC. The rate is not recovering and appears correlated with a specific job type."
+        },
+        {
+          "level": 2,
+          "requires": { "node_ids": ["alerting"], "min_tier": 2 },
+          "text": "worker-us-01 has attempted to process job ID 8f4a1c 47 times since 15:40 UTC and failed each time. The worker repeatedly retries the same message, blocking other jobs queued behind it."
+        },
+        {
+          "level": 3,
+          "requires": { "node_ids": ["tracing"], "min_tier": 2 },
+          "text": "Job 8f4a1c contains a malformed attachment reference with a null byte in the filename field — the handler throws a deserialization panic on every attempt. Because no dead-letter queue is configured, the message cannot be quarantined and retries indefinitely, holding up all subsequent messages in that partition."
+        }
+      ]
+    },
+    {
+      "id": "scheduler_drift",
+      "name": "Scheduler drift",
+      "family": "queue",
+      "severity": 2,
+      "scope": "instance",
+      "group_by": null,
+      "target": { "tags_all": ["scheduled"] },
+      "fires_when": null,
+      "gates": { "min_tick": 35, "min_users": 0, "cooldown_ticks": 140 },
+      "base_weight": 7,
+      "weight_per_target": 4,
+      "damage": { "health_delta": -25, "tags_add": ["unbounded_queue"] },
+      "resolved_by": ["restart", "upgrade_tier"],
+      "duration_ticks": null,
+      "escalates_to": null,
+      "escalate_after_ticks": null,
+      "ledger_events": [
+        { "kind": "incident_remediation", "when": "on_resolve", "basis": "severity * 18" }
+      ],
+      "signals": [
+        {
+          "level": 0,
+          "requires": null,
+          "text": "Multiple customers have opened tickets saying their nightly digest emails never arrived and scheduled data exports are missing. Two accounts have asked if something broke overnight."
+        },
+        {
+          "level": 1,
+          "requires": { "node_ids": ["metrics_pipeline"], "min_tier": 1 },
+          "text": "Scheduled job completion rate on the compute layer dropped 55% starting at 06:00 UTC. Jobs that do execute are running up to 90 seconds outside their configured trigger windows."
+        },
+        {
+          "level": 2,
+          "requires": { "node_ids": ["alerting"], "min_tier": 2 },
+          "text": "cron-us-01 has missed 9 scheduled jobs since 06:00 UTC. The scheduler process is running and firing triggers, but execution is delayed and some schedule slots are skipped entirely."
+        },
+        {
+          "level": 3,
+          "requires": { "node_ids": ["tracing"], "min_tier": 2 },
+          "text": "cron-us-01's system clock drifted 38 seconds behind NTP after a host migration at 05:58 UTC. The scheduler compares wall-clock time to job windows, so every trigger whose slot fell in that 38-second gap was silently skipped. Additionally, skipped trigger events are accumulating in the internal dispatch queue without any catch-up or discard mechanism — the queue is now growing without bound and will continue to do so until the clock is corrected and the scheduler is restarted."
+        }
+      ]
+    }
+  ]
+}

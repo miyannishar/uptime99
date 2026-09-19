@@ -1,0 +1,313 @@
+{
+  "incidents": [
+    {
+      "id": "bad_deploy",
+      "name": "Bad deploy",
+      "family": "delivery",
+      "severity": 3,
+      "scope": "instance",
+      "group_by": null,
+      "target": {
+        "tags_none": [
+          "has_rollback"
+        ],
+        "layers": [
+          "compute",
+          "delivery"
+        ],
+        "tags_any": [
+          "no_rollback"
+        ]
+      },
+      "fires_when": null,
+      "gates": {
+        "min_tick": 20,
+        "min_users": 500,
+        "cooldown_ticks": 100
+      },
+      "base_weight": 13,
+      "weight_per_target": 5,
+      "damage": {
+        "health_delta": -65,
+        "utilization_delta_pct": 20
+      },
+      "resolved_by": [
+        "restart"
+      ],
+      "duration_ticks": null,
+      "escalates_to": "silent_failure",
+      "escalate_after_ticks": 25,
+      "ledger_events": [
+        {
+          "kind": "sla_credit",
+          "when": "per_tick",
+          "basis": "affected_users * credit_rate"
+        },
+        {
+          "kind": "incident_remediation",
+          "when": "on_resolve",
+          "basis": "severity * 30"
+        }
+      ],
+      "signals": [
+        {
+          "level": 0,
+          "requires": null,
+          "text": "Our VP of Sales just forwarded a thread from three enterprise accounts — users are getting errors and the app is unusable. One of them is threatening to escalate to their legal team if we do not respond in the next hour."
+        },
+        {
+          "level": 1,
+          "requires": {
+            "node_ids": [
+              "metrics_pipeline"
+            ],
+            "min_tier": 1
+          },
+          "text": "Error rate on the compute layer spiked from 0.4% to 67% at 14:22 UTC. CPU utilisation is 31% above baseline, and request latency at the 99th percentile has increased by 4.8x. The pattern started simultaneously across affected instances."
+        },
+        {
+          "level": 2,
+          "requires": {
+            "node_ids": [
+              "alerting"
+            ],
+            "min_tier": 2
+          },
+          "text": "app-us-02 is returning HTTP 500 on 71% of requests since 14:22 UTC. Its health score has dropped to 22 and the instance is consuming excess CPU on every request cycle. The anomaly correlates with a deployment event at 14:20 UTC."
+        },
+        {
+          "level": 3,
+          "requires": {
+            "node_ids": [
+              "tracing"
+            ],
+            "min_tier": 2
+          },
+          "text": "Tracing shows app-us-02 panicking on startup after the 14:20 deploy introduced an incompatible schema migration. The process is restarting in a crash loop, consuming CPU on each failed boot cycle before the supervisor relaunches it. No rollback mechanism is configured on this node, so the deploy cannot be undone automatically. Restarting the instance clears the crash loop and returns it to a stable state, though the underlying schema issue may persist until the next deploy corrects it."
+        }
+      ]
+    },
+    {
+      "id": "canary_anomaly",
+      "name": "Canary anomaly",
+      "family": "delivery",
+      "severity": 1,
+      "scope": "instance",
+      "group_by": null,
+      "target": {
+        "tags_all": [
+          "canary_capable"
+        ]
+      },
+      "fires_when": null,
+      "gates": {
+        "min_tick": 60,
+        "min_users": 4000,
+        "cooldown_ticks": 90
+      },
+      "base_weight": 6,
+      "weight_per_target": 3,
+      "damage": {
+        "health_delta": -15
+      },
+      "resolved_by": [
+        "rollback_deploy"
+      ],
+      "duration_ticks": null,
+      "escalates_to": null,
+      "escalate_after_ticks": null,
+      "ledger_events": [
+        {
+          "kind": "incident_remediation",
+          "when": "on_resolve",
+          "basis": "severity * 10"
+        }
+      ],
+      "signals": [
+        {
+          "level": 0,
+          "requires": null,
+          "text": "A handful of users are reporting an inconsistent experience — some say features that worked yesterday are behaving differently today. Two have opened support tickets saying they saw an error on a page that normally works fine."
+        },
+        {
+          "level": 1,
+          "requires": {
+            "node_ids": [
+              "metrics_pipeline"
+            ],
+            "min_tier": 1
+          },
+          "text": "A subset of requests on the compute layer is showing a 3.2% elevated error rate and 180ms higher median latency compared to the rest of the fleet. The divergence began approximately 18 minutes ago and is limited to a fraction of traffic."
+        },
+        {
+          "level": 2,
+          "requires": {
+            "node_ids": [
+              "alerting"
+            ],
+            "min_tier": 2
+          },
+          "text": "app-us-01's canary cohort is recording a 4.1% error rate and 240ms p50 latency regression versus the stable fleet at 09:47 UTC. Health score is at 84 and declining. The canary traffic split is currently at 10%."
+        },
+        {
+          "level": 3,
+          "requires": {
+            "node_ids": [
+              "tracing"
+            ],
+            "min_tier": 2
+          },
+          "text": "Tracing shows app-us-01's canary build introduced a dependency on a feature flag that is not enabled in production. Every request that reaches a code path guarded by that flag returns a partial response, causing the downstream client to log an error. The issue only affects the 10% canary cohort. Rolling back the deploy returns app-us-01 to the last stable build and clears the error immediately."
+        }
+      ]
+    },
+    {
+      "id": "api_deprecation",
+      "name": "API deprecation",
+      "family": "delivery",
+      "severity": 2,
+      "scope": "instance",
+      "group_by": null,
+      "target": {
+        "tags_all": [
+          "third_party"
+        ]
+      },
+      "fires_when": null,
+      "gates": {
+        "min_tick": 100,
+        "min_users": 6000,
+        "cooldown_ticks": 350
+      },
+      "base_weight": 5,
+      "weight_per_target": 3,
+      "damage": {
+        "health_delta": -35
+      },
+      "resolved_by": [
+        "upgrade_tier"
+      ],
+      "duration_ticks": null,
+      "escalates_to": null,
+      "escalate_after_ticks": null,
+      "ledger_events": [
+        {
+          "kind": "incident_remediation",
+          "when": "on_resolve",
+          "basis": "severity * 40"
+        }
+      ],
+      "signals": [
+        {
+          "level": 0,
+          "requires": null,
+          "text": "Customer support is getting a stream of complaints — users say a key feature has stopped working entirely. The product team has also noticed that one of our integrations is returning empty results. Nobody changed anything on our end."
+        },
+        {
+          "level": 1,
+          "requires": {
+            "node_ids": [
+              "metrics_pipeline"
+            ],
+            "min_tier": 1
+          },
+          "text": "Outbound API call success rate from the compute layer dropped to 34% starting at 06:10 UTC. The failures are isolated to calls reaching an external service and are returning 410 Gone responses consistently."
+        },
+        {
+          "level": 2,
+          "requires": {
+            "node_ids": [
+              "alerting"
+            ],
+            "min_tier": 2
+          },
+          "text": "third-party-api-01 calls are failing with HTTP 410 Gone on every request since 06:00 UTC. The endpoint being called is returning a deprecation notice in the response body. Health score has fallen to 51 as dependent workflows fail to complete."
+        },
+        {
+          "level": 3,
+          "requires": {
+            "node_ids": [
+              "tracing"
+            ],
+            "min_tier": 2
+          },
+          "text": "Tracing confirms third-party-api-01 is calling the v2 endpoint of the payment processor's API, which was retired at 06:00 UTC after six months of announced deprecation. All v2 calls now return 410 Gone. The v3 API requires a newer SDK version available only in higher tiers of the integration node. Upgrading the tier switches to the v3 client and restores full API functionality."
+        }
+      ]
+    },
+    {
+      "id": "disaster_recovery_drill",
+      "name": "Disaster recovery drill",
+      "family": "delivery",
+      "severity": 2,
+      "scope": "architecture",
+      "group_by": null,
+      "target": null,
+      "fires_when": {
+        "any_node": {
+          "tags_all": [
+            "untested_restore"
+          ]
+        }
+      },
+      "gates": {
+        "min_tick": 110,
+        "min_users": 8000,
+        "cooldown_ticks": 450
+      },
+      "base_weight": 4,
+      "weight_per_target": 0,
+      "damage": {
+        "health_delta": -5
+      },
+      "resolved_by": [],
+      "duration_ticks": 25,
+      "escalates_to": null,
+      "escalate_after_ticks": null,
+      "ledger_events": [
+        {
+          "kind": "incident_remediation",
+          "when": "on_expire",
+          "basis": "severity * 35"
+        }
+      ],
+      "signals": [
+        {
+          "level": 0,
+          "requires": null,
+          "text": "This is a scheduled reminder: the quarterly disaster recovery drill begins today at 10:00 UTC. The operations team will be running restore procedures for the next several hours. Expect reduced capacity on some systems during the exercise window."
+        },
+        {
+          "level": 1,
+          "requires": {
+            "node_ids": [
+              "metrics_pipeline"
+            ],
+            "min_tier": 1
+          },
+          "text": "Metrics pipeline is tracking the active DR drill. One or more nodes in the architecture have restore procedures that have never been validated in production. The drill is revealing whether those procedures actually work under real conditions."
+        },
+        {
+          "level": 2,
+          "requires": {
+            "node_ids": [
+              "alerting"
+            ],
+            "min_tier": 2
+          },
+          "text": "Alerting flagged two nodes — pg-replica-us-01 and object-store-us-01 — whose restore runbooks have not been executed since provisioning. The drill is actively testing their recovery procedures. No customer traffic is affected yet, but results will determine the organisation's true RTO."
+        },
+        {
+          "level": 3,
+          "requires": {
+            "node_ids": [
+              "tracing"
+            ],
+            "min_tier": 2
+          },
+          "text": "Tracing captured the restore timeline for each node under drill. pg-replica-us-01's restore from the last snapshot took 47 minutes — 3x the documented RTO — because the restore script referenced a deprecated snapshot format. object-store-us-01's restore completed successfully. The drill expires on its own; the findings feed directly into whether your actual RTO is achievable if a real incident requires a restore."
+        }
+      ]
+    }
+  ]
+}

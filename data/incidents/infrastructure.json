@@ -1,0 +1,789 @@
+{
+  "incidents": [
+    {
+      "id": "hardware_failure",
+      "name": "Hardware failure",
+      "family": "infrastructure",
+      "severity": 4,
+      "scope": "instance",
+      "group_by": null,
+      "target": {
+        "tags_all": [
+          "spof"
+        ]
+      },
+      "fires_when": null,
+      "gates": {
+        "min_tick": 20,
+        "min_users": 0,
+        "cooldown_ticks": 80
+      },
+      "base_weight": 12,
+      "weight_per_target": 4,
+      "damage": {
+        "down": true,
+        "health_delta": -100
+      },
+      "resolved_by": [
+        "restart",
+        "add_replica"
+      ],
+      "duration_ticks": null,
+      "escalates_to": null,
+      "escalate_after_ticks": null,
+      "ledger_events": [
+        {
+          "kind": "sla_credit",
+          "when": "per_tick",
+          "basis": "affected_users * credit_rate"
+        }
+      ],
+      "signals": [
+        {
+          "level": 0,
+          "requires": null,
+          "text": "CEO: \"I have three enterprise customers on the phone telling me everything is down. What is going on?\""
+        },
+        {
+          "level": 1,
+          "requires": {
+            "node_ids": [
+              "metrics_pipeline"
+            ],
+            "min_tier": 1
+          },
+          "text": "Uptime on the affected layer collapsed to 0% at 14:07 UTC and has not recovered. Error rate is at 100%."
+        },
+        {
+          "level": 2,
+          "requires": {
+            "node_ids": [
+              "alerting"
+            ],
+            "min_tier": 2
+          },
+          "text": "app-us-01 has not passed a health check in four minutes. The instance is marked unreachable and is not accepting connections."
+        },
+        {
+          "level": 3,
+          "requires": {
+            "node_ids": [
+              "tracing"
+            ],
+            "min_tier": 2
+          },
+          "text": "app-us-01's hypervisor reported a fatal hardware fault on the underlying host. The VM has not booted since the host stopped responding to pings at 14:07."
+        }
+      ]
+    },
+    {
+      "id": "az_outage",
+      "name": "Availability zone outage",
+      "family": "infrastructure",
+      "severity": 4,
+      "scope": "group",
+      "group_by": "region",
+      "target": {
+        "tags_all": [
+          "single_az"
+        ],
+        "layers": [
+          "compute",
+          "data"
+        ]
+      },
+      "fires_when": null,
+      "gates": {
+        "min_tick": 60,
+        "min_users": 5000,
+        "cooldown_ticks": 200
+      },
+      "base_weight": 10,
+      "weight_per_target": 5,
+      "damage": {
+        "down": true,
+        "health_delta": -40
+      },
+      "resolved_by": [
+        "failover",
+        "enable_multi_az"
+      ],
+      "duration_ticks": null,
+      "escalates_to": null,
+      "escalate_after_ticks": null,
+      "ledger_events": [
+        {
+          "kind": "sla_credit",
+          "when": "per_tick",
+          "basis": "affected_users * credit_rate"
+        },
+        {
+          "kind": "data_egress",
+          "when": "on_resolve",
+          "basis": "affected_instances * 12"
+        }
+      ],
+      "signals": [
+        {
+          "level": 0,
+          "requires": null,
+          "text": "Support queue: 47 tickets in 10 minutes. Users are saying the product is completely inaccessible and has been for a while."
+        },
+        {
+          "level": 1,
+          "requires": {
+            "node_ids": [
+              "metrics_pipeline"
+            ],
+            "min_tier": 1
+          },
+          "text": "Uptime on compute and data layers dropped from 99.9% to 0% simultaneously. No recovery trend visible."
+        },
+        {
+          "level": 2,
+          "requires": {
+            "node_ids": [
+              "alerting"
+            ],
+            "min_tier": 2
+          },
+          "text": "All nodes in us-east-1a are unreachable. app-us-01, app-us-02, pg-primary, and redis-01 all failed health checks within the same 30-second window."
+        },
+        {
+          "level": 3,
+          "requires": {
+            "node_ids": [
+              "tracing"
+            ],
+            "min_tier": 2
+          },
+          "text": "The cloud provider's us-east-1a datacenter lost power at 09:42 UTC. Every node located in that zone lost network reachability at the same timestamp."
+        }
+      ]
+    },
+    {
+      "id": "region_outage",
+      "name": "Regional outage",
+      "family": "infrastructure",
+      "severity": 5,
+      "scope": "group",
+      "group_by": "region",
+      "target": {
+        "tags_all": [
+          "single_region"
+        ]
+      },
+      "fires_when": null,
+      "gates": {
+        "min_tick": 150,
+        "min_users": 20000,
+        "cooldown_ticks": 400
+      },
+      "base_weight": 4,
+      "weight_per_target": 6,
+      "damage": {
+        "down": true,
+        "health_delta": -60
+      },
+      "resolved_by": [],
+      "duration_ticks": 35,
+      "escalates_to": null,
+      "escalate_after_ticks": null,
+      "ledger_events": [
+        {
+          "kind": "sla_credit",
+          "when": "per_tick",
+          "basis": "affected_users * credit_rate"
+        },
+        {
+          "kind": "data_egress",
+          "when": "on_expire",
+          "basis": "affected_instances * 12"
+        },
+        {
+          "kind": "emergency_premium",
+          "when": "on_expire",
+          "basis": "severity * 50 * emergency_premium_multiplier"
+        },
+        {
+          "kind": "incident_remediation",
+          "when": "on_expire",
+          "basis": "severity * 25"
+        }
+      ],
+      "signals": [
+        {
+          "level": 0,
+          "requires": null,
+          "text": "Every channel is lit up. Customers, partners, and the board are asking why nothing works. This is our worst outage in memory."
+        },
+        {
+          "level": 1,
+          "requires": {
+            "node_ids": [
+              "metrics_pipeline"
+            ],
+            "min_tier": 1
+          },
+          "text": "Every metric flatlined at 11:03 UTC. Uptime, latency, and error rate are all unresponsive across every layer simultaneously."
+        },
+        {
+          "level": 2,
+          "requires": {
+            "node_ids": [
+              "alerting"
+            ],
+            "min_tier": 2
+          },
+          "text": "Every endpoint in us-east-1 is returning 503. app-us-01 through app-us-04, pg-primary, redis-01, and the load balancer are all unreachable."
+        },
+        {
+          "level": 3,
+          "requires": {
+            "node_ids": [
+              "tracing"
+            ],
+            "min_tier": 2
+          },
+          "text": "The cloud provider declared a P0 networking incident for the entire us-east-1 region at 11:03 UTC. BGP routes are withdrawn; no traffic can reach any resource in the region."
+        }
+      ]
+    },
+    {
+      "id": "provider_outage",
+      "name": "Cloud provider outage",
+      "family": "infrastructure",
+      "severity": 4,
+      "scope": "group",
+      "group_by": "def_id",
+      "target": {
+        "tags_all": [
+          "third_party"
+        ]
+      },
+      "fires_when": null,
+      "gates": {
+        "min_tick": 40,
+        "min_users": 1000,
+        "cooldown_ticks": 250
+      },
+      "base_weight": 8,
+      "weight_per_target": 2,
+      "damage": {
+        "down": true
+      },
+      "resolved_by": [],
+      "duration_ticks": 30,
+      "escalates_to": null,
+      "escalate_after_ticks": null,
+      "ledger_events": [
+        {
+          "kind": "sla_credit",
+          "when": "per_tick",
+          "basis": "affected_users * credit_rate"
+        },
+        {
+          "kind": "incident_remediation",
+          "when": "on_expire",
+          "basis": "severity * 25"
+        }
+      ],
+      "signals": [
+        {
+          "level": 0,
+          "requires": null,
+          "text": "Users are reporting that file uploads are failing completely and they cannot log in. Several large accounts are threatening to churn."
+        },
+        {
+          "level": 1,
+          "requires": {
+            "node_ids": [
+              "metrics_pipeline"
+            ],
+            "min_tier": 1
+          },
+          "text": "Error rate on third-party dependencies jumped to 100%. The affected service is returning nothing at all."
+        },
+        {
+          "level": 2,
+          "requires": {
+            "node_ids": [
+              "alerting"
+            ],
+            "min_tier": 2
+          },
+          "text": "object-store-us is returning 503 on every request. The dependency has been fully unreachable for 12 minutes."
+        },
+        {
+          "level": 3,
+          "requires": {
+            "node_ids": [
+              "tracing"
+            ],
+            "min_tier": 2
+          },
+          "text": "The cloud provider's status page confirms a wide outage affecting their object storage infrastructure in us-east-1. No ETA has been published."
+        }
+      ]
+    },
+    {
+      "id": "vendor_outage",
+      "name": "Vendor service outage",
+      "family": "infrastructure",
+      "severity": 3,
+      "scope": "group",
+      "group_by": "def_id",
+      "target": {
+        "tags_all": [
+          "third_party"
+        ]
+      },
+      "fires_when": null,
+      "gates": {
+        "min_tick": 40,
+        "min_users": 1000,
+        "cooldown_ticks": 200
+      },
+      "base_weight": 8,
+      "weight_per_target": 2,
+      "damage": {
+        "health_delta": -40
+      },
+      "resolved_by": [],
+      "duration_ticks": 20,
+      "escalates_to": null,
+      "escalate_after_ticks": null,
+      "ledger_events": [
+        {
+          "kind": "sla_credit",
+          "when": "per_tick",
+          "basis": "affected_users * credit_rate"
+        },
+        {
+          "kind": "incident_remediation",
+          "when": "on_expire",
+          "basis": "severity * 25"
+        }
+      ],
+      "signals": [
+        {
+          "level": 0,
+          "requires": null,
+          "text": "Users on Twitter are complaining that pages are taking forever to load. Two enterprise accounts opened support tickets in the last hour."
+        },
+        {
+          "level": 1,
+          "requires": {
+            "node_ids": [
+              "metrics_pipeline"
+            ],
+            "min_tier": 1
+          },
+          "text": "Latency on the edge delivery layer climbed from 80ms to 1.4s over the last 20 minutes. Error rate is up 8%."
+        },
+        {
+          "level": 2,
+          "requires": {
+            "node_ids": [
+              "alerting"
+            ],
+            "min_tier": 2
+          },
+          "text": "cdn-us-01 is returning elevated timeouts and 5xx responses on roughly 15% of requests. The degradation started at 16:20 UTC."
+        },
+        {
+          "level": 3,
+          "requires": {
+            "node_ids": [
+              "tracing"
+            ],
+            "min_tier": 2
+          },
+          "text": "The vendor's status page lists a degraded incident affecting routing in their North America edge network. Cache hit rates on cdn-us-01 dropped from 91% to 34% as traffic is rerouted through congested paths."
+        }
+      ]
+    },
+    {
+      "id": "oom_kill",
+      "name": "Out-of-memory kill",
+      "family": "infrastructure",
+      "severity": 3,
+      "scope": "instance",
+      "group_by": null,
+      "target": {
+        "layers": [
+          "compute"
+        ]
+      },
+      "fires_when": null,
+      "gates": {
+        "min_tick": 10,
+        "min_users": 0,
+        "cooldown_ticks": 60
+      },
+      "base_weight": 14,
+      "weight_per_target": 3,
+      "damage": {
+        "health_delta": -70,
+        "utilization_delta_pct": 25
+      },
+      "resolved_by": [
+        "restart",
+        "vertical_scale"
+      ],
+      "duration_ticks": null,
+      "escalates_to": null,
+      "escalate_after_ticks": null,
+      "ledger_events": [
+        {
+          "kind": "incident_remediation",
+          "when": "on_resolve",
+          "basis": "severity * 20"
+        }
+      ],
+      "signals": [
+        {
+          "level": 0,
+          "requires": null,
+          "text": "CEO: \"Three customers just emailed me directly. The app keeps logging them out.\""
+        },
+        {
+          "level": 1,
+          "requires": {
+            "node_ids": [
+              "metrics_pipeline"
+            ],
+            "min_tier": 1
+          },
+          "text": "Error rate on the compute layer jumped to 7.2% and is not recovering."
+        },
+        {
+          "level": 2,
+          "requires": {
+            "node_ids": [
+              "alerting"
+            ],
+            "min_tier": 2
+          },
+          "text": "app-us-01 was killed by the OOM reaper and restarted twice in four minutes."
+        },
+        {
+          "level": 3,
+          "requires": {
+            "node_ids": [
+              "tracing"
+            ],
+            "min_tier": 2
+          },
+          "text": "app-us-01 is at 3.9GB of a 4GB limit. Heap grows ~180MB per minute under current load and never releases."
+        }
+      ]
+    },
+    {
+      "id": "process_restart",
+      "name": "Process restart",
+      "family": "infrastructure",
+      "severity": 2,
+      "scope": "instance",
+      "group_by": null,
+      "target": {
+        "tags_all": [
+          "in_memory"
+        ]
+      },
+      "fires_when": null,
+      "gates": {
+        "min_tick": 10,
+        "min_users": 0,
+        "cooldown_ticks": 70
+      },
+      "base_weight": 12,
+      "weight_per_target": 3,
+      "damage": {
+        "health_delta": -30,
+        "tags_add": [
+          "cold_cache"
+        ]
+      },
+      "resolved_by": [
+        "warm_cache",
+        "restart"
+      ],
+      "duration_ticks": null,
+      "escalates_to": null,
+      "escalate_after_ticks": null,
+      "ledger_events": [
+        {
+          "kind": "incident_remediation",
+          "when": "on_resolve",
+          "basis": "severity * 20"
+        }
+      ],
+      "signals": [
+        {
+          "level": 0,
+          "requires": null,
+          "text": "Users are complaining that everything feels sluggish after what looked like a brief maintenance blip about ten minutes ago."
+        },
+        {
+          "level": 1,
+          "requires": {
+            "node_ids": [
+              "metrics_pipeline"
+            ],
+            "min_tier": 1
+          },
+          "text": "p95 latency on the cache layer spiked from 4ms to 220ms. Cache miss rate is running at 98% and has not recovered."
+        },
+        {
+          "level": 2,
+          "requires": {
+            "node_ids": [
+              "alerting"
+            ],
+            "min_tier": 2
+          },
+          "text": "cache-us-01 was restarted by the watchdog at 10:34 UTC. Its working set is empty and every request is falling through to the database."
+        },
+        {
+          "level": 3,
+          "requires": {
+            "node_ids": [
+              "tracing"
+            ],
+            "min_tier": 2
+          },
+          "text": "cache-us-01 was terminated after its health check endpoint stopped responding for 30s. All in-memory state was lost on shutdown; the cache has not been warmed since restart."
+        }
+      ]
+    },
+    {
+      "id": "primary_node_failure",
+      "name": "Primary node failure",
+      "family": "infrastructure",
+      "severity": 4,
+      "scope": "instance",
+      "group_by": null,
+      "target": {
+        "tags_any": [
+          "stateful",
+          "manual_failover"
+        ]
+      },
+      "fires_when": null,
+      "gates": {
+        "min_tick": 50,
+        "min_users": 3000,
+        "cooldown_ticks": 220
+      },
+      "base_weight": 7,
+      "weight_per_target": 5,
+      "damage": {
+        "down": true,
+        "health_delta": -80
+      },
+      "resolved_by": [
+        "failover",
+        "restore_from_backup",
+        "restart"
+      ],
+      "duration_ticks": null,
+      "escalates_to": null,
+      "escalate_after_ticks": null,
+      "ledger_events": [
+        {
+          "kind": "sla_credit",
+          "when": "per_tick",
+          "basis": "affected_users * credit_rate"
+        }
+      ],
+      "signals": [
+        {
+          "level": 0,
+          "requires": null,
+          "text": "Payments are failing and user data is not saving. Two enterprise customers have already escalated to their account managers."
+        },
+        {
+          "level": 1,
+          "requires": {
+            "node_ids": [
+              "metrics_pipeline"
+            ],
+            "min_tier": 1
+          },
+          "text": "Data layer error rate is at 94%. Connection attempts are timing out and no reads or writes are completing."
+        },
+        {
+          "level": 2,
+          "requires": {
+            "node_ids": [
+              "alerting"
+            ],
+            "min_tier": 2
+          },
+          "text": "pg-primary has been unresponsive for six minutes. The node is marked down; no standby has been promoted and all write traffic is failing."
+        },
+        {
+          "level": 3,
+          "requires": {
+            "node_ids": [
+              "tracing"
+            ],
+            "min_tier": 2
+          },
+          "text": "pg-primary crashed after a storage I/O hang at 08:51 UTC. The process exited with SIGKILL. Failover is manual and no operator has initiated it yet."
+        }
+      ]
+    },
+    {
+      "id": "failover_jitter",
+      "name": "Failover jitter",
+      "family": "infrastructure",
+      "severity": 1,
+      "scope": "instance",
+      "group_by": null,
+      "target": {
+        "tags_all": [
+          "auto_failover"
+        ]
+      },
+      "fires_when": null,
+      "gates": {
+        "min_tick": 80,
+        "min_users": 5000,
+        "cooldown_ticks": 120
+      },
+      "base_weight": 6,
+      "weight_per_target": 2,
+      "damage": {
+        "health_delta": -15,
+        "utilization_delta_pct": 10
+      },
+      "resolved_by": [
+        "restart"
+      ],
+      "duration_ticks": null,
+      "escalates_to": null,
+      "escalate_after_ticks": null,
+      "ledger_events": [
+        {
+          "kind": "incident_remediation",
+          "when": "on_resolve",
+          "basis": "severity * 20"
+        }
+      ],
+      "signals": [
+        {
+          "level": 0,
+          "requires": null,
+          "text": "A handful of users reported a brief error around 15:22. It seems to have resolved itself, but we are not sure what happened."
+        },
+        {
+          "level": 1,
+          "requires": {
+            "node_ids": [
+              "metrics_pipeline"
+            ],
+            "min_tier": 1
+          },
+          "text": "Error rate on the data layer spiked to 4.1% for 45 seconds starting at 15:22 UTC, then returned to baseline without intervention."
+        },
+        {
+          "level": 2,
+          "requires": {
+            "node_ids": [
+              "alerting"
+            ],
+            "min_tier": 2
+          },
+          "text": "pg-primary-b briefly took over as leader at 15:22:14 and handed back to pg-primary-a at 15:22:58. Total disruption: 44 seconds."
+        },
+        {
+          "level": 3,
+          "requires": {
+            "node_ids": [
+              "tracing"
+            ],
+            "min_tier": 2
+          },
+          "text": "pg-primary-a's heartbeat was delayed 4.2s due to a GC pause under peak load. The failover probe interpreted this as a primary failure and promoted pg-primary-b. The original primary was still alive and reclaimed leadership once the pause cleared."
+        }
+      ]
+    },
+    {
+      "id": "clock_skew",
+      "name": "Clock skew",
+      "family": "infrastructure",
+      "severity": 2,
+      "scope": "instance",
+      "group_by": null,
+      "target": {
+        "tags_all": [
+          "scheduled"
+        ]
+      },
+      "fires_when": null,
+      "gates": {
+        "min_tick": 30,
+        "min_users": 0,
+        "cooldown_ticks": 150
+      },
+      "base_weight": 5,
+      "weight_per_target": 3,
+      "damage": {
+        "health_delta": -25
+      },
+      "resolved_by": [
+        "restart",
+        "upgrade_tier"
+      ],
+      "duration_ticks": null,
+      "escalates_to": null,
+      "escalate_after_ticks": null,
+      "ledger_events": [
+        {
+          "kind": "incident_remediation",
+          "when": "on_resolve",
+          "basis": "severity * 20"
+        }
+      ],
+      "signals": [
+        {
+          "level": 0,
+          "requires": null,
+          "text": "Several customers emailed to say their scheduled reports did not arrive this morning and their digest emails are late by over an hour."
+        },
+        {
+          "level": 1,
+          "requires": {
+            "node_ids": [
+              "metrics_pipeline"
+            ],
+            "min_tier": 1
+          },
+          "text": "Scheduled job execution rate on the compute layer dropped 60% in the last hour. Jobs that are firing are running significantly off their expected schedule."
+        },
+        {
+          "level": 2,
+          "requires": {
+            "node_ids": [
+              "alerting"
+            ],
+            "min_tier": 2
+          },
+          "text": "cron-us-01 has missed 14 scheduled jobs since 07:00 UTC. The scheduler is running but jobs are not firing at their configured times."
+        },
+        {
+          "level": 3,
+          "requires": {
+            "node_ids": [
+              "tracing"
+            ],
+            "min_tier": 2
+          },
+          "text": "cron-us-01's system clock drifted 47 seconds behind NTP after its hypervisor was live-migrated. The scheduler compares wall-clock time to job schedules, so every job whose trigger window fell in that 47-second gap was silently skipped."
+        }
+      ]
+    }
+  ]
+}

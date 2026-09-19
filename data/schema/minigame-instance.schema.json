@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["instances"],
+  "properties": {
+    "instances": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "minigame", "difficulty", "brief", "teaches",
+                     "levers", "given", "solution", "wrong_outcomes", "reveal"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
+          "minigame": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
+          "difficulty": { "type": "integer", "minimum": 1, "maximum": 5 },
+          "brief": { "type": "string", "minLength": 20 },
+          "teaches": { "type": "string", "minLength": 30 },
+          "levers": { "type": "object", "minProperties": 1 },
+          "_comment_given": {
+            "type": "string",
+            "description": "given and solution are format-specific payloads. The instance does not carry its own format (it is derived from registry.json), so this schema cannot discriminate their shape. Their required keys and types are enforced instead by checkInstanceShapes in src/validate/minigameChecks.ts, which resolves the format and consults SHAPE_BY_FORMAT; it requires the known keys without rejecting extras. Adding a format means adding its row there, or its instances get no payload validation. See CLAUDE.md section 14."
+          },
+          "given": { "type": "object", "minProperties": 1 },
+          "solution": { "type": "object", "minProperties": 1 },
+          "distractors": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["choice", "why_wrong"],
+              "properties": {
+                "choice": { "type": "string", "minLength": 1 },
+                "why_wrong": { "type": "string", "minLength": 20 }
+              }
+            }
+          },
+          "wrong_outcomes": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["when", "shows", "why_wrong"],
+              "properties": {
+                "when": { "enum": ["any", "below", "above", "wrong_order",
+                                   "wrong_value", "wrong_target", "wrong_choice"] },
+                "shows": { "type": "string", "minLength": 20 },
+                "why_wrong": { "type": "string", "minLength": 20 }
+              }
+            }
+          },
+          "reveal": { "type": "string", "minLength": 40 }
+        }
+      }
+    }
+  }
+}

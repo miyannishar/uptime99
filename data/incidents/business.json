@@ -1,0 +1,219 @@
+{
+  "incidents": [
+    {
+      "id": "sla_breach",
+      "name": "SLA breach",
+      "family": "business",
+      "severity": 3,
+      "scope": "architecture",
+      "group_by": null,
+      "target": null,
+      "fires_when": { "any_node": { "max_health": 20 } },
+      "gates": { "min_tick": 80, "min_users": 5000, "cooldown_ticks": 200 },
+      "base_weight": 7,
+      "weight_per_target": 0,
+      "damage": { "health_delta": -5 },
+      "resolved_by": ["publish_status_update"],
+      "duration_ticks": null,
+      "escalates_to": null,
+      "escalate_after_ticks": null,
+      "ledger_events": [
+        { "kind": "sla_credit", "when": "on_resolve", "basis": "affected_users * credit_rate * 4" }
+      ],
+      "signals": [
+        {
+          "level": 0,
+          "requires": null,
+          "text": "I'm forwarding this from three of our enterprise accounts — they're asking why their dashboards have been down for the last two hours and what SLA credit they're owed. One of them has copied their procurement team. We need a statement on the status page immediately or we're going to lose the renewal conversation."
+        },
+        {
+          "level": 1,
+          "requires": { "node_ids": ["metrics_pipeline"], "min_tier": 1 },
+          "text": "One or more nodes in the compute layer dropped below health threshold 20 at 15:43 UTC. Cumulative unavailability for the affected service tier has exceeded the monthly SLA allowance. The incident clock is running and a credit obligation has been triggered."
+        },
+        {
+          "level": 2,
+          "requires": { "node_ids": ["alerting"], "min_tier": 2 },
+          "text": "Three of your production nodes are currently in critical health. Combined, they account for 61% of your contracted capacity for enterprise accounts. Total downtime attributed to this SLA period has exceeded the 99.9% availability threshold by 47 minutes. The credit obligation is live and accruing."
+        },
+        {
+          "level": 3,
+          "requires": { "node_ids": ["tracing"], "min_tier": 2 },
+          "text": "Tracing confirms the critical-health nodes are experiencing cascading error rates from an unresolved upstream incident. Enterprise customers are learning about the outage from their own monitoring rather than a proactive update — compounding the reputational damage. Publishing a status update acknowledges the breach, starts the remediation clock under your SLA contract, and stops the credit accrual once the incident is resolved."
+        }
+      ]
+    },
+    {
+      "id": "compliance_audit_failure",
+      "name": "Compliance audit failure",
+      "family": "business",
+      "severity": 3,
+      "scope": "architecture",
+      "group_by": null,
+      "target": null,
+      "fires_when": { "no_node": { "tags_all": ["audit_logged"] } },
+      "gates": { "min_tick": 130, "min_users": 15000, "cooldown_ticks": 500 },
+      "base_weight": 4,
+      "weight_per_target": 0,
+      "damage": { "health_delta": -5 },
+      "resolved_by": ["enable_observability"],
+      "duration_ticks": null,
+      "escalates_to": null,
+      "escalate_after_ticks": null,
+      "ledger_events": [
+        { "kind": "incident_remediation", "when": "on_resolve", "basis": "severity * 70" }
+      ],
+      "signals": [
+        {
+          "level": 0,
+          "requires": null,
+          "text": "The internal audit team has flagged us to the board. Their preliminary review found we have no evidence of any access or configuration audit trail across our systems. They're putting the compliance sign-off on hold until we can demonstrate adequate controls. The board meeting is in six weeks."
+        },
+        {
+          "level": 1,
+          "requires": { "node_ids": ["metrics_pipeline"], "min_tier": 1 },
+          "text": "Compliance scanning shows no nodes in the architecture are emitting audit events. The absence of any audit trail across all layers constitutes a complete gap in control coverage and will result in an automatic failure on the next scheduled audit."
+        },
+        {
+          "level": 2,
+          "requires": { "node_ids": ["alerting"], "min_tier": 2 },
+          "text": "Audit check confirmed zero of 26 nodes in your architecture have audit logging enabled. Every user action, configuration change, and data access across your entire system is going unrecorded. The finding spans compute, data, and messaging layers — there are no partially compliant tiers."
+        },
+        {
+          "level": 3,
+          "requires": { "node_ids": ["tracing"], "min_tier": 2 },
+          "text": "The audit failure traces directly to the absence of the audit_logged capability on every node in the architecture. Without a single node emitting audit logs, the organisation cannot produce evidence of who accessed what, when, or from where — the minimum requirement for any compliance framework. Enabling observability on at least one node establishes the required audit footprint and closes the immediate finding."
+        }
+      ]
+    },
+    {
+      "id": "pci_audit_failure",
+      "name": "PCI audit failure",
+      "family": "business",
+      "severity": 4,
+      "scope": "architecture",
+      "group_by": null,
+      "target": null,
+      "fires_when": { "any_node": { "layers": ["data"], "tags_none": ["encrypted_at_rest"] } },
+      "gates": { "min_tick": 150, "min_users": 25000, "cooldown_ticks": 600 },
+      "base_weight": 3,
+      "weight_per_target": 0,
+      "damage": { "health_delta": -5 },
+      "resolved_by": ["enable_encryption"],
+      "duration_ticks": null,
+      "escalates_to": null,
+      "escalate_after_ticks": null,
+      "ledger_events": [
+        { "kind": "incident_remediation", "when": "on_resolve", "basis": "severity * 150" }
+      ],
+      "signals": [
+        {
+          "level": 0,
+          "requires": null,
+          "text": "FWD: Preliminary PCI DSS findings — ACTION REQUIRED. I'm sending this along because it came to me first and needs your immediate attention. The assessor's email is below. Short version: they found unencrypted cardholder data environments and they are recommending we suspend card processing until remediation is complete. Call me when you've read this."
+        },
+        {
+          "level": 1,
+          "requires": { "node_ids": ["metrics_pipeline"], "min_tier": 1 },
+          "text": "PCI compliance scanning detected one or more data-layer nodes without encryption at rest. Any unencrypted node in the cardholder data environment is an automatic control failure under PCI DSS Requirement 3.5. The finding has been escalated to the assessor."
+        },
+        {
+          "level": 2,
+          "requires": { "node_ids": ["alerting"], "min_tier": 2 },
+          "text": "PCI scan identified seven of your nine data-layer nodes are operating without encryption at rest. The gap spans primary and replica databases plus several object storage nodes — every one is a separately reportable finding. The assessor treats each unencrypted node as an independent control failure."
+        },
+        {
+          "level": 3,
+          "requires": { "node_ids": ["tracing"], "min_tier": 2 },
+          "text": "The audit findings map directly to data-layer nodes provisioned without the encrypted_at_rest capability. Each unencrypted node is storing or transmitting data within scope of PCI DSS. Enabling encryption on each affected data node closes the individual findings. The assessor has stated that without complete remediation across all in-scope nodes, the merchant agreement cannot be renewed and card payment processing must be suspended."
+        }
+      ]
+    },
+    {
+      "id": "gdpr_breach_notification",
+      "name": "GDPR breach notification",
+      "family": "business",
+      "severity": 5,
+      "scope": "architecture",
+      "group_by": null,
+      "target": null,
+      "fires_when": { "any_node": { "tags_none": ["audit_logged"] } },
+      "gates": { "min_tick": 100, "min_users": 10000, "cooldown_ticks": 700 },
+      "base_weight": 2,
+      "weight_per_target": 0,
+      "damage": { "health_delta": -5 },
+      "resolved_by": ["enable_observability", "restrict_access"],
+      "duration_ticks": null,
+      "escalates_to": null,
+      "escalate_after_ticks": null,
+      "ledger_events": [
+        { "kind": "incident_remediation", "when": "on_resolve", "basis": "severity * 300" }
+      ],
+      "signals": [
+        {
+          "level": 0,
+          "requires": null,
+          "text": "Outside counsel has just called. The supervisory authority has issued a formal inquiry — they received a complaint from a data subject who says their personal data was shared without consent. Under Article 33, we have 72 hours to notify the authority of the scope of the breach. Without an audit trail, we cannot demonstrate what data was accessed or by whom. Counsel says this is our worst-case scenario."
+        },
+        {
+          "level": 1,
+          "requires": { "node_ids": ["metrics_pipeline"], "min_tier": 1 },
+          "text": "GDPR compliance scanning detected nodes processing personal data with no audit logging active. Under Article 30, every data processing operation must be recorded. The absence of audit events across one or more nodes constitutes a reportable data processing failure."
+        },
+        {
+          "level": 2,
+          "requires": { "node_ids": ["alerting"], "min_tier": 2 },
+          "text": "Eleven of your 26 nodes are processing or storing personal data with zero audit log coverage. The gap spans both compute and data layers — user personal data has been read, written, and transmitted on these nodes with no record of access, modification, or deletion since they were provisioned."
+        },
+        {
+          "level": 3,
+          "requires": { "node_ids": ["tracing"], "min_tier": 2 },
+          "text": "The breach notification is triggered because personal data has been accessible on nodes without audit logging since those nodes came online. The supervisory authority requires a 72-hour notification detailing the categories of data affected, the approximate number of data subjects, and the measures taken to address the breach. Enabling observability adds the audit trail required to demonstrate compliance going forward. Restricting access limits further personal data exposure during the remediation window and is required before the notification response can be filed."
+        }
+      ]
+    },
+    {
+      "id": "data_subject_access_request",
+      "name": "Data subject access request",
+      "family": "business",
+      "severity": 1,
+      "scope": "architecture",
+      "group_by": null,
+      "target": null,
+      "fires_when": { "no_node": { "tags_all": ["audit_logged"] } },
+      "gates": { "min_tick": 90, "min_users": 8000, "cooldown_ticks": 150 },
+      "base_weight": 8,
+      "weight_per_target": 0,
+      "damage": { "health_delta": -5 },
+      "resolved_by": ["enable_observability"],
+      "duration_ticks": null,
+      "escalates_to": null,
+      "escalate_after_ticks": null,
+      "ledger_events": [
+        { "kind": "incident_remediation", "when": "on_resolve", "basis": "severity * 12" }
+      ],
+      "signals": [
+        {
+          "level": 0,
+          "requires": null,
+          "text": "Legal has forwarded a DSAR — a customer wants a full copy of all personal data we hold on them and a record of every time it was accessed. We have 30 days to respond. Legal says if we miss the deadline we are automatically in breach of our data processing obligations and they will want to talk about our audit trail situation."
+        },
+        {
+          "level": 1,
+          "requires": { "node_ids": ["metrics_pipeline"], "min_tier": 1 },
+          "text": "A data subject access request has been logged. Fulfilling the request requires a complete record of personal data held and all access events across every node in the architecture. No nodes are currently emitting audit events, which means there is no automated path to satisfying the request."
+        },
+        {
+          "level": 2,
+          "requires": { "node_ids": ["alerting"], "min_tier": 2 },
+          "text": "Zero of 26 nodes in your architecture have audit logging enabled. Satisfying the DSAR requires enumerating every personal data record held and every access event against that record. With no audit trail anywhere in the system, there is no complete or reliable way to do this — the organisation cannot currently respond to the request within the statutory 30-day window."
+        },
+        {
+          "level": 3,
+          "requires": { "node_ids": ["tracing"], "min_tier": 2 },
+          "text": "Without audit logs on any node, the organisation cannot reconstruct a history of data access for the requesting subject. Past events cannot be recovered. Enabling observability begins capturing events going forward, which satisfies the request for future access records and demonstrates to the regulator that remediation is underway. Failure to respond within 30 days exposes the organisation to enforcement action — the fine structure for non-response is typically a percentage of annual global turnover."
+        }
+      ]
+    }
+  ]
+}

@@ -159,7 +159,7 @@
       "name": "Worker Pool",
       "layer": "compute",
       "role": "async_runtime",
-      "description": "Pulls jobs from a queue and processes them off the synchronous request path. Consumer lag is the primary failure mode \u2014 a slow or crashed pool lets backlogs grow silently until upstream queues overflow.",
+      "description": "Pulls jobs from a queue and processes them off the synchronous request path. Consumer lag is the primary failure mode — a slow or crashed pool lets backlogs grow silently until upstream queues overflow.",
       "singleton": false,
       "max_instances": 6,
       "provides": [
@@ -258,7 +258,7 @@
       "name": "Scheduler",
       "layer": "compute",
       "role": "job_scheduler",
-      "description": "Triggers jobs on a time-based schedule rather than in response to requests. Silent failures are the primary hazard \u2014 a missed or skipped run often goes undetected until data is stale or a downstream process times out.",
+      "description": "Triggers jobs on a time-based schedule rather than in response to requests. Silent failures are the primary hazard — a missed or skipped run often goes undetected until data is stale or a downstream process times out.",
       "singleton": true,
       "max_instances": 1,
       "provides": [

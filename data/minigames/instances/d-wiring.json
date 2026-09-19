@@ -1,0 +1,60 @@
+{
+  "instances": [
+    {
+      "id": "topology_second_az",
+      "minigame": "topology_puzzle",
+      "difficulty": 3,
+      "brief": "Everything you run sits in us-east-1a. An AZ outage would take the whole system down.",
+      "teaches": "Redundancy protects against a failure domain, not against a count. Two instances in one availability zone share the zone's fate.",
+      "levers": { "component_count": 4, "connection_points_highlighted": true },
+      "given": {
+        "nodes": [
+          { "id": "lb", "label": "Load balancer", "zone": "us-east-1a" },
+          { "id": "app1", "label": "app-us-01", "zone": "us-east-1a" },
+          { "id": "pg", "label": "pg-primary", "zone": "us-east-1a" }
+        ],
+        "edges": [{"from": "lb", "to": "app1"}, {"from": "app1", "to": "pg"}],
+        "place": { "id": "app2", "label": "New app instance" },
+        "zones": ["us-east-1a", "us-east-1b"]
+      },
+      "solution": { "zone": "us-east-1b", "connect_to": ["lb", "pg"] },
+      "wrong_outcomes": [
+        {
+          "when": "wrong_target",
+          "shows": "us-east-1a goes dark in the drill. Both app instances are unreachable. Uptime drops 4.1%.",
+          "why_wrong": "The new instance shares the failing zone with the old one, so it fails at the same moment."
+        }
+      ],
+      "reveal": "An availability zone is a failure domain — power, network and cooling are shared inside it. Adding capacity within the same zone raises throughput but not survivability. The new instance belongs in us-east-1b, connected to the same load balancer so traffic can shift to it when 1a fails. It connects to both the load balancer, so traffic can reach it, and pg-primary, because an app instance with no datastore serves nothing."
+    },
+    {
+      "id": "topology_multi_region_write",
+      "minigame": "topology_puzzle",
+      "difficulty": 5,
+      "brief": "Your EU stack (lb-eu-01, app-eu-01) routes all writes to pg-primary in us-east-1. Last month a 23-minute us-east-1 outage caused 100% EU write failures despite EU compute staying healthy.",
+      "teaches": "A regional deployment is only as resilient as its most remote dependency. Cross-region writes re-centralise your failure domain across the wire regardless of where your compute lives.",
+      "levers": { "component_count": 6, "connection_points_highlighted": false },
+      "given": {
+        "nodes": [
+          { "id": "glb", "label": "Global LB", "zone": "us-east-1a" },
+          { "id": "app_us", "label": "app-us-01", "zone": "us-east-1a" },
+          { "id": "pg_primary", "label": "pg-primary", "zone": "us-east-1a" },
+          { "id": "lb_eu", "label": "lb-eu-01", "zone": "eu-west-1a" },
+          { "id": "app_eu", "label": "app-eu-01", "zone": "eu-west-1a" }
+        ],
+        "edges": [{"from": "glb", "to": "app_us"}, {"from": "glb", "to": "lb_eu"}, {"from": "app_us", "to": "pg_primary"}, {"from": "lb_eu", "to": "app_eu"}, {"from": "app_eu", "to": "pg_primary"}],
+        "place": { "id": "pg_replica", "label": "EU regional database (promotable)" },
+        "zones": ["us-east-1a", "eu-west-1a", "eu-west-1b"]
+      },
+      "solution": { "zone": "eu-west-1b", "connect_to": ["app_eu", "pg_primary"] },
+      "wrong_outcomes": [
+        {
+          "when": "wrong_target",
+          "shows": "eu-west-1a goes dark. app-eu-01 and the new database are in the same availability zone, so both vanish together. EU traffic fails over to us-east-1 across the Atlantic; p95 for EU users rises from 40 ms to 310 ms.",
+          "why_wrong": "Placing the new database in app-eu-01's own zone gives you geographic separation from us-east-1 but no separation from the app tier it serves. A single AZ failure takes both."
+        }
+      ],
+      "reveal": "The trap here is geographic confusion: the new component is in Europe, so the EU stack looks independent. But if app-eu-01 still writes to pg-primary in us-east-1, the transatlantic link remains a single point of failure. The correct placement puts pg-replica in eu-west-1b — inside the EU region, but a different availability zone from app-eu-01, so an AZ failure does not take the app tier and its database together — and connects it to both app-eu-01 (the local write client) and pg-primary (the replication source). During a us-east-1 outage the EU database is promoted to accept writes locally; on recovery the two are reconciled and replication is re-established. Promotion is the step that makes the local write path real — a replica left in read-only mode fails EU writes exactly as the transatlantic dependency did. The failure domain is broken by moving the write dependency local — not just by placing a component in a new geography."
+    }
+  ]
+}

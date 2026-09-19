@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["minigames"],
+  "properties": {
+    "minigames": {
+      "type": "array",
+      "minItems": 15,
+      "maxItems": 15,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "name", "format", "description"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
+          "name": { "type": "string", "minLength": 1 },
+          "format": { "enum": ["ordered_sequence", "fill_blank", "dial", "wiring", "evidence"] },
+          "description": { "type": "string", "minLength": 30 }
+        }
+      }
+    }
+  }
+}

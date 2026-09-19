@@ -1,0 +1,28 @@
+{
+  "incidents": [
+    {
+      "id": "fixture_incident",
+      "name": "Fixture incident",
+      "family": "infrastructure",
+      "severity": 3,
+      "scope": "instance",
+      "group_by": null,
+      "target": { "tags_all": ["spof"], "layers": ["data"] },
+      "fires_when": null,
+      "gates": { "min_tick": 30, "min_users": 1000, "cooldown_ticks": 100 },
+      "base_weight": 8,
+      "weight_per_target": 4,
+      "damage": { "down": false, "health_delta": -30, "utilization_delta_pct": 20, "tags_add": [] },
+      "resolved_by": ["restart"],
+      "duration_ticks": null,
+      "escalates_to": null,
+      "escalate_after_ticks": null,
+      "ledger_events": [
+        { "kind": "sla_credit", "when": "per_tick", "basis": "affected_users * credit_rate" }
+      ],
+      "signals": [
+        { "level": 0, "requires": null, "text": "A client is asking why their dashboard is blank." }
+      ]
+    }
+  ]
+}

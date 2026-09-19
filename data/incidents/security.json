@@ -1,0 +1,618 @@
+{
+  "incidents": [
+    {
+      "id": "credential_leak",
+      "name": "Credential leak",
+      "family": "security",
+      "severity": 3,
+      "scope": "instance",
+      "group_by": null,
+      "target": {
+        "tags_all": [
+          "shared_credentials"
+        ]
+      },
+      "fires_when": null,
+      "gates": {
+        "min_tick": 50,
+        "min_users": 2000,
+        "cooldown_ticks": 250
+      },
+      "base_weight": 6,
+      "weight_per_target": 5,
+      "damage": {
+        "health_delta": -25
+      },
+      "resolved_by": [
+        "rotate_credentials"
+      ],
+      "duration_ticks": null,
+      "escalates_to": "data_breach",
+      "escalate_after_ticks": 60,
+      "ledger_events": [
+        {
+          "kind": "incident_remediation",
+          "when": "on_resolve",
+          "basis": "severity * 60"
+        }
+      ],
+      "signals": [
+        {
+          "level": 0,
+          "requires": null,
+          "text": "A security researcher just published a blog post listing what appear to be our API credentials, sourced from a public GitHub repository. They are asking for comment before the article goes live. We have two hours."
+        },
+        {
+          "level": 1,
+          "requires": {
+            "node_ids": [
+              "metrics_pipeline"
+            ],
+            "min_tier": 1
+          },
+          "text": "Authentication success rate on the identity layer dropped 14% over the past hour, consistent with replayed or repurposed credentials. The pattern shows repeated successful logins from IP blocks with no prior history in user device records."
+        },
+        {
+          "level": 2,
+          "requires": {
+            "node_ids": [
+              "alerting"
+            ],
+            "min_tier": 2
+          },
+          "text": "secrets-manager-01 shows 34 unique API keys last accessed in the past 6 hours that had zero usage in the previous 30 days. The spike correlates with credentials appearing in an external dump at 02:11 UTC."
+        },
+        {
+          "level": 3,
+          "requires": {
+            "node_ids": [
+              "tracing"
+            ],
+            "min_tier": 2
+          },
+          "text": "ci-cd-01's deployment pipeline has been using a single admin API key since provisioning, stored in a shared config file committed to the repository. The key has full write access to all services. Tracing shows it being used from an external IP since 01:52 UTC. Rotating it immediately revokes the attacker's access but will break the deployment pipeline until the new credential is distributed to all consumers."
+        }
+      ]
+    },
+    {
+      "id": "credential_stuffing",
+      "name": "Credential stuffing",
+      "family": "security",
+      "severity": 2,
+      "scope": "instance",
+      "group_by": null,
+      "target": {
+        "layers": [
+          "edge",
+          "ingress"
+        ],
+        "tags_none": [
+          "rate_limited"
+        ]
+      },
+      "fires_when": null,
+      "gates": {
+        "min_tick": 60,
+        "min_users": 5000,
+        "cooldown_ticks": 180
+      },
+      "base_weight": 8,
+      "weight_per_target": 4,
+      "damage": {
+        "utilization_delta_pct": 40,
+        "health_delta": -15
+      },
+      "resolved_by": [
+        "enable_rate_limit"
+      ],
+      "duration_ticks": null,
+      "escalates_to": null,
+      "escalate_after_ticks": null,
+      "ledger_events": [
+        {
+          "kind": "overage",
+          "when": "per_tick",
+          "basis": "affected_instances * 3"
+        }
+      ],
+      "signals": [
+        {
+          "level": 0,
+          "requires": null,
+          "text": "Our head of customer success just escalated a message from three enterprise accounts — their users cannot log in and keep hitting error pages. They want a status update in the next 30 minutes or they are going to their boards."
+        },
+        {
+          "level": 1,
+          "requires": {
+            "node_ids": [
+              "metrics_pipeline"
+            ],
+            "min_tier": 1
+          },
+          "text": "Authentication error rate at the edge layer has climbed to 43% over the last 12 minutes. CPU utilization on the ingress tier is at 91%, significantly above the daily average of 38%."
+        },
+        {
+          "level": 2,
+          "requires": {
+            "node_ids": [
+              "alerting"
+            ],
+            "min_tier": 2
+          },
+          "text": "cdn-edge-01 is processing 18,000 login requests per minute, up from a baseline of 900. The burst shows rotating User-Agent strings, sequential account enumeration, and no consistent browser fingerprint. Legitimate user logins are queued behind the attack traffic."
+        },
+        {
+          "level": 3,
+          "requires": {
+            "node_ids": [
+              "tracing"
+            ],
+            "min_tier": 2
+          },
+          "text": "cdn-edge-01 has no per-client request rate limit configured. An automated attacker is replaying 14.2 million username-password pairs sourced from a known external breach dump. Each attempt reaches the origin authentication service, saturating the connection pool. Enabling a rate limit at the edge would block the attack burst before it reaches the origin."
+        }
+      ]
+    },
+    {
+      "id": "brute_force_attack",
+      "name": "Brute force attack",
+      "family": "security",
+      "severity": 2,
+      "scope": "instance",
+      "group_by": null,
+      "target": {
+        "layers": [
+          "edge",
+          "ingress"
+        ],
+        "tags_none": [
+          "rate_limited"
+        ]
+      },
+      "fires_when": null,
+      "gates": {
+        "min_tick": 40,
+        "min_users": 2000,
+        "cooldown_ticks": 150
+      },
+      "base_weight": 9,
+      "weight_per_target": 4,
+      "damage": {
+        "utilization_delta_pct": 30
+      },
+      "resolved_by": [
+        "enable_rate_limit"
+      ],
+      "duration_ticks": null,
+      "escalates_to": null,
+      "escalate_after_ticks": null,
+      "ledger_events": [
+        {
+          "kind": "overage",
+          "when": "per_tick",
+          "basis": "affected_instances * 3"
+        }
+      ],
+      "signals": [
+        {
+          "level": 0,
+          "requires": null,
+          "text": "We are getting a flood of password reset requests and locked-account complaints from users who cannot log in. Two enterprise accounts have opened priority tickets — their admin users are locked out and they need access restored immediately."
+        },
+        {
+          "level": 1,
+          "requires": {
+            "node_ids": [
+              "metrics_pipeline"
+            ],
+            "min_tier": 1
+          },
+          "text": "Failed authentication attempts at the edge layer reached 12,000 per minute at 08:34 UTC — a 60x increase over the 24-hour average. CPU utilization on the ingress tier is at 85%."
+        },
+        {
+          "level": 2,
+          "requires": {
+            "node_ids": [
+              "alerting"
+            ],
+            "min_tier": 2
+          },
+          "text": "ingress-us-01 is processing 9,800 failed login attempts per minute from a rotating pool of 340 distinct IP addresses. Account lockout policies have triggered on 1,200 user accounts in the last 8 minutes, preventing legitimate owners from logging in."
+        },
+        {
+          "level": 3,
+          "requires": {
+            "node_ids": [
+              "tracing"
+            ],
+            "min_tier": 2
+          },
+          "text": "ingress-us-01 has no rate limit on the /auth/login endpoint. The attacking client is cycling through a dictionary of 8 million common passwords against a list of 14,000 harvested email addresses. No throttle applies per IP or per account until the lockout policy fires, by which point accounts are already inaccessible to their owners. Enabling a rate limit would cap attempts per IP and break the attack loop within seconds."
+        }
+      ]
+    },
+    {
+      "id": "data_breach",
+      "name": "Data breach",
+      "family": "security",
+      "severity": 5,
+      "scope": "instance",
+      "group_by": null,
+      "target": {
+        "tags_any": [
+          "public_exposed",
+          "unencrypted"
+        ]
+      },
+      "fires_when": null,
+      "gates": {
+        "min_tick": 90,
+        "min_users": 10000,
+        "cooldown_ticks": 500
+      },
+      "base_weight": 2,
+      "weight_per_target": 8,
+      "damage": {
+        "health_delta": -30
+      },
+      "resolved_by": [
+        "restrict_access",
+        "enable_encryption"
+      ],
+      "duration_ticks": null,
+      "escalates_to": "gdpr_breach_notification",
+      "escalate_after_ticks": 80,
+      "ledger_events": [
+        {
+          "kind": "sla_credit",
+          "when": "per_tick",
+          "basis": "affected_users * credit_rate * 3"
+        },
+        {
+          "kind": "incident_remediation",
+          "when": "on_resolve",
+          "basis": "severity * 200"
+        }
+      ],
+      "signals": [
+        {
+          "level": 0,
+          "requires": null,
+          "text": "A journalist from TechCrunch just emailed asking if we want to comment on a dataset being sold on a forum that appears to contain customer records. They are running the story in four hours with or without a statement from us."
+        },
+        {
+          "level": 1,
+          "requires": {
+            "node_ids": [
+              "metrics_pipeline"
+            ],
+            "min_tier": 1
+          },
+          "text": "Outbound data transfer volume from the data layer increased 340% at 03:42 UTC and has not returned to baseline. The egress destination is an IP range with no prior history in our access logs."
+        },
+        {
+          "level": 2,
+          "requires": {
+            "node_ids": [
+              "alerting"
+            ],
+            "min_tier": 2
+          },
+          "text": "object-store-us-01 has served 2.4 TB of unauthenticated GET requests in the past 90 minutes. The bucket's public read policy was enabled 11 days ago and has been accumulating access since then. Presigned URL logging was disabled."
+        },
+        {
+          "level": 3,
+          "requires": {
+            "node_ids": [
+              "tracing"
+            ],
+            "min_tier": 2
+          },
+          "text": "object-store-us-01's bucket ACL was set to public-read during a configuration change on the 7th that was not reviewed. All objects in the bucket — including 4.1 million serialised user records exported for a data warehouse migration — have been publicly readable since then. An external crawler indexed the endpoint and the contents are circulating on data-broker forums. Restricting the bucket's access policy stops further exfiltration immediately but does not recover data already copied."
+        }
+      ]
+    },
+    {
+      "id": "insider_threat",
+      "name": "Insider threat",
+      "family": "security",
+      "severity": 4,
+      "scope": "architecture",
+      "group_by": null,
+      "target": null,
+      "fires_when": {
+        "any_node": {
+          "tags_none": [
+            "audit_logged"
+          ]
+        }
+      },
+      "gates": {
+        "min_tick": 120,
+        "min_users": 15000,
+        "cooldown_ticks": 400
+      },
+      "base_weight": 4,
+      "weight_per_target": 0,
+      "damage": {
+        "health_delta": -5
+      },
+      "resolved_by": [
+        "enable_observability"
+      ],
+      "duration_ticks": null,
+      "escalates_to": null,
+      "escalate_after_ticks": null,
+      "ledger_events": [
+        {
+          "kind": "incident_remediation",
+          "when": "on_resolve",
+          "basis": "severity * 90"
+        }
+      ],
+      "signals": [
+        {
+          "level": 0,
+          "requires": null,
+          "text": "Legal just called. An ex-employee terminated last month accessed several customer accounts using credentials that were never revoked. The customers are asking us to explain what data was accessed. Legal wants a full audit trail by end of day."
+        },
+        {
+          "level": 1,
+          "requires": {
+            "node_ids": [
+              "metrics_pipeline"
+            ],
+            "min_tier": 1
+          },
+          "text": "Access events across the identity layer show 140 admin-level operations performed by accounts that have not been active in over 30 days. None of these operations produced an entry in the audit trail."
+        },
+        {
+          "level": 2,
+          "requires": {
+            "node_ids": [
+              "alerting"
+            ],
+            "min_tier": 2
+          },
+          "text": "iam-broker-01 records show four service accounts provisioned in Q2 — never decommissioned — performed bulk data exports from the user table between 02:00 and 04:45 UTC on Wednesday. No audit log entry exists for any of these exports."
+        },
+        {
+          "level": 3,
+          "requires": {
+            "node_ids": [
+              "tracing"
+            ],
+            "min_tier": 2
+          },
+          "text": "Fourteen service accounts created during onboarding retain full read access to production data with no expiry policy. Seven are bound to former contractors or terminated employees. Because no audit logging is configured across most of the architecture, there is no record of what each account accessed or exported before today's discovery. Until audit logging is enabled and stale accounts are revoked, the full scope of the exposure cannot be established."
+        }
+      ]
+    },
+    {
+      "id": "ransomware_attack",
+      "name": "Ransomware attack",
+      "family": "security",
+      "severity": 5,
+      "scope": "architecture",
+      "group_by": null,
+      "target": null,
+      "fires_when": {
+        "no_node": {
+          "tags_all": [
+            "backed_up"
+          ]
+        }
+      },
+      "gates": {
+        "min_tick": 140,
+        "min_users": 20000,
+        "cooldown_ticks": 600
+      },
+      "base_weight": 3,
+      "weight_per_target": 0,
+      "damage": {
+        "health_delta": -5
+      },
+      "resolved_by": [
+        "enable_backup",
+        "restore_from_backup"
+      ],
+      "duration_ticks": null,
+      "escalates_to": null,
+      "escalate_after_ticks": null,
+      "ledger_events": [
+        {
+          "kind": "incident_remediation",
+          "when": "on_resolve",
+          "basis": "severity * 250"
+        }
+      ],
+      "signals": [
+        {
+          "level": 0,
+          "requires": null,
+          "text": "A partner whose integration pulls data from our platform every 15 minutes just emailed to ask whether we are experiencing an incident. Their last 40 sync requests have returned empty payloads or connection errors and they have a client presentation in two hours that depends on the data."
+        },
+        {
+          "level": 1,
+          "requires": {
+            "node_ids": [
+              "metrics_pipeline"
+            ],
+            "min_tier": 1
+          },
+          "text": "Storage I/O across the data layer dropped to 0% at 07:22 UTC. Persistent volumes on 11 nodes are returning I/O errors simultaneously. Disk utilisation spiked to 100% on each node within a 90-second window before going unreadable."
+        },
+        {
+          "level": 2,
+          "requires": {
+            "node_ids": [
+              "alerting"
+            ],
+            "min_tier": 2
+          },
+          "text": "pg-primary, object-store-us-01, and backup-us-01 are all reporting corrupted or encrypted volumes as of 07:22 UTC. The encryption pattern across all three nodes is consistent with a ransomware payload that propagated laterally across the storage tier."
+        },
+        {
+          "level": 3,
+          "requires": {
+            "node_ids": [
+              "tracing"
+            ],
+            "min_tier": 2
+          },
+          "text": "A ransomware payload entered through a compromised deployment credential at 07:19 UTC and traversed the internal network via unrestricted east-west traffic, reaching every data-bearing node within 3 minutes. No node in the architecture has a verified backup. There is no clean snapshot to restore from. The only recovery paths are rebuilding the data layer from scratch or paying the ransom. Enabling backups before an attack provides a restore point from before the encryption event."
+        }
+      ]
+    },
+    {
+      "id": "tls_handshake_error",
+      "name": "TLS handshake error",
+      "family": "security",
+      "severity": 2,
+      "scope": "instance",
+      "group_by": null,
+      "target": {
+        "node_ids": [
+          "tls_cert"
+        ]
+      },
+      "fires_when": null,
+      "gates": {
+        "min_tick": 30,
+        "min_users": 500,
+        "cooldown_ticks": 120
+      },
+      "base_weight": 8,
+      "weight_per_target": 4,
+      "damage": {
+        "health_delta": -40
+      },
+      "resolved_by": [
+        "renew_cert"
+      ],
+      "duration_ticks": null,
+      "escalates_to": null,
+      "escalate_after_ticks": null,
+      "ledger_events": [
+        {
+          "kind": "sla_credit",
+          "when": "per_tick",
+          "basis": "affected_users * credit_rate"
+        }
+      ],
+      "signals": [
+        {
+          "level": 0,
+          "requires": null,
+          "text": "A wave of tickets from users saying the app will not load — browsers are showing a 'Your connection is not private' error and refusing to continue. Two enterprise accounts have called in asking whether we have been compromised."
+        },
+        {
+          "level": 1,
+          "requires": {
+            "node_ids": [
+              "metrics_pipeline"
+            ],
+            "min_tier": 1
+          },
+          "text": "TLS negotiation failure rate at the edge layer climbed from 0.1% to 89% at 11:08 UTC. The spike is simultaneous across all geographic endpoints, ruling out a single-region issue."
+        },
+        {
+          "level": 2,
+          "requires": {
+            "node_ids": [
+              "alerting"
+            ],
+            "min_tier": 2
+          },
+          "text": "tls-cert-01's handshake is failing for all clients presenting modern TLS 1.3 requirements. The certificate chain served to connecting clients is incomplete — the intermediate CA certificate is missing from the bundle, causing validation errors across all major browsers and HTTP clients."
+        },
+        {
+          "level": 3,
+          "requires": {
+            "node_ids": [
+              "tracing"
+            ],
+            "min_tier": 2
+          },
+          "text": "A cert renewal deployed at 11:05 UTC replaced the leaf certificate but did not update the intermediate CA bundle. The new leaf was issued by a different intermediate CA than the one previously installed. Every client downloading the chain receives the leaf without a valid trust anchor, causing 100% of TLS handshakes to fail. Installing a complete chain including the correct intermediate CA resolves the issue immediately."
+        }
+      ]
+    },
+    {
+      "id": "cert_expiry_incident",
+      "name": "Certificate expiry",
+      "family": "security",
+      "severity": 4,
+      "scope": "instance",
+      "group_by": null,
+      "target": {
+        "tags_all": [
+          "stale_cert"
+        ]
+      },
+      "fires_when": null,
+      "gates": {
+        "min_tick": 45,
+        "min_users": 1000,
+        "cooldown_ticks": 300
+      },
+      "base_weight": 7,
+      "weight_per_target": 6,
+      "damage": {
+        "down": true,
+        "health_delta": -100
+      },
+      "resolved_by": [
+        "renew_cert"
+      ],
+      "duration_ticks": null,
+      "escalates_to": null,
+      "escalate_after_ticks": null,
+      "ledger_events": [
+        {
+          "kind": "sla_credit",
+          "when": "per_tick",
+          "basis": "affected_users * credit_rate"
+        }
+      ],
+      "signals": [
+        {
+          "level": 0,
+          "requires": null,
+          "text": "Customers across all regions are reporting a security warning that prevents them from accessing the app. Our status page is getting hundreds of views, four enterprise customers have called in directly, and sales just took a call from an account asking whether we are experiencing a breach."
+        },
+        {
+          "level": 1,
+          "requires": {
+            "node_ids": [
+              "metrics_pipeline"
+            ],
+            "min_tier": 1
+          },
+          "text": "TLS certificate validity on the edge layer is showing 0 days remaining. HTTP error rate spiked from 0.3% to 94% at 00:01 UTC. New connections are failing at the TLS layer before any application code is reached."
+        },
+        {
+          "level": 2,
+          "requires": {
+            "node_ids": [
+              "alerting"
+            ],
+            "min_tier": 2
+          },
+          "text": "tls-cert-01's certificate for *.prod.example.com expired at 00:00:01 UTC. All HTTPS clients are receiving an SSL_ERROR_EXPIRED response."
+        },
+        {
+          "level": 3,
+          "requires": {
+            "node_ids": [
+              "tracing"
+            ],
+            "min_tier": 2
+          },
+          "text": "tls-cert-01's certificate renewal was never automated. The engineer who managed it manually created a calendar reminder that was not transferred when they left the team. The cert entered stale_cert state four days before expiry, but no monitoring alert was wired to that state. It expired at midnight UTC. Renewing it requires provisioning a new certificate and deploying it; typical time-to-green is 8 minutes."
+        }
+      ]
+    }
+  ]
+}

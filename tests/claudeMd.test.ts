@@ -24,4 +24,43 @@ describe('CLAUDE.md', () => {
       expect(doc, f).toContain(f)
     }
   })
+
+  it('documents the incident model', () => {
+    expect(doc).toContain('data/incidents/')
+    expect(doc).toMatch(/49 incidents/)
+    expect(doc).toMatch(/47 tags/)
+  })
+
+  it('states the runtime-tag production rule', () => {
+    expect(doc).toMatch(/cold_cache/)
+    expect(doc).toMatch(/unbounded_queue/)
+    expect(doc).toMatch(/damage\.tags_add/)
+    expect(doc).toMatch(/runtime_only/i)
+  })
+
+  it('defines incident_severity', () => {
+    expect(doc).toMatch(/incident_severity/)
+  })
+
+  it('documents the signal levels', () => {
+    expect(doc).toMatch(/level 0/i)
+    expect(doc).toMatch(/tracing/)
+  })
+
+  it('documents the minigame model', () => {
+    expect(doc).toContain('data/minigames/')
+    expect(doc).toMatch(/five (interaction )?formats|5 (interaction )?formats/i)
+    expect(doc).toMatch(/difficulty-slot/i)
+  })
+
+  it('states the format-agnostic split', () => {
+    expect(doc).toMatch(/teaches/)
+    expect(doc).toMatch(/reveal/)
+    expect(doc).toMatch(/given/)
+    expect(doc).toMatch(/solution/)
+  })
+
+  it('links the minigame spec', () => {
+    expect(doc).toContain('docs/superpowers/specs/2026-09-18-minigame-data-model-design.md')
+  })
 })

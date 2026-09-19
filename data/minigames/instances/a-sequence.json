@@ -1,0 +1,192 @@
+{
+  "instances": [
+    {
+      "id": "cutover_lower_ttl_first",
+      "minigame": "dns_cutover",
+      "difficulty": 2,
+      "brief": "You have a maintenance window tonight to migrate the database from pg-primary to pg-replica-01. The replica is fully caught up and you have confirmed the window with stakeholders.",
+      "teaches": "A DNS record change only takes effect once the old TTL has expired everywhere, so the TTL must be lowered and allowed to propagate before the record is changed.",
+      "levers": { "step_count": 4, "labels_hint_order": true, "decoy_steps": 0 },
+      "given": {
+        "steps": [
+          "Update the A record to point at pg-replica-01",
+          "Lower the record TTL from 3600s to 60s",
+          "Wait for the old TTL window to elapse",
+          "Once the old TTL window has elapsed, confirm pg-replica-01 is accepting writes and note its IP address for the A record"
+        ]
+      },
+      "solution": { "order": [1, 2, 3, 0] },
+      "wrong_outcomes": [
+        {
+          "when": "wrong_order",
+          "shows": "Record updated. 41 minutes later, 62% of clients are still connecting to pg-primary.",
+          "why_wrong": "Resolvers cached the old record for its full 3600s TTL, so changing it first changes nothing for an hour."
+        }
+      ],
+      "reveal": "The TTL is a promise you already made to every resolver that asked: lowering it does not retroactively shorten caches that already exist. So you lower it first, then wait out the old value — that wait is unavoidable and is why this is a planned migration rather than an emergency one. Only once the old window has elapsed do you confirm the destination is accepting writes and take its IP, and that ordering matters: a health check run an hour earlier tells you nothing about the moment you actually switch. The A record update consumes that IP and is the true point of no return — everything before it is reversible."
+    },
+    {
+      "id": "cutover_drain_before_switch",
+      "minigame": "dns_cutover",
+      "difficulty": 4,
+      "brief": "You are migrating live traffic from old-lb-01 to new-lb-01 with zero dropped connections. Both targets are currently in the pool.",
+      "teaches": "Active connections to the old target must be fully drained before it is removed, and the new target must pass health checks before any traffic is shifted to it.",
+      "levers": { "step_count": 6, "labels_hint_order": false, "decoy_steps": 2 },
+      "given": {
+        "steps": [
+          "Confirm the load balancer reports new-lb-01 healthy — two consecutive 200s on /healthz",
+          "Register new-lb-01 in the load balancer pool",
+          "Ramp traffic weight to new-lb-01: 10% then 50% then 100%",
+          "Verify the active connection count on old-lb-01 reads 0",
+          "Update the DNS A record to new-lb-01 before draining old-lb-01",
+          "Set old-lb-01 to draining",
+          "Remove old-lb-01 from the load balancer pool",
+          "Set the deregistration delay to 0 to speed up the cutover"
+        ]
+      },
+      "solution": { "order": [1, 0, 2, 5, 3, 6] },
+      "wrong_outcomes": [
+        {
+          "when": "wrong_order",
+          "shows": "Cutover complete. 3 minutes later, 847 requests returned 503 — old-lb-01 was removed while 312 connections were still active.",
+          "why_wrong": "Removing the old target before draining in-flight connections aborts them, producing 503 errors for users mid-session."
+        }
+      ],
+      "reveal": "Load balancers track a table of active connections per backend. When you mark a target 'draining', the balancer stops routing new requests there but lets existing connections complete normally. Pulling the target out before drain completes sends a TCP RST to every open socket. The new target must be registered before the load balancer will probe it — health checks run only against registered backends, so registration necessarily precedes confirmation. Only after the active connection count on the old target genuinely reads 0 is it safe to remove it entirely."
+    },
+    {
+      "id": "restore_enable_backup",
+      "minigame": "restore_drill",
+      "difficulty": 2,
+      "brief": "You have just provisioned a new database server. You need to configure and prove the backup agent is working.",
+      "teaches": "A backup is not configured until its first run has completed and been verified — a schedule entry alone means no backup exists yet.",
+      "levers": { "step_count": 4, "labels_hint_order": true, "decoy_steps": 0 },
+      "given": {
+        "steps": [
+          "Trigger the first manual backup run",
+          "Verify the backup file can be restored on a test instance",
+          "Install and configure the backup agent with destination path and schedule",
+          "Confirm the backup job completed with 0 errors and nonzero bytes written"
+        ]
+      },
+      "solution": { "order": [2, 0, 3, 1] },
+      "wrong_outcomes": [
+        {
+          "when": "wrong_order",
+          "shows": "Restore test aborts: pg_restore: error: could not open input file — the destination path is empty, because the manual run had not been triggered yet.",
+          "why_wrong": "Configuring the agent starts the schedule but does not create a backup. Without a completed, verified run, there is no backup — only the intention of one."
+        }
+      ],
+      "reveal": "A backup schedule is a future promise, not a present fact. The daemon may be running, the cron entry may be valid, and the config file may pass linting — and yet no backup exists until a run has completed and been recorded. 'Installed' and 'verified working' are two different states separated by an explicit run and an explicit check. Verifying restorability on a test instance is the final gate because it proves the stored file can actually be used in recovery — the only thing that matters when disaster strikes."
+    },
+    {
+      "id": "restore_verify_then_promote",
+      "minigame": "restore_drill",
+      "difficulty": 3,
+      "brief": "pg-primary has a corrupted data directory. You have a recent backup. You need to restore service with confidence the data is intact.",
+      "teaches": "Restoring to a scratch instance and verifying integrity before promotion means corruption is discovered while the old system is still intact — promoting an unverified restore can leave you with bad data and no fallback.",
+      "levers": { "step_count": 5, "labels_hint_order": false, "decoy_steps": 1 },
+      "given": {
+        "steps": [
+          "Restore the backup to scratch-pg-01, a temporary non-production instance",
+          "Disable maintenance mode and confirm the application is serving both reads and writes",
+          "Delete the corrupted production data to free disk space before promotion",
+          "Run pg_dumpall --schema-only and compare table counts against the last snapshot",
+          "VACUUM ANALYZE the tables the count comparison confirmed present, watching for corruption errors",
+          "Promote scratch-pg-01 to production by updating the connection string"
+        ]
+      },
+      "solution": { "order": [0, 3, 4, 5, 1] },
+      "wrong_outcomes": [
+        {
+          "when": "wrong_order",
+          "shows": "Promotion complete. 8 minutes later, the application throws 'relation orders_archive does not exist' — the restore had silently dropped 3 tables not caught before cutover.",
+          "why_wrong": "Promoting without integrity checks means discovering corruption after traffic is live. The only options are then to serve bad data or restore again from scratch under user load."
+        }
+      ],
+      "reveal": "A restore that appears to complete successfully may still be missing tables, have corrupt indexes, or contain partial writes from a crash mid-commit. The backup file was stored correctly, but the restore process itself can fail silently on individual objects. Running integrity checks on the scratch copy while the old production instance is still intact gives you a safe fallback. Once you promote the restored copy and redirect traffic, the previous state is no longer the source of truth — any corruption that surfaces after that point must be fixed live, under user load, with no net below you."
+    },
+    {
+      "id": "restore_under_fire",
+      "minigame": "restore_drill",
+      "difficulty": 5,
+      "brief": "pg-primary is erroring on most queries but still committing some writes. You are performing a PITR restore under a live outage.",
+      "teaches": "Post-recovery-target writes to the old primary are lost when the restored instance is promoted, and the WAL archive can recycle segments you still need to fetch if writes continue advancing the LSN.",
+      "levers": { "step_count": 7, "labels_hint_order": false, "decoy_steps": 2 },
+      "given": {
+        "steps": [
+          "Apply WAL segments to scratch-pg-01 up to the recovery target LSN",
+          "Begin restoring the base backup to scratch-pg-01 before stopping writes to minimize downtime",
+          "Set the application to maintenance mode to block all incoming writes",
+          "Disable maintenance mode and verify the application is accepting writes",
+          "Record the LSN at which writes stopped, and select the last base backup preceding it",
+          "Run VACUUM on the current primary to free disk space before restoring",
+          "Restore the base backup to scratch-pg-01",
+          "Run pg_dumpall --schema-only on scratch-pg-01 to confirm no missing tables",
+          "Promote scratch-pg-01 to primary and update the connection string"
+        ]
+      },
+      "solution": { "order": [2, 4, 6, 0, 7, 8, 3] },
+      "wrong_outcomes": [
+        {
+          "when": "wrong_order",
+          "shows": "Restore complete. Promotion successful. Two minutes later, the application reports 'duplicate key value violates unique constraint' and missing rows — the old primary committed several transactions after the recovery target LSN while the restore was running, and those commits are not in the restored timeline.",
+          "why_wrong": "Writes that continue past the recovery target are not in the restored history. Promoting without stopping writes first creates two diverged sources of truth; any commits between the stop point and promotion are permanently lost."
+        }
+      ],
+      "reveal": "PITR restores a consistent timeline only up to the recovery target — any commits after that point on the old primary are not in the restored history. If writes continue arriving on the old primary while you select a backup and replay WAL, two things go wrong: the archive may recycle WAL segments needed between your base backup's START WAL LOCATION and your target, and when you promote the restored instance the old primary's post-target commits create a diverged timeline that is expensive or impossible to reconcile. Stopping writes first freezes the LSN, lets you record a stable stop point, select a base backup that precedes it, and ensures the archive retains every segment needed for the replay window. Every step before promotion must run with writes blocked."
+    },
+    {
+      "id": "cert_chain_leaf_first",
+      "minigame": "cert_chain_puzzle",
+      "difficulty": 2,
+      "brief": "Your TLS handshake is failing with 'unable to get local issuer certificate'. The server is presenting only its leaf certificate — the intermediate is missing from the chain file.",
+      "teaches": "A server must present the full chain from its leaf up to but excluding a trusted root — the client already holds the root, and the common failure is an intermediate that was never presented at all.",
+      "levers": { "step_count": 4, "labels_hint_order": true, "decoy_steps": 0 },
+      "given": {
+        "steps": [
+          "Read the leaf certificate's Issuer field to identify which intermediate signed it",
+          "Download that intermediate from the CA's published bundle URL",
+          "Confirm the intermediate's own Issuer matches a root already present in the client trust store",
+          "Concatenate leaf then intermediate into the chain file and reload nginx"
+        ]
+      },
+      "solution": { "order": [0, 1, 2, 3] },
+      "wrong_outcomes": [
+        {
+          "when": "wrong_order",
+          "shows": "Chain file written but the leaf's Issuer field was never checked. TLS handshake test reports: 'unable to get local issuer certificate' — the downloaded intermediate does not sign this leaf.",
+          "why_wrong": "Without reading the leaf's Issuer field first, there is no reliable basis for selecting the correct intermediate. Assembling the chain with the wrong intermediate leaves the trust path unverifiable."
+        }
+      ],
+      "reveal": "A TLS server must present every certificate in the chain from its own leaf up to — but not including — the trusted root. The client already holds the root in its trust store; the root does not need to be transmitted. The common failure is a chain file that contains only the leaf: the client receives the leaf, looks up its Issuer to find who signed it, and finds nothing, producing 'unable to get local issuer certificate'. The fix requires knowing exactly which intermediate signed the leaf — the leaf's own Issuer field names it — then fetching and verifying that intermediate chains to a trusted root before assembling the file."
+    },
+    {
+      "id": "restore_point_in_time",
+      "minigame": "restore_drill",
+      "difficulty": 3,
+      "brief": "A bad migration ran against pg-primary at 14:36 UTC and corrupted 12 tables. You need to restore to 14:32 UTC using PITR.",
+      "teaches": "A point-in-time restore requires the base snapshot applied before the WAL segments, with the recovery target time configured before PostgreSQL starts — otherwise replay overshoots or stops at the wrong point.",
+      "levers": { "step_count": 5, "labels_hint_order": false, "decoy_steps": 1 },
+      "given": {
+        "steps": [
+          "Copy the most recent base backup taken before that target timestamp to /var/lib/postgresql/15/recovery/",
+          "Start PostgreSQL in recovery mode and verify the log shows 'recovery stopping before commit of transaction'",
+          "Identify the target timestamp: 2026-09-18T14:32:00 UTC, 4 minutes before the migration ran",
+          "Confirm the WAL archive runs continuously from the copied base backup's START WAL LOCATION (read from its backup_label) through to 14:32 UTC",
+          "Apply the logical pg_dump on top of the base backup to establish a consistent starting point",
+          "Set recovery_target_time = '2026-09-18 14:32:00+00' and restore_command in postgresql.auto.conf, then create the recovery.signal file"
+        ]
+      },
+      "solution": { "order": [2, 0, 3, 5, 1] },
+      "wrong_outcomes": [
+        {
+          "when": "wrong_order",
+          "shows": "Recovery started. PostgreSQL applies WAL and stops 2 hours after the target time — 47 tables from the migration are present that should not be.",
+          "why_wrong": "Starting recovery without confirming WAL archive coverage and setting the target time first means the replay has no stopping point and overshoots into the bad migration."
+        }
+      ],
+      "reveal": "Point-in-time recovery in PostgreSQL works in two phases: the base backup establishes the physical cluster state at a known consistent point, then WAL segments are replayed one by one in commit order until the recovery target is reached. The recovery parameters (including recovery_target_time) must be written before PostgreSQL starts, because the process reads them at startup to know where to stop. Note they live in postgresql.auto.conf alongside a recovery.signal file, not in a recovery.conf — that file was removed in PostgreSQL 12, and a modern server that finds one refuses to start at all. The '+00' on the target time is not decoration either: recovery_target_time is interpreted in the server's own TimeZone, so an unqualified literal silently recovers to the wrong instant. If you have gaps in your WAL archive — segments missing between the base backup LSN and the target time — PostgreSQL either stops early or errors out mid-replay. You cannot check archive coverage until you know where the base backup starts — the backup_label file records the START WAL LOCATION that the replay must begin from, and only by copying the backup first can you confirm whether the archive runs continuously all the way to your target."
+    }
+  ]
+}

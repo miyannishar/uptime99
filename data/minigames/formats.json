@@ -1,0 +1,111 @@
+{
+  "formats": [
+    {
+      "id": "ordered_sequence",
+      "name": "Ordered sequence",
+      "description": "Drags four to seven procedure steps into the order they must actually be performed in to resolve the incident correctly.",
+      "levers": {
+        "step_count": {
+          "type": "integer",
+          "min": 4,
+          "max": 7,
+          "description": "Number of steps to arrange. More steps means a larger search space."
+        },
+        "labels_hint_order": {
+          "type": "boolean",
+          "description": "When false, labels give no ordering cue, raising difficulty."
+        },
+        "decoy_steps": {
+          "type": "integer",
+          "min": 0,
+          "max": 2,
+          "description": "Extra plausible-but-wrong steps added to the pool. More decoys raise difficulty."
+        }
+      }
+    },
+    {
+      "id": "fill_blank",
+      "name": "Fill in the blanks",
+      "description": "Reads a config snippet or command and fills in the one to four missing values that would make it correct and safe.",
+      "levers": {
+        "blank_count": {
+          "type": "integer",
+          "min": 1,
+          "max": 4,
+          "description": "Number of blanks to fill. Each additional blank raises cognitive load."
+        },
+        "input_mode": {
+          "type": "enum",
+          "values": ["pick_from_list", "free_text"],
+          "description": "free_text removes the hint list, requiring recall rather than recognition."
+        },
+        "surrounding_noise": {
+          "type": "boolean",
+          "description": "When true, surrounding config lines contain irrelevant distractor values."
+        }
+      }
+    },
+    {
+      "id": "dial",
+      "name": "Dial and allocate",
+      "description": "Turns a numeric dial to set a resource allocation — such as replica count or memory limit — within the constraints shown on screen.",
+      "levers": {
+        "tolerance_pct": {
+          "type": "integer",
+          "min": 0,
+          "max": 20,
+          "description": "How far from the exact answer still counts as correct. Lower is harder."
+        },
+        "table_complete": {
+          "type": "boolean",
+          "description": "When false, the cost or impact table is partially hidden, requiring estimation."
+        },
+        "second_constraint": {
+          "type": "boolean",
+          "description": "When true, a second binding constraint is added, narrowing the valid range."
+        }
+      }
+    },
+    {
+      "id": "wiring",
+      "name": "Visual wiring",
+      "description": "Draws connections between architecture components on a canvas to restore the correct traffic flow after a misconfiguration.",
+      "levers": {
+        "component_count": {
+          "type": "integer",
+          "min": 2,
+          "max": 6,
+          "description": "Number of components to wire. Each extra component adds connection candidates."
+        },
+        "connection_points_highlighted": {
+          "type": "boolean",
+          "description": "When false, valid connection targets are not highlighted, requiring unaided recall."
+        }
+      }
+    },
+    {
+      "id": "evidence",
+      "name": "Evidence selection",
+      "description": "Scans a scrollable log or metrics panel and selects exactly the lines that prove the root cause of the current incident.",
+      "levers": {
+        "distractor_count": {
+          "type": "integer",
+          "min": 2,
+          "max": 5,
+          "description": "Number of plausible-but-wrong lines mixed into the output. More distractors raise difficulty."
+        },
+        "distractor_plausibility": {
+          "type": "enum",
+          "values": ["low", "high"],
+          "description": "high means distractors are topically related errors that require domain knowledge to reject."
+        },
+        "output_lines": {
+          "type": "integer",
+          "min": 3,
+          "max": 20,
+          "description": "Total lines in the log panel. More lines mean more scanning before finding evidence."
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["formats"],
+  "properties": {
+    "formats": {
+      "type": "array",
+      "minItems": 5,
+      "maxItems": 5,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "name", "description", "levers"],
+        "properties": {
+          "id": { "enum": ["ordered_sequence", "fill_blank", "dial", "wiring", "evidence"] },
+          "name": { "type": "string", "minLength": 1 },
+          "description": { "type": "string", "minLength": 40 },
+          "levers": {
+            "type": "object",
+            "minProperties": 2,
+            "additionalProperties": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["type", "description"],
+              "properties": {
+                "type": { "enum": ["integer", "number", "boolean", "enum"] },
+                "description": { "type": "string", "minLength": 10 },
+                "min": { "type": "number" },
+                "max": { "type": "number" },
+                "values": { "type": "array", "minItems": 2, "items": { "type": "string" } }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

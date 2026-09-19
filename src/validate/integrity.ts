@@ -3,6 +3,25 @@ import { resolve } from 'node:path'
 import { loadJson } from './loadJson'
 import { compileSchema } from './schemaValidator'
 import { matchActions, type Action, type Constraint } from './matchActions'
+import {
+  loadIncidents,
+  checkIncidentCount,
+  checkTagIncidentBidirectional,
+  checkIncidentConstraintRefs,
+  checkResolvedByMatchable,
+  checkEscalationGraph,
+  checkWeaknessCoverage,
+} from './incidentChecks'
+import {
+  loadMinigameData,
+  checkRegistryMatchesActions,
+  checkFormatsResolve,
+  checkSlotCoverage,
+  checkInstanceRefs,
+  checkInstanceIdsUnique,
+  checkInstanceShapes,
+  checkWhenLegality,
+} from './minigameChecks'
 
 const NODE_DIR = 'data/nodes'
 
@@ -278,6 +297,53 @@ export function runIntegrityChecks(): string[] {
   problems.push(...checkActionNodeAndRoleRefs(c.actions as any[], nodeIds, roles))
   problems.push(...checkActionStatsDelta(c.actions, c.nodes, runtimeOnlyTags))
   problems.push(...checkActionReachability(c.actions, c.nodes, runtimeOnlyTags))
+
+  // 12–17. Incident integrity checks
+  const incidents = loadIncidents()
+  const tagList = loadJson<any>('data/tags.json').tags
+  const incidentSchema = compileSchema('data/schema/incident.schema.json')
+  for (const f of readdirSync(resolve(import.meta.dirname, '../..', 'data/incidents'))
+                    .filter((x) => x.endsWith('.json'))) {
+    const r = incidentSchema(loadJson(`data/incidents/${f}`))
+    if (!r.valid) problems.push(`data/incidents/${f}: ${r.errors.join('; ')}`)
+  }
+  problems.push(...checkIncidentCount(incidents))
+  problems.push(...checkTagIncidentBidirectional(incidents, tagList))
+  problems.push(...checkIncidentConstraintRefs(incidents, c))
+  problems.push(...checkResolvedByMatchable(incidents, c))
+  problems.push(...checkEscalationGraph(incidents))
+  problems.push(...checkWeaknessCoverage(incidents, tagList, c.actions))
+
+  // 18–24. Minigame integrity checks
+  const actionList = loadJson<any>('data/actions.json').actions
+  for (const [dataPath, schemaPath] of [
+    ['data/minigames/formats.json', 'data/schema/minigame-format.schema.json'],
+    ['data/minigames/registry.json', 'data/schema/minigame-registry.schema.json'],
+  ] as const) {
+    const r = compileSchema(schemaPath)(loadJson(dataPath))
+    if (!r.valid) problems.push(`${dataPath}: ${r.errors.join('; ')}`)
+  }
+  // schema-validate the instance files BEFORE loading them into one pool: a file
+  // missing its top-level `instances` key would otherwise put `undefined` in the
+  // pool and make the checks below throw a raw TypeError, hiding the real error
+  // that was just recorded here
+  const schemaProblemsBefore = problems.length
+  const instSchema = compileSchema('data/schema/minigame-instance.schema.json')
+  for (const f of readdirSync(resolve(import.meta.dirname, '../..', 'data/minigames/instances'))
+                  .filter((x) => x.endsWith('.json'))) {
+    const r = instSchema(loadJson(`data/minigames/instances/${f}`))
+    if (!r.valid) problems.push(`data/minigames/instances/${f}: ${r.errors.join('; ')}`)
+  }
+  if (problems.length === schemaProblemsBefore) {
+    const mgData = loadMinigameData()
+    problems.push(...checkRegistryMatchesActions(mgData.minigames, actionList))
+    problems.push(...checkFormatsResolve(mgData.minigames, mgData.formats))
+    problems.push(...checkSlotCoverage(mgData.instances, actionList))
+    problems.push(...checkInstanceRefs(mgData.instances, mgData.minigames, mgData.formats))
+    problems.push(...checkInstanceIdsUnique(mgData.instances))
+    problems.push(...checkInstanceShapes(mgData.instances, mgData.minigames))
+    problems.push(...checkWhenLegality(mgData.instances, mgData.minigames))
+  }
 
   return problems
 }

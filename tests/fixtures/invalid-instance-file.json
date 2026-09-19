@@ -1,0 +1,22 @@
+{
+  "instances": [
+    {
+      "id": "fixture_seq_scan",
+      "minigame": "query_plan_puzzle",
+      "difficulty": 5,
+      "brief": "A fixture instance used only by schema tests.",
+      "teaches": "A range filter on an unindexed column forces a full table scan.",
+      "levers": { "distractor_count": 2, "distractor_plausibility": "high", "output_lines": 3 },
+      "given": { "explain": "Seq Scan on orders  (cost=0.00..89432.11 rows=4103922)" },
+      "solution": { "choice": "CREATE INDEX ON orders(created_at)" },
+      "distractors": [
+        { "choice": "CREATE INDEX ON orders(id)", "why_wrong": "id is the primary key and the filter never references it." },
+        { "choice": "Add a read replica", "why_wrong": "A replica runs the same unindexed scan." }
+      ],
+      "wrong_outcomes": [
+        { "when": "wrong_choice", "shows": "Query still returns in 4.1s, 4.1M rows examined.", "why_wrong": "Nothing you changed affects how the planner reaches those rows." }
+      ],
+      "reveal": "The planner has no ordered structure for created_at, so it reads every row and discards most of them. An index lets it seek to the range start and stop at the end."
+    }
+  ]
+}
