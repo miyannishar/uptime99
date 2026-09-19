@@ -4,7 +4,17 @@
 
 html,
 body,
-#root { height: 100%; }
+#root {
+  height: 100%;
+  max-width: 100%;
+}
+
+/* Backstop. The app is a fixed-viewport console: nothing should ever produce a
+   horizontal document scrollbar, and if a dense panel does overflow, clipping it
+   locally is better than sliding the entire UI sideways. Panels that legitimately
+   need to scroll (CodeBlock, the catalog, the dock) opt in themselves. */
+html,
+body { overflow-x: hidden; }
 
 body {
   margin: 0;

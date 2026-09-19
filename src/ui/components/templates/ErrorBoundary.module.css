@@ -1,0 +1,49 @@
+.root {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: var(--sp-8) var(--sp-6);
+}
+
+.title {
+  font-size: var(--fs-6);
+  color: var(--bad);
+}
+
+.sub {
+  margin-top: var(--sp-6);
+  font-size: var(--fs-1);
+  letter-spacing: var(--ls-wide);
+  text-transform: uppercase;
+  color: var(--txt-faint);
+}
+
+.message {
+  margin-top: var(--sp-4);
+  font-size: var(--fs-4);
+  color: var(--txt-strong);
+  line-height: 1.6;
+}
+
+.stack {
+  margin-top: var(--sp-4);
+  padding: var(--sp-5);
+  font-family: var(--font);
+  font-size: var(--fs-1);
+  line-height: 1.7;
+  color: var(--txt-dim);
+  background: #080c11;
+  border: 1px solid var(--line);
+  border-radius: var(--r-2);
+  overflow-x: auto;
+  white-space: pre-wrap;
+}
+
+.retry {
+  margin-top: var(--sp-6);
+  padding: 6px 14px;
+  font-size: var(--fs-2);
+  color: var(--acc);
+  background: var(--acc-bg);
+  border: 1px solid var(--acc);
+  border-radius: var(--r-1);
+}

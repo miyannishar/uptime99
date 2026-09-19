@@ -5,7 +5,8 @@
   overflow-y: auto;
   padding: var(--sp-5);
   background: var(--bg-1);
-  border-top: 1px solid var(--line);
+  /* Left column of the shell — see templates/AppShell. */
+  border-right: 1px solid var(--line);
 }
 
 .head { flex: 0 0 auto; }

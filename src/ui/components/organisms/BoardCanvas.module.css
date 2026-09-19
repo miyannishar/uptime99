@@ -1,12 +1,72 @@
 .root {
   position: relative;
-  padding: var(--sp-6) var(--sp-5);
+  height: 100%;
+  min-height: 0;
   background: var(--board-wash), var(--bg-0);
-  min-height: 100%;
-  overflow: auto;
+  overflow: hidden;
 }
 
-/* Link layer sits behind the cards. */
+/* ---- controls ------------------------------------------------------------ */
+
+.controls {
+  position: absolute;
+  top: var(--sp-4);
+  right: var(--sp-5);
+  z-index: var(--z-panel);
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-2) var(--sp-3);
+  background: color-mix(in srgb, var(--bg-1) 88%, transparent);
+  border: 1px solid var(--line);
+  border-radius: var(--r-1);
+  backdrop-filter: blur(3px);
+}
+
+.hint {
+  font-size: var(--fs-0);
+  color: var(--txt-faint);
+  margin-right: var(--sp-3);
+}
+
+.ctl {
+  min-width: 20px;
+  padding: 1px 6px;
+  font-size: var(--fs-1);
+  color: var(--txt-dim);
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  background: var(--bg-2);
+}
+
+.ctl:hover { color: var(--txt); border-color: var(--line-strong); }
+
+.zoom {
+  font-size: var(--fs-0);
+  color: var(--txt-dim);
+  font-variant-numeric: tabular-nums;
+  min-width: 34px;
+  text-align: center;
+}
+
+/* ---- surface ------------------------------------------------------------- */
+
+.viewport {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  cursor: grab;
+  touch-action: none;
+}
+
+.viewport:active { cursor: grabbing; }
+.grabbing { cursor: grabbing; }
+
+.world {
+  position: relative;
+  transform-origin: 0 0;
+}
+
 .links {
   position: absolute;
   inset: 0;
@@ -15,73 +75,62 @@
   overflow: visible;
 }
 
-.path,
-.tray {
-  position: relative;
-  z-index: var(--z-board);
-  display: flex;
-  gap: var(--sp-7);
-  align-items: flex-start;
+/* ---- layer bands (guides) ------------------------------------------------ */
+
+.band {
+  position: absolute;
+  z-index: 0;
+  border: 1px dashed color-mix(in srgb, var(--layer) 22%, transparent);
+  border-radius: var(--r-3);
+  background: color-mix(in srgb, var(--layer) 4%, transparent);
+  pointer-events: none;
 }
 
-.tray { gap: var(--sp-6); }
-
-.column {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-4);
-}
-
-.layerHead {
-  display: flex;
-  align-items: center;
+.bandLabel {
+  position: absolute;
+  top: 8px;
+  left: 12px;
+  display: inline-flex;
+  align-items: baseline;
   gap: var(--sp-3);
-  padding-bottom: var(--sp-2);
-  border-bottom: 1px solid color-mix(in srgb, var(--layer) 35%, transparent);
-}
-
-.layerName {
   font-size: var(--fs-0);
   letter-spacing: var(--ls-wide);
   text-transform: uppercase;
   color: var(--layer);
 }
 
-.layerIndex {
-  font-size: var(--fs-0);
+.bandIndex {
   color: var(--txt-faint);
   font-variant-numeric: tabular-nums;
 }
 
-.stack {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-4);
+.shelf {
+  position: absolute;
+  z-index: 0;
+  border-top: 1px dashed var(--line-strong);
+  pointer-events: none;
 }
 
-.empty {
-  width: 116px;
-  padding: var(--sp-4);
-  font-size: var(--fs-0);
-  color: var(--txt-faint);
-  text-align: center;
-  border: 1px dashed var(--line);
-  border-radius: var(--r-2);
-}
-
-.trayRule {
-  position: relative;
-  z-index: var(--z-board);
-  margin: var(--sp-7) 0 var(--sp-5);
-  border-top: 1px dashed var(--line);
-}
-
-.trayLabel {
-  position: relative;
-  top: -0.7em;
-  padding-right: var(--sp-4);
-  background: var(--bg-0);
+.shelfLabel {
+  position: absolute;
+  top: 6px;
+  left: 12px;
   font-size: var(--fs-0);
   letter-spacing: var(--ls-mid);
   color: var(--txt-faint);
+}
+
+/* ---- draggable node slots ------------------------------------------------ */
+
+.slot {
+  position: absolute;
+  z-index: var(--z-board);
+  cursor: grab;
+  touch-action: none;
+}
+
+.dragging {
+  z-index: var(--z-panel);
+  cursor: grabbing;
+  filter: drop-shadow(0 12px 22px rgba(0, 0, 0, 0.75));
 }

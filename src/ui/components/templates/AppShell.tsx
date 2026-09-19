@@ -5,14 +5,18 @@ import s from './AppShell.module.css'
 export interface AppShellProps {
   /** MetricsHeader. Always visible, in both phases. */
   header: ReactNode
-  /** CatalogDrawer in the design phase; omitted during a run. */
-  aside?: ReactNode
-  /** BoardCanvas. */
+  /**
+   * Left column — what is coming at the player. IncidentFeed during a run,
+   * CatalogDrawer during design. Both answer "what do I have to deal with",
+   * which is why they share the column rather than competing for it.
+   */
+  left?: ReactNode
+  /** BoardCanvas. The centre, because it is what the player reads. */
   main: ReactNode
-  /** NodeInspector or DesignPhasePanel. */
-  panel?: ReactNode
-  /** IncidentFeed, under the panel so incidents and actions read together. */
-  feed?: ReactNode
+  /** Right column — what the player can do. NodeInspector or DesignPhasePanel. */
+  right?: ReactNode
+  /** Full-width bottom dock: work in flight, cooldowns, recent charges. */
+  dock?: ReactNode
   /** MinigameOverlay / DebriefPanel. */
   overlay?: ReactNode
 }
@@ -20,27 +24,27 @@ export interface AppShellProps {
 /**
  * The frame every phase shares.
  *
- * The board takes the space and the panel is fixed-width, because the board is
- * what the player reads and the panel is what they act in. The incident feed sits
- * UNDER the panel rather than across the bottom: an incident and the actions that
- * resolve it belong in the same column, so a player can read a signal and then
- * act without their eye crossing the screen.
+ * Three columns, in the order the player's attention moves: the incident arrives
+ * on the LEFT, they read the system in the MIDDLE, and they act on the RIGHT.
+ * That ordering matters more than it looks — reading state before acting is the
+ * habit the game exists to build, and a layout that puts the action list first
+ * would teach the opposite.
+ *
+ * The board takes all the slack; both side columns are fixed-width so a node card
+ * never reflows as the inspector's content changes length.
  */
-export function AppShell({ header, aside, main, panel, feed, overlay }: AppShellProps) {
+export function AppShell({ header, left, main, right, dock, overlay }: AppShellProps) {
   return (
-    <div className={cx(s.root, aside && s.withAside, panel && s.withPanel)}>
+    <div className={cx(s.root, left && s.withLeft, right && s.withRight, dock && s.withDock)}>
       <div className={s.header}>{header}</div>
 
-      {aside && <div className={s.aside}>{aside}</div>}
+      {left && <div className={s.left}>{left}</div>}
 
       <main className={s.main}>{main}</main>
 
-      {panel && (
-        <div className={s.side}>
-          <div className={s.panel}>{panel}</div>
-          {feed && <div className={s.feed}>{feed}</div>}
-        </div>
-      )}
+      {right && <div className={s.right}>{right}</div>}
+
+      {dock && <div className={s.dock}>{dock}</div>}
 
       {overlay}
     </div>

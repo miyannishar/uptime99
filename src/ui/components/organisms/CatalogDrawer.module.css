@@ -67,7 +67,7 @@
 
 .nodeHead {
   display: grid;
-  grid-template-columns: 1fr auto auto;
+  grid-template-columns: minmax(0, 1fr) auto auto;
   align-items: baseline;
   gap: var(--sp-4);
   width: 100%;
@@ -122,9 +122,11 @@
   gap: var(--sp-2);
 }
 
+/* Flex-wrap rather than a six-track grid: this sits in a ~300px column and six
+   nowrap tracks cannot fit. Wrapping degrades gracefully; a grid overflows. */
 .tier {
-  display: grid;
-  grid-template-columns: 22px 1fr auto auto auto auto;
+  display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: var(--sp-3);
   padding: var(--sp-2) var(--sp-3);
@@ -134,8 +136,15 @@
   font-size: var(--fs-1);
 }
 
-.tierId { color: var(--acc); }
-.tierName { color: var(--txt); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tierId { color: var(--acc); flex: 0 0 auto; }
+.tierName {
+  color: var(--txt);
+  flex: 1 1 86px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .tierStats { color: var(--txt-faint); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .tierCost { color: var(--txt); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .tooDear { color: var(--bad); }

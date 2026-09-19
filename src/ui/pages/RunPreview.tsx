@@ -2,13 +2,14 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { DepthMode, MinigameAnswer, MinigameSession, WrongOutcome } from '../types'
 import {
   BoardCanvas, CommandPalette, IncidentFeed, MetricsHeader, MinigameShell, NodeInspector,
+  TaskDock,
 } from '../components/organisms'
 import { MinigameOverlay, RunLayout } from '../components/templates'
 import type { Speed } from '../components/molecules'
 import { economy, index, instancesForSlot, offPathLayers, requestPathLayers } from '../data/catalog'
 import {
   incidentCountByInstance, ladderFor, portsFor, resolvedActionsFor, sampleBoard,
-  sampleIncidents, sampleMetrics, samplePaletteEntries, sampleTick,
+  sampleIncidents, sampleLedger, sampleMetrics, samplePaletteEntries, sampleTick,
 } from '../fixtures/sampleRun'
 
 export interface RunPreviewProps {
@@ -40,6 +41,25 @@ export function RunPreview({ depthMode, onDepthChange }: RunPreviewProps) {
   )
 
   const actions = useMemo(() => (selected ? resolvedActionsFor(selected) : []), [selected])
+
+  /* Dock contents: everything the player is waiting on, across the whole board. */
+  const provisioning = useMemo(
+    () =>
+      sampleBoard
+        .filter((n) => (n.provisioningTicksLeft ?? 0) > 0)
+        .map((node) => ({ node, ticksLeft: node.provisioningTicksLeft ?? 0 })),
+    [],
+  )
+
+  const cooldowns = useMemo(
+    () =>
+      sampleBoard.flatMap((node) =>
+        resolvedActionsFor(node)
+          .filter((a) => a.availability === 'cooldown')
+          .map((a) => ({ node, action: a.def, remainingS: a.cooldownRemainingS })),
+      ),
+    [],
+  )
 
   /* ⌘K / Ctrl+K */
   useEffect(() => {
@@ -154,6 +174,15 @@ export function RunPreview({ depthMode, onDepthChange }: RunPreviewProps) {
           selectedKey={selectedIncident}
           onSelect={(key) => setSelectedIncident(key === selectedIncident ? null : key)}
           tickSeconds={economy.tick_seconds}
+        />
+      }
+      dock={
+        <TaskDock
+          provisioning={provisioning}
+          cooldowns={cooldowns}
+          ledger={sampleLedger}
+          tickSeconds={economy.tick_seconds}
+          onSelectNode={setSelectedId}
         />
       }
       overlay={

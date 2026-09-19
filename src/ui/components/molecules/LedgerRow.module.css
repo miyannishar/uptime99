@@ -1,6 +1,9 @@
 .root {
   display: grid;
-  grid-template-columns: 118px 1fr auto auto;
+  /* minmax(0, 1fr), not 1fr: a bare `1fr` floors at the track's content
+     min-width, so the nowrap label below would widen the row past its container
+     instead of ellipsising. */
+  grid-template-columns: minmax(0, 118px) minmax(0, 1fr) auto auto;
   align-items: baseline;
   gap: var(--sp-4);
   padding: var(--sp-2) var(--sp-3);

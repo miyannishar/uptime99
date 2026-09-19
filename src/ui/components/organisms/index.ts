@@ -42,3 +42,6 @@ export type { DebriefPanelProps } from './DebriefPanel'
 
 export { ScenarioSelect } from './ScenarioSelect'
 export type { ScenarioSelectProps } from './ScenarioSelect'
+
+export { TaskDock } from './TaskDock'
+export type { TaskDockProps, DockProvisioning, DockCooldown } from './TaskDock'

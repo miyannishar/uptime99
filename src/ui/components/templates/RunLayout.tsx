@@ -3,12 +3,14 @@ import { AppShell } from './AppShell'
 
 export interface RunLayoutProps {
   header: ReactNode
+  /** IncidentFeed — left, because it is what forces the player to act. */
+  feed: ReactNode
   /** BoardCanvas. */
   board: ReactNode
   /** NodeInspector for the selected node. */
   inspector: ReactNode
-  /** IncidentFeed. */
-  feed: ReactNode
+  /** TaskDock: provisioning, cooldowns, recent charges. */
+  dock?: ReactNode
   overlay?: ReactNode
 }
 
@@ -17,8 +19,15 @@ export interface RunLayoutProps {
  * system through ACTIONS, not by dragging in new components, and leaving the
  * catalog open would suggest otherwise.
  */
-export function RunLayout({ header, board, inspector, feed, overlay }: RunLayoutProps) {
+export function RunLayout({ header, feed, board, inspector, dock, overlay }: RunLayoutProps) {
   return (
-    <AppShell header={header} main={board} panel={inspector} feed={feed} overlay={overlay} />
+    <AppShell
+      header={header}
+      left={feed}
+      main={board}
+      right={inspector}
+      dock={dock}
+      overlay={overlay}
+    />
   )
 }

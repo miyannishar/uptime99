@@ -1,8 +1,10 @@
-import { useCallback, useLayoutEffect, useRef, useState } from 'react'
+import { useEffect, useRef } from 'react'
 import type { BoardNode, LayerDef } from '../../types'
 import { EdgeLink, NodeCard } from '../molecules'
-import type { Point } from '../molecules'
-import { healthStatus, layerVar } from '../../utils/format'
+import {
+  ANCHOR_Y, BAND_W, CARD_W, PAD, useBoardLayout,
+} from '../../hooks/useBoardLayout'
+import { cx, healthStatus, layerVar } from '../../utils/format'
 import s from './BoardCanvas.module.css'
 
 export interface BoardCanvasProps {
@@ -17,28 +19,19 @@ export interface BoardCanvasProps {
   saturationKnee?: number
 }
 
-interface Link {
-  id: string
-  from: Point
-  to: Point
-  severed: boolean
-  status: ReturnType<typeof healthStatus>
-  dimmed: boolean
-  label: string
-}
-
 /**
- * The board.
+ * The board: a graph of draggable nodes.
  *
- * Layout is a column per request-path layer in `layer_index` order — edge →
- * ingress → compute → data — which makes a request's journey left-to-right
- * reading order. The three off-path layers sit in a tray below, separated by a
- * rule, because they are never in the p95 sum and grouping them with the path
- * would imply otherwise.
+ * Nodes are absolutely positioned and can be dragged anywhere; drag the
+ * background to pan. Link endpoints are pure arithmetic off those positions —
+ * there is deliberately no DOM measurement here, which is both simpler and the
+ * reason this component can no longer enter a layout/measure feedback loop.
  *
- * Links are drawn in an SVG overlay from MEASURED card positions rather than
- * computed coordinates, so the graph stays correct when cards reflow, text
- * wraps, or the container resizes.
+ * The layer bands behind the nodes are GUIDES, not containers. A node's `layer`
+ * is fixed in `data/nodes/*.json` and dragging a card out of its band changes
+ * nothing — the band is there so the request path stays readable left to right
+ * and the off-path shelf stays visibly separate, since those three layers are
+ * never in the p95 sum.
  */
 export function BoardCanvas({
   nodes,
@@ -49,108 +42,169 @@ export function BoardCanvas({
   incidentCountByInstance = {},
   saturationKnee = 0.8,
 }: BoardCanvasProps) {
-  const hostRef = useRef<HTMLDivElement>(null)
-  const cardRefs = useRef(new Map<string, HTMLElement>())
-  const [links, setLinks] = useState<Link[]>([])
-  const [size, setSize] = useState({ w: 0, h: 0 })
+  const layout = useBoardLayout(nodes, requestPathLayers)
+  const { positions, offPathY, pan, zoom } = layout
+  const viewportRef = useRef<HTMLDivElement>(null)
 
   const byId = new Map(nodes.map((n) => [n.inst.instance_id, n]))
 
-  const register = useCallback((id: string, el: HTMLElement | null) => {
-    if (el) cardRefs.current.set(id, el)
-    else cardRefs.current.delete(id)
-  }, [])
+  // Extent of the placed graph, so the pannable surface is big enough to hold it.
+  let maxX = PAD + requestPathLayers.length * BAND_W
+  let maxY = offPathY + 200
+  for (const p of positions.values()) {
+    maxX = Math.max(maxX, p.x + CARD_W + PAD)
+    maxY = Math.max(maxY, p.y + 160)
+  }
 
-  const measure = useCallback(() => {
-    const host = hostRef.current
-    if (!host) return
-    const base = host.getBoundingClientRect()
-    setSize({ w: base.width, h: base.height })
-
-    const next: Link[] = []
-    for (const node of nodes) {
-      const fromEl = cardRefs.current.get(node.inst.instance_id)
-      if (!fromEl) continue
-      const a = fromEl.getBoundingClientRect()
-
-      for (const targetId of node.edgesOut) {
-        const toEl = cardRefs.current.get(targetId)
-        const target = byId.get(targetId)
-        if (!toEl || !target) continue
-        const b = toEl.getBoundingClientRect()
-
-        const touchesSelection =
-          !selectedInstanceId ||
-          selectedInstanceId === node.inst.instance_id ||
-          selectedInstanceId === targetId
-
-        next.push({
+  const links = nodes.flatMap((node) => {
+    const from = positions.get(node.inst.instance_id)
+    if (!from) return []
+    return node.edgesOut.flatMap((targetId) => {
+      const to = positions.get(targetId)
+      const target = byId.get(targetId)
+      if (!to || !target) return []
+      const touchesSelection =
+        !selectedInstanceId ||
+        selectedInstanceId === node.inst.instance_id ||
+        selectedInstanceId === targetId
+      // Leave the source's right edge, enter the target's left edge. When a card
+      // has been dragged to the left of its target the curve simply doubles back,
+      // which reads correctly as "this dependency points backwards".
+      return [
+        {
           id: `${node.inst.instance_id}->${targetId}`,
-          from: { x: a.right - base.left, y: a.top - base.top + a.height / 2 },
-          to: { x: b.left - base.left, y: b.top - base.top + b.height / 2 },
-          // A down target means no traffic reaches it at all.
+          from: { x: from.x + CARD_W, y: from.y + ANCHOR_Y },
+          to: { x: to.x, y: to.y + ANCHOR_Y },
           severed: target.inst.down,
           status: healthStatus(target.inst.health, target.inst.down),
           dimmed: !touchesSelection,
           label: `${node.def.name} to ${target.def.name}`,
-        })
-      }
+        },
+      ]
+    })
+  })
+
+  /**
+   * Wheel zoom, attached natively with `passive: false`.
+   *
+   * React's synthetic wheel handler is registered passively, so calling
+   * preventDefault there is ignored and the page scrolls behind the zoom. This has
+   * to be a native listener to own the gesture.
+   */
+  useEffect(() => {
+    const el = viewportRef.current
+    if (!el) return
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault()
+      const rect = el.getBoundingClientRect()
+      // Normalise across deltaMode (pixels vs lines vs pages) and trackpads.
+      const step = Math.max(-0.25, Math.min(0.25, -e.deltaY * 0.0015))
+      layout.zoomAtPoint(e.clientX - rect.left, e.clientY - rect.top, step)
     }
-    setLinks(next)
-  }, [nodes, byId, selectedInstanceId])
+    el.addEventListener('wheel', onWheel, { passive: false })
+    return () => el.removeEventListener('wheel', onWheel)
+  }, [layout.zoomAtPoint])
 
-  useLayoutEffect(() => {
-    measure()
-    const host = hostRef.current
-    if (!host || typeof ResizeObserver === 'undefined') return
-    const ro = new ResizeObserver(measure)
-    ro.observe(host)
-    for (const el of cardRefs.current.values()) ro.observe(el)
-    return () => ro.disconnect()
-  }, [measure])
-
-  const renderColumn = (layer: LayerDef, compact = false) => {
-    const inLayer = nodes.filter((n) => n.layer.id === layer.id)
-    return (
-      <div className={s.column} key={layer.id}>
-        <div className={s.layerHead} style={{ ['--layer' as string]: layerVar(layer.id) }}>
-          <span className={s.layerName}>{layer.name}</span>
-          {layer.layer_index !== null && <span className={s.layerIndex}>{layer.layer_index}</span>}
-        </div>
-        <div className={s.stack}>
-          {inLayer.length === 0 && <div className={s.empty}>empty</div>}
-          {inLayer.map((node) => (
-            <div key={node.inst.instance_id} ref={(el) => register(node.inst.instance_id, el)}>
-              <NodeCard
-                node={node}
-                compact={compact}
-                selected={selectedInstanceId === node.inst.instance_id}
-                onSelect={onSelect}
-                incidentCount={incidentCountByInstance[node.inst.instance_id] ?? 0}
-                saturationKnee={saturationKnee}
-              />
-            </div>
-          ))}
-        </div>
-      </div>
-    )
+  const fitToViewport = () => {
+    const el = viewportRef.current
+    if (!el) return
+    layout.fit(el.clientWidth, el.clientHeight, maxX, maxY)
   }
 
   return (
-    <div className={s.root} ref={hostRef}>
-      <svg className={s.links} width={size.w} height={size.h} aria-hidden="true">
-        {links.map((link) => (
-          <EdgeLink key={link.id} {...link} />
-        ))}
-      </svg>
-
-      <div className={s.path}>{requestPathLayers.map((l) => renderColumn(l))}</div>
-
-      <div className={s.trayRule}>
-        <span className={s.trayLabel}>off the request path · never in the p95 sum</span>
+    <div className={s.root}>
+      {/* ---- controls -------------------------------------------------- */}
+      <div className={s.controls}>
+        <span className={s.hint}>drag nodes · drag background to pan · scroll to zoom</span>
+        <button type="button" className={s.ctl} onClick={() => layout.zoomBy(-0.1)} aria-label="Zoom out">
+          −
+        </button>
+        <span className={s.zoom}>{Math.round(zoom * 100)}%</span>
+        <button type="button" className={s.ctl} onClick={() => layout.zoomBy(0.1)} aria-label="Zoom in">
+          +
+        </button>
+        <button type="button" className={s.ctl} onClick={fitToViewport}>
+          fit
+        </button>
+        <button type="button" className={s.ctl} onClick={layout.reset}>
+          reset
+        </button>
       </div>
 
-      <div className={s.tray}>{offPathLayers.map((l) => renderColumn(l, true))}</div>
+      {/* ---- pannable surface ------------------------------------------ */}
+      <div
+        ref={viewportRef}
+        className={cx(s.viewport, layout.dragging && s.grabbing)}
+        onPointerDown={layout.startPan}
+      >
+        <div
+          className={s.world}
+          style={{
+            width: maxX,
+            height: maxY,
+            transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
+          }}
+        >
+          {/* layer bands — guides, not containers */}
+          {requestPathLayers.map((layer, i) => (
+            <div
+              key={layer.id}
+              className={s.band}
+              style={{
+                left: PAD - 18,
+                top: PAD - 34,
+                width: BAND_W - 24,
+                height: offPathY - PAD + 34,
+                transform: `translateX(${i * BAND_W}px)`,
+                ['--layer' as string]: layerVar(layer.id),
+              }}
+            >
+              <span className={s.bandLabel}>
+                {layer.name}
+                <span className={s.bandIndex}>{layer.layer_index}</span>
+              </span>
+            </div>
+          ))}
+
+          {/* off-path shelf */}
+          <div className={s.shelf} style={{ top: offPathY, width: maxX - PAD * 2 + 36, left: PAD - 18 }}>
+            <span className={s.shelfLabel}>
+              off the request path · never in the p95 sum ·{' '}
+              {offPathLayers.map((l) => l.name).join(' · ')}
+            </span>
+          </div>
+
+          <svg className={s.links} width={maxX} height={maxY} aria-hidden="true">
+            {links.map((link) => (
+              <EdgeLink key={link.id} {...link} />
+            ))}
+          </svg>
+
+          {nodes.map((node) => {
+            const p = positions.get(node.inst.instance_id)
+            if (!p) return null
+            const id = node.inst.instance_id
+            return (
+              <div
+                key={id}
+                className={cx(s.slot, layout.dragging === id && s.dragging)}
+                style={{ left: p.x, top: p.y }}
+                onPointerDown={(e) => layout.startNodeDrag(id, e)}
+              >
+                <NodeCard
+                  node={node}
+                  selected={selectedInstanceId === id}
+                  // Suppress the click that ends a drag, so moving a card does
+                  // not also change the inspector.
+                  onSelect={onSelect ? () => !layout.moved && onSelect(id) : undefined}
+                  incidentCount={incidentCountByInstance[id] ?? 0}
+                  saturationKnee={saturationKnee}
+                />
+              </div>
+            )
+          })}
+        </div>
+      </div>
     </div>
   )
 }

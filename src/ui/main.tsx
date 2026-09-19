@@ -3,12 +3,15 @@ import { createRoot } from 'react-dom/client'
 import './styles/tokens.css'
 import './styles/reset.css'
 import { App } from './App'
+import { ErrorBoundary } from './components/templates/ErrorBoundary'
 
 const host = document.getElementById('root')
 if (!host) throw new Error('#root missing from index.html')
 
 createRoot(host).render(
   <StrictMode>
-    <App />
+    <ErrorBoundary>
+      <App />
+    </ErrorBoundary>
   </StrictMode>,
 )

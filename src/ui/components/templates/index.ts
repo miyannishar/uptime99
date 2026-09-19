@@ -9,3 +9,5 @@ export type { RunLayoutProps } from './RunLayout'
 
 export { MinigameOverlay } from './MinigameOverlay'
 export type { MinigameOverlayProps } from './MinigameOverlay'
+
+export { ErrorBoundary } from './ErrorBoundary'
