@@ -29,6 +29,7 @@ import actionsRaw from '../../../data/actions.json'
 import metricsRaw from '../../../data/metrics.json'
 import formatsRaw from '../../../data/minigames/formats.json'
 import registryRaw from '../../../data/minigames/registry.json'
+import ticketsRaw from '../../../data/tickets.json'
 
 /* -- single files ---------------------------------------------------------- */
 
@@ -39,6 +40,7 @@ export const metrics = (metricsRaw as unknown as { metrics: MetricDef[] }).metri
 export const economy = (metricsRaw as unknown as { economy: Economy }).economy
 export const formats = (formatsRaw as unknown as { formats: FormatDef[] }).formats
 export const minigames = (registryRaw as unknown as { minigames: MinigameDef[] }).minigames
+export const tickets = (ticketsRaw as unknown as { tickets: any[] }).tickets
 
 /* -- globbed directories --------------------------------------------------- */
 
@@ -166,4 +168,5 @@ export const engineCatalog: EngineCatalog = catalogFrom({
   minigameInstances,
   scenarios,
   levels,
+  tickets,
 })

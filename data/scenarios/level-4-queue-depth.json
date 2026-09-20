@@ -19,5 +19,6 @@
     { "def_id": "backup_system", "tier": 1, "region": "us-east-1a", "x": 640, "y": 260 }
   ],
   "end": { "kind": "fixed_window", "ticks": 100 },
-  "incidents": []
+  "incidents": [],
+  "ticket_ids": ["add_dlq_queue", "add_alerting", "enable_autoscale"]
 }

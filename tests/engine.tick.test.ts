@@ -65,7 +65,7 @@ describe('advance — arrivals', () => {
       actions: [...c.actions], metrics: [...c.metrics], economy: c.economy,
       incidents: [...c.incidents], formats: [...c.formats],
       minigames: [...c.minigames], minigameInstances: [...c.minigameInstances],
-      levels: [...c.levels],
+      levels: [...c.levels], tickets: [...c.tickets],
       scenarios: [{ ...realScenario, id: 'weighted-cap-test',
         incident_source: 'weighted', incidents: [],
         end: { kind: 'fixed_window', ticks: 400 } }],
@@ -174,7 +174,7 @@ describe('advance — scripted arrivals', () => {
       actions: [...c.actions], metrics: [...c.metrics], economy: c.economy,
       incidents: [...c.incidents], formats: [...c.formats],
       minigames: [...c.minigames], minigameInstances: [...c.minigameInstances],
-      levels: [...c.levels],
+      levels: [...c.levels], tickets: [...c.tickets],
       scenarios: [{ ...realScenario, id: 'az-test',
         incidents: [{ incident_id: 'az_outage', at_tick: 1 }] }],
     })

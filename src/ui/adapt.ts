@@ -338,6 +338,34 @@ export function adaptDesignSummary(
   }
 }
 
+/* ----------------------------------------------------------------- tickets --- */
+
+export interface AdaptedTicket {
+  def: any
+  record: import('@engine/types').TicketRecord
+  /** positive = time left, negative = overdue by N ticks */
+  ticksUntilDeadline: number
+  overdue: boolean
+  status: 'pending' | 'overdue' | 'completed'
+}
+
+export function adaptTickets(
+  activeTickets: readonly import('@engine/types').TicketRecord[] | undefined,
+  catalog: EngineCatalog,
+  currentTick: number,
+): AdaptedTicket[] {
+  return (activeTickets ?? []).map(record => {
+    const def = (catalog as any).ticketById?.get(record.ticket_id)
+    if (!def) return null
+    const ticksUntilDeadline = record.deadline_tick - currentTick
+    const overdue = !record.completed && ticksUntilDeadline < 0
+    const status: AdaptedTicket['status'] = record.completed
+      ? 'completed'
+      : overdue ? 'overdue' : 'pending'
+    return { def, record, ticksUntilDeadline, overdue, status }
+  }).filter(Boolean) as AdaptedTicket[]
+}
+
 /** Build the debrief summary from the engine view + final metric readings. */
 export function adaptDebriefSummary(
   view: import('@engine/summary').DebriefSummaryView,

@@ -1,0 +1,397 @@
+{
+  "tickets": [
+    {
+      "id": "scale_app_t2",
+      "name": "Scale app cluster before traffic spike",
+      "blurb": "Marketing has a campaign running in 5 minutes. App cluster at tier 1 has 300 rps headroom. The spike will bring 1,200 rps. Upgrade to tier 2 (1,500 rps) before it hits or you'll be throttling paying customers.",
+      "kind": "upgrade",
+      "severity": 2,
+      "requirement": {
+        "node_id": "app_cluster",
+        "min_tier": 2
+      },
+      "hint_actions": [
+        "upgrade_tier"
+      ],
+      "appears_at_tick": 3,
+      "deadline_ticks": 25,
+      "reputation_penalty_per_tick": 0.5,
+      "bonus_reputation": 8
+    },
+    {
+      "id": "scale_app_t3",
+      "name": "App cluster at capacity \u2014 needs tier 3",
+      "blurb": "Last month's traffic spike hit 4,000 rps. App cluster tier 2 peaks at 1,500 rps. You need tier 3 (8,000 rps) before the annual product event, which historically generates 3x normal traffic for 90 minutes.",
+      "kind": "upgrade",
+      "severity": 3,
+      "requirement": {
+        "node_id": "app_cluster",
+        "min_tier": 3
+      },
+      "hint_actions": [
+        "upgrade_tier"
+      ],
+      "appears_at_tick": 5,
+      "deadline_ticks": 30,
+      "reputation_penalty_per_tick": 0.8,
+      "bonus_reputation": 12
+    },
+    {
+      "id": "upgrade_lb_t2",
+      "name": "Load balancer becoming a bottleneck",
+      "blurb": "The load balancer is approaching its connection limit under current traffic. At current growth rates, it will saturate in 8 ticks. Tier 2 increases capacity 10x and adds health check routing.",
+      "kind": "upgrade",
+      "severity": 1,
+      "requirement": {
+        "node_id": "load_balancer",
+        "min_tier": 2
+      },
+      "hint_actions": [
+        "upgrade_tier"
+      ],
+      "appears_at_tick": 8,
+      "deadline_ticks": 35,
+      "reputation_penalty_per_tick": 0.4,
+      "bonus_reputation": 5
+    },
+    {
+      "id": "upgrade_db_t2",
+      "name": "Database query latency SLA at risk",
+      "blurb": "Database query latency is approaching the p95 SLA threshold. Tier 2 doubles query capacity and adds a read replica. The latency SLA is 200ms; you're currently at 180ms on busy days.",
+      "kind": "upgrade",
+      "severity": 2,
+      "requirement": {
+        "node_id": "postgres",
+        "min_tier": 2
+      },
+      "hint_actions": [
+        "upgrade_tier"
+      ],
+      "appears_at_tick": 10,
+      "deadline_ticks": 40,
+      "reputation_penalty_per_tick": 0.6,
+      "bonus_reputation": 8
+    },
+    {
+      "id": "upgrade_cdn_t2",
+      "name": "CDN tier 1 can't absorb launch traffic",
+      "blurb": "The CDN is serving 8,000 rps on peak days. Tier 1 capacity is 10,000 rps \u2014 you have 20% headroom. The product launch brings 50,000 rps. Without tier 2, the CDN saturates and traffic hits your origin directly.",
+      "kind": "upgrade",
+      "severity": 1,
+      "requirement": {
+        "node_id": "cdn",
+        "min_tier": 2
+      },
+      "hint_actions": [
+        "upgrade_tier"
+      ],
+      "appears_at_tick": 5,
+      "deadline_ticks": 20,
+      "reputation_penalty_per_tick": 0.4,
+      "bonus_reputation": 5
+    },
+    {
+      "id": "upgrade_redis_t2",
+      "name": "Cache hit rate falling \u2014 tier 1 at capacity",
+      "blurb": "Cache hit rate has been falling. The tier-1 Redis instance is at 90% capacity during peak hours. Tier 2 triples throughput and reduces latency under load. The customer success team is starting to notice the slowdowns.",
+      "kind": "upgrade",
+      "severity": 1,
+      "requirement": {
+        "node_id": "redis",
+        "min_tier": 2
+      },
+      "hint_actions": [
+        "upgrade_tier"
+      ],
+      "appears_at_tick": 8,
+      "deadline_ticks": 30,
+      "reputation_penalty_per_tick": 0.3,
+      "bonus_reputation": 5
+    },
+    {
+      "id": "add_db_replica",
+      "name": "Deploy replaces need a hot standby",
+      "blurb": "The team is deploying a schema migration this sprint. Engineering requires a hot standby before they merge \u2014 if the migration fails, you need to roll back in under 2 minutes. No replica means no deploy window.",
+      "kind": "capability",
+      "severity": 2,
+      "requirement": {
+        "tags_any": [
+          "has_replica"
+        ],
+        "layers": [
+          "data"
+        ]
+      },
+      "hint_actions": [
+        "add_replica"
+      ],
+      "appears_at_tick": 6,
+      "deadline_ticks": 35,
+      "reputation_penalty_per_tick": 0.6,
+      "bonus_reputation": 8
+    },
+    {
+      "id": "enable_autoscale",
+      "name": "On-call insists on autoscaling before deploy",
+      "blurb": "The deployment team won't merge the new service until autoscaling is enabled. The last deployment caused a 45-minute incident when traffic spiked 3x and the team had to manually scale. Enable autoscaling first.",
+      "kind": "capability",
+      "severity": 2,
+      "requirement": {
+        "tags_any": [
+          "autoscaling"
+        ],
+        "layers": [
+          "compute"
+        ]
+      },
+      "hint_actions": [
+        "enable_autoscaling"
+      ],
+      "appears_at_tick": 4,
+      "deadline_ticks": 30,
+      "reputation_penalty_per_tick": 0.5,
+      "bonus_reputation": 8
+    },
+    {
+      "id": "add_backup",
+      "name": "Backup before major schema migration",
+      "blurb": "Schema migration is scheduled for next deploy window. The DBA requires a verified backup before the migration runs. If the migration corrupts data, the backup is the only recovery path.",
+      "kind": "capability",
+      "severity": 3,
+      "requirement": {
+        "tags_any": [
+          "backed_up"
+        ],
+        "layers": [
+          "data"
+        ]
+      },
+      "hint_actions": [
+        "enable_backup"
+      ],
+      "appears_at_tick": 7,
+      "deadline_ticks": 30,
+      "reputation_penalty_per_tick": 0.7,
+      "bonus_reputation": 12
+    },
+    {
+      "id": "multi_az_deploy",
+      "name": "SLA contract requires multi-AZ for Tier 1 customers",
+      "blurb": "Your SLA contract with enterprise customers specifies 99.95% uptime. A single-AZ deployment cannot mathematically guarantee that. The enterprise renewals are next quarter. Migrate to multi-AZ now.",
+      "kind": "capability",
+      "severity": 2,
+      "requirement": {
+        "tags_any": [
+          "multi_az"
+        ],
+        "layers": [
+          "compute"
+        ]
+      },
+      "hint_actions": [
+        "upgrade_tier"
+      ],
+      "appears_at_tick": 15,
+      "deadline_ticks": 40,
+      "reputation_penalty_per_tick": 0.6,
+      "bonus_reputation": 8
+    },
+    {
+      "id": "dr_region_ready",
+      "name": "Disaster recovery drill scheduled",
+      "blurb": "A disaster recovery drill is scheduled. The scenario: primary region goes offline. SRE lead needs to verify that DR procedures exist before the drill. Having backup_system on the board is the prerequisite.",
+      "kind": "add_node",
+      "severity": 1,
+      "requirement": {
+        "node_id": "backup_system",
+        "min_count": 1
+      },
+      "hint_actions": [
+        "upgrade_tier"
+      ],
+      "appears_at_tick": 20,
+      "deadline_ticks": 50,
+      "reputation_penalty_per_tick": 0.4,
+      "bonus_reputation": 5
+    },
+    {
+      "id": "encrypt_db",
+      "name": "Security audit: database must be encrypted at rest",
+      "blurb": "Security audit is next week. Auditor checklist item 3.2: database must have encryption at rest enabled. A failed audit item blocks the SOC 2 certification. Engineering has three weeks to pass.",
+      "kind": "compliance",
+      "severity": 3,
+      "requirement": {
+        "tags_all": [
+          "encrypted_at_rest"
+        ],
+        "layers": [
+          "data"
+        ]
+      },
+      "hint_actions": [
+        "upgrade_tier"
+      ],
+      "appears_at_tick": 5,
+      "deadline_ticks": 40,
+      "reputation_penalty_per_tick": 0.8,
+      "bonus_reputation": 12
+    },
+    {
+      "id": "rate_limit_api",
+      "name": "DDoS protection required for PCI scope",
+      "blurb": "The API is in scope for PCI DSS compliance. PCI requirement 6.4: rate limiting must be in place on all external-facing endpoints. The QSA audit is in 35 ticks. A failed audit item means the company cannot process card payments.",
+      "kind": "compliance",
+      "severity": 2,
+      "requirement": {
+        "tags_any": [
+          "rate_limited"
+        ],
+        "layers": [
+          "ingress"
+        ]
+      },
+      "hint_actions": [
+        "upgrade_tier"
+      ],
+      "appears_at_tick": 10,
+      "deadline_ticks": 35,
+      "reputation_penalty_per_tick": 0.6,
+      "bonus_reputation": 8
+    },
+    {
+      "id": "audit_logging",
+      "name": "GDPR compliance: enable audit logging on database",
+      "blurb": "GDPR compliance requires audit logging on all databases that store personal data. Your postgres instance stores user accounts. The DPO has set a 30-day deadline. Postgres tier 4 enables audit_logged.",
+      "kind": "compliance",
+      "severity": 2,
+      "requirement": {
+        "node_id": "postgres",
+        "min_tier": 4
+      },
+      "hint_actions": [
+        "upgrade_tier"
+      ],
+      "appears_at_tick": 12,
+      "deadline_ticks": 50,
+      "reputation_penalty_per_tick": 0.5,
+      "bonus_reputation": 8
+    },
+    {
+      "id": "add_waf",
+      "name": "Security team requires WAF before external launch",
+      "blurb": "The security team has flagged the external API as a DDoS target after last month's incident. WAF is required before the public launch. Without it, the next DDoS attack hits your origin directly.",
+      "kind": "add_node",
+      "severity": 3,
+      "requirement": {
+        "node_id": "waf",
+        "min_count": 1
+      },
+      "hint_actions": [
+        "upgrade_tier"
+      ],
+      "appears_at_tick": 8,
+      "deadline_ticks": 30,
+      "reputation_penalty_per_tick": 0.7,
+      "bonus_reputation": 12
+    },
+    {
+      "id": "add_metrics",
+      "name": "On-call rotation needs metrics before next week",
+      "blurb": "The new on-call rotation starts Monday. The incoming SRE refused to take pager duty without metrics visibility. Add a metrics pipeline so the on-call can see what's happening.",
+      "kind": "add_node",
+      "severity": 1,
+      "requirement": {
+        "node_id": "metrics_pipeline",
+        "min_count": 1
+      },
+      "hint_actions": [
+        "upgrade_tier"
+      ],
+      "appears_at_tick": 5,
+      "deadline_ticks": 40,
+      "reputation_penalty_per_tick": 0.4,
+      "bonus_reputation": 5
+    },
+    {
+      "id": "add_alerting",
+      "name": "Management requires SLA alerting",
+      "blurb": "Management wants SLA tracking after the last outage went undetected for 12 minutes. The alerting node enables level-2 signals on all incidents, meaning the on-call gets paged immediately instead of hearing from customers first.",
+      "kind": "add_node",
+      "severity": 2,
+      "requirement": {
+        "node_id": "alerting",
+        "min_count": 1
+      },
+      "hint_actions": [
+        "upgrade_tier"
+      ],
+      "appears_at_tick": 8,
+      "deadline_ticks": 45,
+      "reputation_penalty_per_tick": 0.5,
+      "bonus_reputation": 8
+    },
+    {
+      "id": "add_dlq_queue",
+      "name": "Failed jobs are being silently dropped",
+      "blurb": "Failed background jobs are being silently dropped. Two customers reported missing webhook deliveries. The DLQ captures failures so they can be retried. Without it, every failed job is permanently lost.",
+      "kind": "capability",
+      "severity": 2,
+      "requirement": {
+        "tags_any": [
+          "has_dlq"
+        ],
+        "layers": [
+          "data"
+        ]
+      },
+      "hint_actions": [
+        "upgrade_tier"
+      ],
+      "appears_at_tick": 10,
+      "deadline_ticks": 35,
+      "reputation_penalty_per_tick": 0.6,
+      "bonus_reputation": 8
+    },
+    {
+      "id": "enable_rollback",
+      "name": "Canary deploys required before next feature ship",
+      "blurb": "Engineering has adopted canary deployments. The rollback capability is required before any canary can go to production. This is a team process gate, not a technical one.",
+      "kind": "capability",
+      "severity": 2,
+      "requirement": {
+        "tags_any": [
+          "canary_capable"
+        ],
+        "layers": [
+          "compute"
+        ]
+      },
+      "hint_actions": [
+        "upgrade_tier"
+      ],
+      "appears_at_tick": 6,
+      "deadline_ticks": 40,
+      "reputation_penalty_per_tick": 0.5,
+      "bonus_reputation": 8
+    },
+    {
+      "id": "cert_renewal",
+      "name": "TLS cert expires next sprint",
+      "blurb": "The TLS certificate on tier 1 has stale_cert \u2014 it expires every sprint and is renewed manually. Tier 2 switches to managed certificate rotation: auto-renewal, no more expiry risk. Upgrade tls_cert to tier 2 before the certificate window closes.",
+      "kind": "compliance",
+      "severity": 3,
+      "requirement": {
+        "node_id": "tls_cert",
+        "min_tier": 2
+      },
+      "hint_actions": [
+        "upgrade_tier",
+        "renew_cert"
+      ],
+      "appears_at_tick": 15,
+      "deadline_ticks": 25,
+      "reputation_penalty_per_tick": 0.8,
+      "bonus_reputation": 12
+    }
+  ]
+}

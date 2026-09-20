@@ -56,5 +56,6 @@
   "end": {
     "kind": "endless"
   },
-  "incidents": []
+  "incidents": [],
+  "ticket_ids": []
 }

@@ -4,6 +4,7 @@ import { shouldArrive, selectIncident } from './arrival'
 import { affectedInstanceIds, applyDamage } from './damage'
 import { ledgerEntriesFor } from './ledger'
 import { deriveMetrics } from './metrics'
+import { processTickets } from './tickets'
 import { scenarioById } from './scenario'
 import { createLogger } from './logger'
 import type { EngineCatalog } from './catalogFrom'
@@ -237,6 +238,13 @@ function oneTick(state: GameState, catalog: EngineCatalog): GameState {
     reputation: metrics.reputation.toFixed(0),
   })
 
+  // 6.5. tickets — runs on post-metrics reputation, before history is recorded
+  const postMetricsState: GameState = {
+    ...mid,
+    carried: { reputation: metrics.reputation, users: metrics.users },
+  }
+  const afterTickets = processTickets(postMetricsState, catalog)
+
   // 7. history and bookkeeping
   const history: Partial<Record<MetricId, number[]>> = {}
   for (const id of METRIC_IDS) {
@@ -246,7 +254,8 @@ function oneTick(state: GameState, catalog: EngineCatalog): GameState {
 
   const final = {
     ...mid,
-    carried: { reputation: metrics.reputation, users: metrics.users },
+    carried: { reputation: afterTickets.carried.reputation, users: metrics.users },
+    active_tickets: afterTickets.active_tickets,
     history,
     session: {
       ...mid.session,

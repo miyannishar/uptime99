@@ -39,6 +39,7 @@ describe('engine public types', () => {
       incidents: [],
       ledger: [],
       last_fired: {},
+      active_tickets: [],
       session: { peak_p95_ms: 0, incidents_fired: 0, incidents_resolved: 0, status: 'running' },
     }
     expect(s.phase satisfies PhaseId).toBe('design')

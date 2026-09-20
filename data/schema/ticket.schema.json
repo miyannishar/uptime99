@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "uptime99 ticket definitions",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["tickets"],
+  "properties": {
+    "tickets": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "name", "blurb", "kind", "severity", "requirement", "hint_actions", "appears_at_tick", "deadline_ticks", "reputation_penalty_per_tick", "bonus_reputation"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
+          "name": { "type": "string" },
+          "blurb": { "type": "string" },
+          "kind": { "enum": ["upgrade", "capability", "add_node", "compliance"] },
+          "severity": { "type": "integer", "minimum": 1, "maximum": 3 },
+          "requirement": { "type": "object", "minProperties": 1 },
+          "hint_actions": { "type": "array", "items": { "type": "string" } },
+          "appears_at_tick": { "type": "integer", "minimum": 1 },
+          "deadline_ticks": { "type": "integer", "minimum": 5 },
+          "reputation_penalty_per_tick": { "type": "number", "minimum": 0 },
+          "bonus_reputation": { "type": "number", "minimum": 0 }
+        }
+      }
+    }
+  }
+}

@@ -16,5 +16,6 @@
     { "def_id": "postgres", "tier": 1, "region": "us-east-1a", "x": 490, "y": 190 }
   ],
   "end": { "kind": "fixed_window", "ticks": 60 },
-  "incidents": []
+  "incidents": [],
+  "ticket_ids": ["upgrade_redis_t2", "add_db_replica", "add_metrics"]
 }

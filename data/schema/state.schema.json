@@ -49,6 +49,22 @@
         "incidents_resolved": { "type": "integer", "minimum": 0 },
         "status": { "enum": ["running", "complete"] }
       }
+    },
+    "active_tickets": {
+      "type": "array",
+      "default": [],
+      "items": {
+        "type": "object",
+        "required": ["ticket_id", "started_tick", "deadline_tick", "completed", "completion_tick"],
+        "additionalProperties": false,
+        "properties": {
+          "ticket_id": { "type": "string" },
+          "started_tick": { "type": "integer" },
+          "deadline_tick": { "type": "integer" },
+          "completed": { "type": "boolean" },
+          "completion_tick": { "type": ["integer", "null"] }
+        }
+      }
     }
   },
   "$defs": {

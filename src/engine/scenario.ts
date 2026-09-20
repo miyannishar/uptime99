@@ -76,6 +76,7 @@ export function loadScenario(scenarioId: string, catalog: EngineCatalog): GameSt
     incidents: [],
     ledger: [],
     last_fired: {},
+    active_tickets: [],
     session: {
       peak_p95_ms: 0, incidents_fired: 0, incidents_resolved: 0, status: 'running',
     },

@@ -39,6 +39,7 @@ export function loadEngineCatalog(): EngineCatalog {
   const scenarios = loadDirObjects('data/scenarios')
 
   const levels = loadJson<any>('data/levels.json').levels
+  const tickets = loadJson<any>('data/tickets.json').tickets
 
   return catalogFrom({
     nodes,
@@ -53,5 +54,6 @@ export function loadEngineCatalog(): EngineCatalog {
     minigameInstances,
     scenarios,
     levels,
+    tickets,
   })
 }

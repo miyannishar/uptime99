@@ -53,5 +53,8 @@
       "at_tick": 12
     }
   ],
-  "star_target": 0
+  "star_target": 0,
+  "ticket_ids": [
+    "scale_app_t2"
+  ]
 }

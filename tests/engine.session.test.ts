@@ -85,6 +85,7 @@ describe('isSessionOver', () => {
       minigames: [...c.minigames],
       minigameInstances: [...c.minigameInstances],
       levels: [...c.levels],
+      tickets: [...c.tickets],
       scenarios: [{ ...real, id: 'end-kind-probe', end: { kind } }],
     })
   }

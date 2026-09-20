@@ -17,5 +17,6 @@
     { "def_id": "backup_system", "tier": 1, "region": "us-east-1a", "x": 490, "y": 230 }
   ],
   "end": { "kind": "fixed_window", "ticks": 80 },
-  "incidents": []
+  "incidents": [],
+  "ticket_ids": ["add_backup", "encrypt_db", "dr_region_ready"]
 }

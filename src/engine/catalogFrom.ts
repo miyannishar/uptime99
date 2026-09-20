@@ -44,6 +44,7 @@ export interface EngineCatalog {
   readonly minigameInstances: readonly any[]
   readonly scenarios: readonly any[]
   readonly levels: readonly any[]
+  readonly tickets: readonly any[]
   readonly nodeById: ReadonlyMap<string, any>
   readonly layerById: ReadonlyMap<string, any>
   readonly tagById: ReadonlyMap<string, any>
@@ -52,6 +53,7 @@ export interface EngineCatalog {
   readonly incidentById: ReadonlyMap<string, any>
   readonly scenarioById: ReadonlyMap<string, any>
   readonly levelByNumber: ReadonlyMap<number, any>
+  readonly ticketById: ReadonlyMap<string, any>
 }
 
 /** Pure constructor: takes already-parsed JSON arrays, does no I/O.
@@ -70,10 +72,14 @@ export function catalogFrom(rawData: {
   minigameInstances: any[]
   scenarios: any[]
   levels: any[]
+  /** Optional: ticket definitions. Defaults to [] if omitted (e.g. browser contexts
+   *  that have not yet wired up the tickets data file). */
+  tickets?: any[]
 }): EngineCatalog {
   const {
     nodes, layers, tags, actions, metrics, economy,
     incidents, formats, minigames, minigameInstances, scenarios, levels,
+    tickets = [],
   } = rawData
 
   const index = <T extends { id: string }>(xs: T[]) =>
@@ -92,6 +98,7 @@ export function catalogFrom(rawData: {
     minigameInstances,
     scenarios,
     levels,
+    tickets,
     nodeById: index(nodes),
     layerById: index(layers),
     tagById: index(tags),
@@ -100,5 +107,6 @@ export function catalogFrom(rawData: {
     incidentById: index(incidents),
     scenarioById: index(scenarios),
     levelByNumber: new Map(levels.map((l: any) => [l.level, l])),
+    ticketById: index(tickets),
   }) as EngineCatalog
 }

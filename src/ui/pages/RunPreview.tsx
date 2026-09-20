@@ -2,12 +2,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { DepthMode, MinigameAnswer, MinigameSession, WrongOutcome } from '../types'
 import {
   BoardCanvas, CommandPalette, IncidentFeed, MetricsHeader, MinigameShell, NodeInspector,
-  TaskDock,
+  TaskDock, TicketFeed,
 } from '../components/organisms'
 import { MinigameOverlay, RunLayout } from '../components/templates'
 import { economy, engineCatalog, index, instancesForSlot, offPathLayers, requestPathLayers } from '../data/catalog'
 import { samplePaletteEntries } from '../fixtures/sampleRun'
-import { adaptActions, adaptIncidents, adaptLedger, adaptTierLadder, incidentCountByInstanceFrom } from '../adapt'
+import { adaptActions, adaptIncidents, adaptLedger, adaptTierLadder, adaptTickets, incidentCountByInstanceFrom } from '../adapt'
 import { actionsFor, tierLadder } from '@engine/actions'
 import { applyOutcome, gradeAnswer } from '@engine/grading'
 import type { UseGameStateReturn } from '../hooks/useGameState'
@@ -149,6 +149,27 @@ export function RunPreview({ depthMode, onDepthChange, game, onQuit, showTutoria
 
   // Fix D: toast notification for incident resolved
   const [toastMessage, setToastMessage] = useState<string | null>(null)
+
+  // Tab switcher state for the left feed panel
+  const [activeTab, setActiveTab] = useState<'incidents' | 'tickets'>('incidents')
+  const [selectedTicket, setSelectedTicket] = useState<string | null>(null)
+
+  // Ticket data
+  const tickets = useMemo(
+    () => adaptTickets(state.active_tickets, engineCatalog, tick),
+    [state.active_tickets, tick],
+  )
+  const pendingTicketCount = tickets.filter(t => t.status !== 'completed').length
+
+  // Auto-switch to tickets tab when a new ticket activates
+  const prevTicketCountRef = useRef(0)
+  useEffect(() => {
+    if (pendingTicketCount > prevTicketCountRef.current) {
+      setActiveTab('tickets')
+      sfx.incidentArrived()
+    }
+    prevTicketCountRef.current = pendingTicketCount
+  }, [pendingTicketCount])
 
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [selectedIncident, setSelectedIncident] = useState<string | null>(
@@ -590,42 +611,100 @@ export function RunPreview({ depthMode, onDepthChange, game, onQuit, showTutoria
         )
       }
       feed={
-        <>
-        {/* Multi-incident triage banner */}
-        {incidents.length >= 2 && (
-          <div style={{
-            padding: '6px 12px',
-            background: 'color-mix(in srgb, var(--bad) 15%, var(--bg-1))',
-            borderBottom: '1px solid color-mix(in srgb, var(--bad) 40%, transparent)',
-            fontSize: '12px', fontWeight: 600,
-            display: 'flex', alignItems: 'center', gap: 8,
-            color: 'var(--bad)',
-          }}>
-            <span>⚡ {incidents.length} incidents</span>
-            <span style={{ color: 'var(--txt-dim)', fontWeight: 400 }}>·</span>
-            <span>–{(incidents.reduce((s, i) => s + (i.def as any).severity * 1.5, 0)).toFixed(1)} rep/tick</span>
-            <span style={{ color: 'var(--txt-dim)', fontWeight: 400 }}>·</span>
-            <span style={{ color: 'var(--txt-faint)', fontWeight: 400, fontSize: 11 }}>
-              fix severity {Math.max(...incidents.map(i => (i.def as any).severity))} first
-            </span>
+        <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+          {/* Tab strip */}
+          <div style={{ display: 'flex', borderBottom: '1px solid var(--line)', flexShrink: 0 }}>
+            {(['incidents', 'tickets'] as const).map(tab => (
+              <button
+                key={tab}
+                type="button"
+                onClick={() => setActiveTab(tab)}
+                style={{
+                  flex: 1,
+                  padding: '6px 8px',
+                  fontSize: '11px',
+                  letterSpacing: '0.08em',
+                  textTransform: 'uppercase',
+                  fontWeight: activeTab === tab ? 600 : 400,
+                  color: activeTab === tab ? 'var(--acc)' : 'var(--txt-faint)',
+                  background: activeTab === tab ? 'var(--acc-bg)' : 'transparent',
+                  border: 'none',
+                  borderBottom: activeTab === tab ? '2px solid var(--acc)' : '2px solid transparent',
+                  cursor: 'pointer',
+                }}
+              >
+                {tab === 'incidents' ? 'Incidents' : 'Tickets'}
+                {tab === 'incidents' && incidents.length > 0 && (
+                  <span style={{ marginLeft: 4, color: 'var(--bad)' }}>{incidents.length}</span>
+                )}
+                {tab === 'tickets' && pendingTicketCount > 0 && (
+                  <span style={{
+                    marginLeft: 4,
+                    color: tickets.some(t => t.overdue) ? 'var(--bad)' : 'var(--warn)',
+                  }}>{pendingTicketCount}</span>
+                )}
+              </button>
+            ))}
           </div>
-        )}
-        <IncidentFeed
-          incidents={incidents}
-          selectedKey={selectedIncident}
-          onSelect={(key) => {
-            setSelectedIncident(key === selectedIncident ? null : key)
-            // Guided: player clicked the incident → advance to "click restart" step
-            if (tutorialStep === 10 && key !== selectedIncident) setTutorialStep(11)
-          }}
-          tickSeconds={economy.tick_seconds}
-          onPlayAction={(instanceId, actionId) => {
-            // Guided: player clicked a resolve action from the feed → advance
-            if (tutorialStep === 11) setTutorialStep(12)  // minigame is now open
-            openMinigame(instanceId, actionId)
-          }}
-        />
-        </>
+          {/* Content */}
+          <div style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
+            {activeTab === 'incidents' ? (
+              <>
+                {/* Multi-incident triage banner */}
+                {incidents.length >= 2 && (
+                  <div style={{
+                    padding: '6px 12px',
+                    background: 'color-mix(in srgb, var(--bad) 15%, var(--bg-1))',
+                    borderBottom: '1px solid color-mix(in srgb, var(--bad) 40%, transparent)',
+                    fontSize: '12px', fontWeight: 600,
+                    display: 'flex', alignItems: 'center', gap: 8,
+                    color: 'var(--bad)',
+                  }}>
+                    <span>⚡ {incidents.length} incidents</span>
+                    <span style={{ color: 'var(--txt-dim)', fontWeight: 400 }}>·</span>
+                    <span>–{(incidents.reduce((s, i) => s + (i.def as any).severity * 1.5, 0)).toFixed(1)} rep/tick</span>
+                    <span style={{ color: 'var(--txt-dim)', fontWeight: 400 }}>·</span>
+                    <span style={{ color: 'var(--txt-faint)', fontWeight: 400, fontSize: 11 }}>
+                      fix severity {Math.max(...incidents.map(i => (i.def as any).severity))} first
+                    </span>
+                  </div>
+                )}
+                <IncidentFeed
+                  incidents={incidents}
+                  selectedKey={selectedIncident}
+                  onSelect={(key) => {
+                    setSelectedIncident(key === selectedIncident ? null : key)
+                    // Guided: player clicked the incident → advance to "click restart" step
+                    if (tutorialStep === 10 && key !== selectedIncident) setTutorialStep(11)
+                  }}
+                  tickSeconds={economy.tick_seconds}
+                  onPlayAction={(instanceId, actionId) => {
+                    // Guided: player clicked a resolve action from the feed → advance
+                    if (tutorialStep === 11) setTutorialStep(12)  // minigame is now open
+                    openMinigame(instanceId, actionId)
+                  }}
+                />
+              </>
+            ) : (
+              <TicketFeed
+                tickets={tickets}
+                selectedKey={selectedTicket}
+                onSelect={(id) => setSelectedTicket(id === selectedTicket ? null : id)}
+                tickSeconds={economy.tick_seconds}
+                board={board}
+                onHintAction={(ticketId, _actionId) => {
+                  const ticket = tickets.find(t => t.def.id === ticketId)
+                  if (!ticket) return
+                  const req = ticket.def.requirement
+                  if (req?.node_id) {
+                    const inst = board.find(n => n.def.id === req.node_id)
+                    if (inst) setSelectedId(inst.inst.instance_id)
+                  }
+                }}
+              />
+            )}
+          </div>
+        </div>
       }
       dock={
         <TaskDock

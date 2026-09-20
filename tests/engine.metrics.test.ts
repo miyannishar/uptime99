@@ -18,7 +18,7 @@ const state = (instances: NodeInstance[], over: Partial<GameState> = {}): GameSt
   save_version: 1, scenario_id: 'slice-oom-kill', phase: 'run', tick: 0, budget: 800,
   rng_seed: null,
   carried: { reputation: 100, users: 50000 }, history: {},
-  instances, incidents: [], ledger: [], last_fired: {},
+  instances, incidents: [], ledger: [], last_fired: {}, active_tickets: [],
   session: { peak_p95_ms: 0, incidents_fired: 0, incidents_resolved: 0, status: 'running' },
   ...over,
 })

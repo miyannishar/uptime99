@@ -17,6 +17,39 @@ export type Status = 'ok' | 'warn' | 'bad' | 'unknown'
 export type ActionAvailability =
   | 'ready' | 'cooldown' | 'unaffordable' | 'provisioning' | 'constraint'
 
+/* -------------------------------------------------------------- tickets --- */
+
+export interface TicketRequirement {
+  node_id?: string
+  min_tier?: number
+  min_count?: number
+  layers?: string[]
+  tags_all?: string[]
+  tags_any?: string[]
+}
+
+export interface TicketDef {
+  readonly id: string
+  readonly name: string
+  readonly blurb: string
+  readonly kind: 'upgrade' | 'capability' | 'add_node' | 'compliance'
+  readonly severity: number
+  readonly requirement: TicketRequirement
+  readonly hint_actions: readonly string[]
+  readonly appears_at_tick: number
+  readonly deadline_ticks: number
+  readonly reputation_penalty_per_tick: number
+  readonly bonus_reputation: number
+}
+
+export interface TicketRecord {
+  readonly ticket_id: string
+  readonly started_tick: number
+  readonly deadline_tick: number
+  readonly completed: boolean
+  readonly completion_tick: number | null
+}
+
 /* ------------------------------------------------------------ save state --- */
 
 export interface NodeInstance {
@@ -89,6 +122,7 @@ export interface GameState {
       cannot be derived from `incidents` because a resolved incident leaves no
       trace there. */
   readonly last_fired: Readonly<Record<string, number>>
+  readonly active_tickets: readonly TicketRecord[]
 }
 
 export const HISTORY_WINDOW = 60

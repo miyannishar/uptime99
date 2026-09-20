@@ -45,3 +45,6 @@ export type { ScenarioSelectProps } from './ScenarioSelect'
 
 export { TaskDock } from './TaskDock'
 export type { TaskDockProps, DockProvisioning, DockCooldown } from './TaskDock'
+
+export { TicketFeed } from './TicketFeed'
+export type { TicketFeedProps } from './TicketFeed'

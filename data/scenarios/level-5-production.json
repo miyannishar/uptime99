@@ -20,5 +20,6 @@
     { "def_id": "metrics_pipeline", "tier": 1, "region": "us-east-1a", "x": 190, "y": 280 }
   ],
   "end": { "kind": "fixed_window", "ticks": 120 },
-  "incidents": []
+  "incidents": [],
+  "ticket_ids": ["multi_az_deploy", "audit_logging", "add_waf", "cert_renewal"]
 }
