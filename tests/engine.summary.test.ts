@@ -85,19 +85,19 @@ describe('debriefSummary', () => {
     expect(summary.scenario_name).toBe('First Incident')
   })
 
-  it('reports cleared = false when the session ends with open incidents', () => {
-    // The golden run leaves oom_kill unresolved
+  it('reports cleared = false when reputation reaches zero', () => {
+    // The golden run ends with reputation=0 because oom_kill runs unresolved
     const s = runSession(startRun(fresh(), c), c)
     const summary = debriefSummary(s, c)
-    expect(s.incidents.length).toBeGreaterThan(0)
+    expect(s.carried.reputation).toBe(0)
     expect(summary.cleared).toBe(false)
   })
 
-  it('reports cleared = true when complete with no open incidents', () => {
-    // Manually simulate: complete session + empty incidents
+  it('reports cleared = true when complete with reputation above zero', () => {
+    // cleared = survived the window with reputation > 0 (incidents don't need to be resolved)
     const ran = runSession(startRun(fresh(), c), c)
-    const noIncidents = { ...ran, incidents: [] }
-    const summary = debriefSummary(noIncidents, c)
+    const highRep = { ...ran, carried: { ...ran.carried, reputation: 50 } }
+    const summary = debriefSummary(highRep, c)
     expect(summary.cleared).toBe(true)
   })
 

@@ -40,6 +40,7 @@ export function useGameState(scenarioId: string): UseGameStateReturn {
   )
   const [speed, setSpeed] = useState<Speed>(1)
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const repZeroTicksRef = useRef(0)
 
   // Derived views - recomputed when state changes
   const boardViews = boardOf(state, engineCatalog)
@@ -82,7 +83,18 @@ export function useGameState(scenarioId: string): UseGameStateReturn {
       setState((s) => {
         if (s.phase !== 'run') return s
         if (isSessionOver(s, engineCatalog)) return endSession(s)
-        return advance(s, 1, engineCatalog)
+        const next = advance(s, 1, engineCatalog)
+        // Check for sustained reputation failure (10 ticks at 0)
+        if (next.carried.reputation <= 0) {
+          repZeroTicksRef.current = (repZeroTicksRef.current ?? 0) + 1
+          if (repZeroTicksRef.current >= 10) {
+            repZeroTicksRef.current = 0
+            return endSession(next)
+          }
+        } else {
+          repZeroTicksRef.current = 0
+        }
+        return next
       })
     }, ms)
     return () => {

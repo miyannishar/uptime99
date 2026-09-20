@@ -53,6 +53,7 @@ export function designSummary(state: GameState, catalog: EngineCatalog): DesignS
 export interface DebriefSummaryView {
   readonly scenario_name: string
   /** state.session.status === 'complete' && no open incidents */
+  /** Survived the session window with reputation above zero. */
   readonly cleared: boolean
   readonly ticks: number
   readonly incidents_fired: number
@@ -67,8 +68,11 @@ export function debriefSummary(state: GameState, catalog: EngineCatalog): Debrie
   const scenario = catalog.scenarioById.get(state.scenario_id)
   const scenarioName: string = scenario?.name ?? state.scenario_id
 
+  // Cleared = survived the session with reputation above zero.
+  // Incidents don't need to be resolved — the session ends when the clock runs out
+  // OR when reputation stays at 0 for 10 ticks (the loss condition).
   const cleared =
-    state.session.status === 'complete' && state.incidents.length === 0
+    state.session.status === 'complete' && state.carried.reputation > 0
 
   return {
     scenario_name: scenarioName,

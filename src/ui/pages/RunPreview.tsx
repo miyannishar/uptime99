@@ -52,6 +52,12 @@ export function RunPreview({ depthMode, onDepthChange, game, onQuit, showTutoria
     if (ready.length === 0) return
     // Play resolution sound before applying (so it fires once, not in the updater)
     sfx.resolved()
+    // Fix D: show toast if any resolved action had an incidentKey (i.e. resolved an incident)
+    const resolvedIncident = ready.some(p => p.incidentKey !== null)
+    if (resolvedIncident) {
+      setToastMessage('✓ Incident cleared — reputation recovering')
+      setTimeout(() => setToastMessage(null), 3000)
+    }
     // Guided: first action resolved → show the "level starts now" step
     if (tutorialStep === 14) setTutorialStep(15)
     // Apply all ready outcomes in one setState to avoid re-render races
@@ -129,6 +135,20 @@ export function RunPreview({ depthMode, onDepthChange, game, onQuit, showTutoria
       setSpeed(1)
     }
   }, [tutorialStep, setSpeed])
+
+  // Fix B: track when reputation first hit 0 for urgency countdown
+  const repZeroTickRef = useRef<number | null>(null)
+  if (state.carried.reputation <= 0) {
+    if (repZeroTickRef.current === null) repZeroTickRef.current = tick
+  } else {
+    repZeroTickRef.current = null
+  }
+  const repZeroRemaining = repZeroTickRef.current !== null
+    ? Math.max(0, Math.min(10, 10 - (tick - repZeroTickRef.current)))
+    : null
+
+  // Fix D: toast notification for incident resolved
+  const [toastMessage, setToastMessage] = useState<string | null>(null)
 
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [selectedIncident, setSelectedIncident] = useState<string | null>(
@@ -503,6 +523,28 @@ export function RunPreview({ depthMode, onDepthChange, game, onQuit, showTutoria
               ✕ quit
             </button>
           )}
+          {/* Fix B: urgency countdown when reputation is 0 */}
+          {repZeroRemaining !== null && (
+            <div style={{
+              position: 'absolute', top: 0, left: 0, right: 0, zIndex: 800,
+              background: 'rgba(220,38,38,0.92)', color: '#fff',
+              fontWeight: 700, fontSize: 13, textAlign: 'center',
+              padding: '5px 0',
+              animation: 'pulse 1s ease-in-out infinite',
+            }}>
+              REPUTATION AT ZERO — {repZeroRemaining} ticks until failure
+            </div>
+          )}
+          {/* Fix E: budget critical warning */}
+          {state.budget < 200 && state.budget > 0 && (
+            <div style={{
+              position: 'absolute', bottom: -22, left: '50%', transform: 'translateX(-50%)',
+              fontSize: 11, color: '#f59e0b', fontWeight: 600, pointerEvents: 'none',
+              whiteSpace: 'nowrap',
+            }}>
+              ⚠ Budget critical: {state.budget} left
+            </div>
+          )}
         </>
       }
       board={
@@ -591,6 +633,19 @@ export function RunPreview({ depthMode, onDepthChange, game, onQuit, showTutoria
             entries={samplePaletteEntries}
             onRun={openMinigame}
           />
+          {/* Fix D: incident cleared toast */}
+          {toastMessage && (
+            <div style={{
+              position: 'fixed', bottom: 80, right: 20, zIndex: 900,
+              background: 'rgba(22, 163, 74, 0.95)', color: '#fff',
+              fontWeight: 600, fontSize: 13, borderRadius: 8,
+              padding: '10px 16px',
+              boxShadow: '0 4px 16px rgba(0,0,0,0.4)',
+              animation: 'slideInRight 0.25s ease-out',
+            }}>
+              {toastMessage}
+            </div>
+          )}
         </>
       }
     />

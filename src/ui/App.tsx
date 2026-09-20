@@ -11,8 +11,6 @@ import { useGameState } from './hooks/useGameState'
 import { sfx } from './hooks/useAudio'
 import s from './App.module.css'
 
-const ALL_SCENARIOS = adaptScenarios(engineCatalog, {}, new Set(engineCatalog.scenarios.map((sc: any) => sc.id)))
-
 /**
  * The game: starts directly in Level 1. A scenario picker lives in the nav.
  * No separate "select a scenario" screen - jump straight in.
@@ -22,6 +20,10 @@ export function App() {
   const [scenarioId, setScenarioId] = useState('slice-oom-kill')
   const [_completedIds, setCompletedIds] = useState<Set<string>>(new Set())
   const [gameKey, setGameKey] = useState(0)   // bump to hard-reset the game
+  // Fix C: earned stars per scenario, persisted to localStorage
+  const [earnedStars, setEarnedStars] = useState<Record<string, number>>(() => {
+    try { return JSON.parse(localStorage.getItem('uptime99:stars') ?? '{}') } catch { return {} }
+  })
 
   const handleComplete = (id: string) => {
     setCompletedIds(prev => { const n = new Set(prev); n.add(id); return n })
@@ -31,6 +33,18 @@ export function App() {
     setScenarioId(id)
     setGameKey(k => k + 1)   // force a fresh useGameState
   }
+
+  const handleEarnedStars = (scenId: string, stars: number) => {
+    setEarnedStars(prev => {
+      const current = prev[scenId] ?? 0
+      if (stars <= current) return prev
+      const next = { ...prev, [scenId]: stars }
+      try { localStorage.setItem('uptime99:stars', JSON.stringify(next)) } catch { /* ignore */ }
+      return next
+    })
+  }
+
+  const scenarios = adaptScenarios(engineCatalog, earnedStars, new Set(engineCatalog.scenarios.map((sc: any) => sc.id)))
 
   return (
     <div className={s.root}>
@@ -44,7 +58,7 @@ export function App() {
           onChange={e => switchScenario(e.target.value)}
           title="Switch scenario"
         >
-          {ALL_SCENARIOS.map(sc => (
+          {scenarios.map(sc => (
             <option key={sc.id} value={sc.id}>
               {sc.locked ? '🔒 ' : ''}{sc.name}
             </option>
@@ -64,6 +78,7 @@ export function App() {
           onComplete={handleComplete}
           onRetry={() => setGameKey(k => k + 1)}
           onSwitchScenario={switchScenario}
+          onEarnedStars={handleEarnedStars}
         />
       </div>
     </div>
@@ -77,9 +92,10 @@ interface GameAppProps {
   onComplete: (id: string) => void
   onRetry: () => void
   onSwitchScenario: (id: string) => void
+  onEarnedStars: (scenarioId: string, stars: number) => void
 }
 
-function GameApp({ scenarioId, depthMode, setDepthMode, onComplete, onRetry, onSwitchScenario }: GameAppProps) {
+function GameApp({ scenarioId, depthMode, setDepthMode, onComplete, onRetry, onSwitchScenario, onEarnedStars }: GameAppProps) {
   const game = useGameState(scenarioId)
   const { state, phase, metrics } = game
 
@@ -101,15 +117,27 @@ function GameApp({ scenarioId, depthMode, setDepthMode, onComplete, onRetry, onS
       id: m.def.id, value: m.value, previous: m.previous,
       series: m.series, status: m.status,
     } as any)))
+    // Fix C: compute stars from debrief summary
+    const stars = summary.cleared
+      ? summary.final_reputation >= 70 ? 3
+        : summary.final_reputation >= 40 ? 2
+        : 1
+      : 0
+    const starDisplay = '★'.repeat(stars) + '☆'.repeat(3 - stars)
     return (
       <div className={s.debriefWrap}>
+        <div style={{ textAlign: 'center', fontSize: 32, padding: '16px 0 0', letterSpacing: 4, color: stars > 0 ? '#fbbf24' : 'var(--txt-faint)' }}>
+          {starDisplay}
+        </div>
         <DebriefPanel
           summary={adapted as any}
           onRetry={() => { onRetry() }}
           onContinue={() => {
             onComplete(scenarioId)
+            onEarnedStars(scenarioId, stars)
             // Advance to the next scenario if one is unlocked
-            const next = ALL_SCENARIOS.find(sc =>
+            const allSc = adaptScenarios(engineCatalog, {}, new Set(engineCatalog.scenarios.map((sc: any) => sc.id)))
+            const next = allSc.find(sc =>
               (sc as any).unlocked_by?.includes(scenarioId) ||
               engineCatalog.scenarios.find((s: any) => s.id === sc.id && s.unlocked_by?.includes(scenarioId))
             )
