@@ -10,7 +10,7 @@ import s from './MinigamePreview.module.css'
  * from data/minigames/instances/.
  *
  * Submitting cycles the attempt counter so the wrong-outcome history and the
- * post-third-failure reveal are both reachable — that loop is the whole teaching
+ * post-third-failure reveal are both reachable - that loop is the whole teaching
  * mechanism and it is the part that most needs to be looked at rather than
  * described.
  */

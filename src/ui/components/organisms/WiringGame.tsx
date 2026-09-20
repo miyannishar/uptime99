@@ -13,10 +13,10 @@ export interface WiringGameProps {
 }
 
 /**
- * Format D — `wiring`.
+ * Format D - `wiring`.
  *
  * Dependency and failure-domain errors are a class of problem a form cannot
- * represent — "two replicas in one availability zone" looks fine as a number and
+ * represent - "two replicas in one availability zone" looks fine as a number and
  * wrong as a picture. So the player places the new component into a zone and
  * chooses what it connects to, and the zones are drawn as the containers they
  * actually are.

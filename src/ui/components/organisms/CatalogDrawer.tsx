@@ -25,7 +25,7 @@ export interface CatalogDrawerProps {
  * Two constraints from the node definitions are enforced visually rather than
  * being left to fail later: `singleton`/`max_instances` greys out a node that is
  * already placed as many times as it may be, and the tier row shows what each
- * rung costs before the player commits. The tier's weakness tags are shown too —
+ * rung costs before the player commits. The tier's weakness tags are shown too -
  * buying tier 1 postgres means buying `spof`, and the player should see that at
  * purchase time rather than discover it when an incident exploits it.
  */

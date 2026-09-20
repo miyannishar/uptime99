@@ -1,11 +1,11 @@
 .root {
   display: flex;
   flex-direction: column;
-  height: 100vh;       /* fixed viewport — no document scroll */
+  height: 100vh;       /* fixed viewport - no document scroll */
   overflow: hidden;
 }
 
-/* .full is no longer needed — root is always 100vh */
+/* .full is no longer needed - root is always 100vh */
 
 .nav {
   flex: 0 0 auto;
@@ -56,6 +56,28 @@
 }
 
 .spacer { flex: 1 1 auto; }
+
+.levelPicker {
+  padding: 3px 8px;
+  font-size: var(--fs-2);
+  color: var(--txt);
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r-1);
+  cursor: pointer;
+  min-width: 160px;
+}
+.levelPicker:hover { border-color: var(--line-strong); }
+.levelPicker:focus { outline: 2px solid var(--acc); }
+
+.debriefWrap {
+  padding: var(--sp-7) var(--sp-6);
+  max-width: 900px;
+  margin: 0 auto;
+  width: 100%;
+  overflow-y: auto;
+  height: 100%;
+}
 
 .hint {
   font-size: var(--fs-0);

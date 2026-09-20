@@ -11,7 +11,7 @@ export interface TagListProps {
   onTagClick?: (tag: TagDef) => void
 }
 
-/** Weaknesses first — they are what the player has to act on. */
+/** Weaknesses first - they are what the player has to act on. */
 const KIND_ORDER: Record<TagKind, number> = {
   weakness: 0,
   posture: 1,

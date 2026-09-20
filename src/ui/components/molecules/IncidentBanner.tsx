@@ -5,7 +5,7 @@ import s from './IncidentBanner.module.css'
 
 export interface IncidentBannerProps {
   incident: ActiveIncident
-  /** `economy.tick_seconds` — converts ticks into a readable clock. */
+  /** `economy.tick_seconds` - converts ticks into a readable clock. */
   tickSeconds?: number
   selected?: boolean
   onSelect?: (key: string) => void
@@ -16,7 +16,7 @@ export interface IncidentBannerProps {
  *
  * Three things here come straight out of the data and change how the player
  * should respond: `scope` (is this one node, a whole group, or a design gap with
- * no node at all), whether `resolved_by` is empty (survive-only — nothing you do
+ * no node at all), whether `resolved_by` is empty (survive-only - nothing you do
  * will end it), and how close `escalate_after_ticks` is to firing.
  */
 export function IncidentBanner({

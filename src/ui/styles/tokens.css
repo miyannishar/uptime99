@@ -127,7 +127,7 @@
   --transition: 0.18s ease;
 
   /* The inspector's stat grid. FLAT widens it because the rack's 112px are
-     free — that is how FLAT becomes a denser screen rather than a poorer one,
+     free - that is how FLAT becomes a denser screen rather than a poorer one,
      and it happens here rather than as a branch inside NodeInspector. */
   --insp-stat-cols: repeat(2, minmax(0, 1fr));
 }

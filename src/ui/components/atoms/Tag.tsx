@@ -3,14 +3,14 @@ import { cx } from '../../utils/format'
 import s from './Tag.module.css'
 
 export interface TagProps {
-  /** Pass the full TagDef where you have it — the kind drives the colour. */
+  /** Pass the full TagDef where you have it - the kind drives the colour. */
   tag?: TagDef
   /** Fallback for rendering a bare id (e.g. an unresolved `tags_add` entry). */
   id?: string
   kind?: TagKind
   /** Marks the tag as applied by an incident rather than by the definition. */
   runtime?: boolean
-  /** Strikethrough — used to preview `on_success.tags_remove`. */
+  /** Strikethrough - used to preview `on_success.tags_remove`. */
   removed?: boolean
   size?: 'xs' | 'sm'
   onClick?: () => void
@@ -30,7 +30,7 @@ export function Tag({ tag, id, kind, runtime, removed, size = 'xs', onClick }: T
   return (
     <Element
       className={cx(s.root, s[resolvedKind], size === 'sm' && s.sm, removed && s.removed)}
-      title={tag ? `${tag.label} — ${tag.description}` : text}
+      title={tag ? `${tag.label} - ${tag.description}` : text}
       onClick={onClick}
       type={onClick ? 'button' : undefined}
     >

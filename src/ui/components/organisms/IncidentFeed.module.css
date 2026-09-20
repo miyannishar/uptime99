@@ -5,7 +5,7 @@
   overflow-y: auto;
   padding: var(--sp-5);
   background: var(--bg-1);
-  /* Left column of the shell — see templates/AppShell. */
+  /* Left column of the shell - see templates/AppShell. */
   border-right: 1px solid var(--line);
 }
 
@@ -93,3 +93,10 @@
   opacity: 0.4;
   cursor: default;
 }
+
+/* ---- new incident slide in ---- */
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.item { animation: slideIn 0.25s ease-out; }

@@ -8,7 +8,7 @@ export interface IncidentFeedProps {
   selectedKey?: string | null
   onSelect?: (key: string) => void
   tickSeconds?: number
-  /** Sum of `severity` across all active incidents — feeds the reputation formula. */
+  /** Sum of `severity` across all active incidents - feeds the reputation formula. */
   incidentSeverity?: number
   /** Called when the player clicks a resolving action button. */
   onPlayAction?: (instanceId: string, actionId: string) => void
@@ -19,7 +19,7 @@ export interface IncidentFeedProps {
  *
  * `incident_severity` is shown here because it is not stored anywhere: the
  * reputation formula computes it as the sum of `severity` across active
- * incidents each tick. Surfacing it makes the reputation drop legible — a player
+ * incidents each tick. Surfacing it makes the reputation drop legible - a player
  * watching reputation fall with no explanation learns nothing.
  *
  * The selected incident expands to show all four signal levels, locked ones
@@ -101,7 +101,7 @@ export function IncidentFeed({
                   ) : (
                     <p className={s.survive}>
                       Nothing resolves this. It runs its course
-                      {incident.ticksRemaining !== null && ` — ${incident.ticksRemaining} ticks left`}.
+                      {incident.ticksRemaining !== null && ` - ${incident.ticksRemaining} ticks left`}.
                     </p>
                   )}
                 </div>

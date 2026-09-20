@@ -11,7 +11,7 @@ export interface EvidenceGameProps {
   distractors?: readonly Distractor[]
   choice: string | null
   onChange: (choice: string) => void
-  /** Stable shuffle seed — pass the instance id. */
+  /** Stable shuffle seed - pass the instance id. */
   seed: string
   disabled?: boolean
   /** After three failures, marks the right one and shows each `why_wrong`. */
@@ -38,11 +38,11 @@ function shuffle<T>(items: readonly T[], seed: string): T[] {
 }
 
 /**
- * Format E — `evidence`.
+ * Format E - `evidence`.
  *
  * Slow queries, bad deploys and crash logs require reading evidence and ruling
  * out distractors: interpretation, not configuration. The distractors are the
- * whole difficulty — `distractor_plausibility: high` means they are topically
+ * whole difficulty - `distractor_plausibility: high` means they are topically
  * related errors that need real domain knowledge to reject, and each carries its
  * own `why_wrong` so a wrong pick teaches why it was tempting.
  *

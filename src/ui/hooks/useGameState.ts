@@ -41,7 +41,7 @@ export function useGameState(scenarioId: string): UseGameStateReturn {
   const [speed, setSpeed] = useState<Speed>(1)
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
-  // Derived views — recomputed when state changes
+  // Derived views - recomputed when state changes
   const boardViews = boardOf(state, engineCatalog)
   const metricViews = metricsOf(state, engineCatalog)
 

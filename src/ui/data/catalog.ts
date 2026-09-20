@@ -1,5 +1,5 @@
 /* ============================================================================
-   Catalog loader — the real data/ directory, not fixtures.
+   Catalog loader - the real data/ directory, not fixtures.
    ----------------------------------------------------------------------------
    Every definition the UI renders comes from the same JSON files that
    `npm run validate` and `npm test` check. There is deliberately no fixture

@@ -11,7 +11,7 @@ import { catalog } from './data/catalog'
  *
  * These exist because the first build of this UI typechecked, bundled and served
  * a completely black page: BoardCanvas rebuilt a Map every render, which changed
- * a useLayoutEffect dependency, which called setState, which re-rendered — an
+ * a useLayoutEffect dependency, which called setState, which re-rendered - an
  * infinite loop React kills by unmounting the tree. Nothing in `tsc` or `vite
  * build` can see that. A mount is the cheapest thing that can.
  *
@@ -26,28 +26,28 @@ afterEach(cleanup)
 
 describe('data reaches the UI', () => {
   it('loads the real catalog, not fixtures', () => {
-    expect(catalog.nodes).toHaveLength(26)
-    expect(catalog.tags).toHaveLength(47)
+    expect(catalog.nodes).toHaveLength(27)
+    expect(catalog.tags).toHaveLength(48)
     expect(catalog.actions).toHaveLength(33)
-    expect(catalog.incidents).toHaveLength(49)
-    expect(catalog.instances).toHaveLength(29)
-    expect(catalog.nodes.reduce((n, d) => n + d.tiers.length, 0)).toBe(80)
+    expect(catalog.incidents).toHaveLength(50)
+    expect(catalog.instances).toHaveLength(32)
+    expect(catalog.nodes.reduce((n, d) => n + d.tiers.length, 0)).toBe(83)
   })
 })
 
 describe('every view mounts without throwing', () => {
   const noop = () => {}
 
-  it('App — scenario select on first load', () => {
+  it('App - scenario select on first load', () => {
     const spy = vi.spyOn(console, 'error').mockImplementation(noop)
     render(<App />)
-    // Scenario select screen should appear — no game selected yet
+    // Scenario select screen should appear - no game selected yet
     const shouted = spy.mock.calls.flat().join(' ')
     expect(shouted).not.toMatch(/Maximum update depth/i)
     spy.mockRestore()
   })
 
-  it('App — game view after picking a scenario', () => {
+  it('App - game view after picking a scenario', () => {
     render(<App />)
     // There is one scenario card: slice-oom-kill
     // Click it to enter the design phase
@@ -91,7 +91,7 @@ describe('every view mounts without throwing', () => {
 
   it('MinigamePreview mounts a real instance for the first format', () => {
     render(<MinigamePreview />)
-    expect(screen.getByText(/attempt 1/i)).toBeTruthy()
+    expect(screen.getByText(/try 1/i)).toBeTruthy()
   })
 
   it('OutcomePreview mounts the scenario select and debrief', () => {

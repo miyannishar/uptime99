@@ -17,16 +17,16 @@ describe('the shipped incident data', () => {
     expect(runIntegrityChecks()).toEqual([])
   })
 
-  it('loads exactly 49 incidents with unique ids', () => {
-    expect(incidents).toHaveLength(49)
-    expect(new Set(incidents.map((i) => i.id)).size).toBe(49)
+  it('loads exactly 50 incidents with unique ids', () => {
+    expect(incidents).toHaveLength(50)
+    expect(new Set(incidents.map((i) => i.id)).size).toBe(50)
   })
 
   it('splits them across the seven families as specified', () => {
     const byFamily: Record<string, number> = {}
     for (const i of incidents) byFamily[i.family] = (byFamily[i.family] ?? 0) + 1
     expect(byFamily).toEqual({
-      infrastructure: 10, capacity: 8, data: 8, queue: 6,
+      infrastructure: 10, capacity: 8, data: 9, queue: 6,
       security: 8, delivery: 4, business: 5,
     })
   })

@@ -14,13 +14,13 @@ export interface SequenceGameProps {
 }
 
 /**
- * Format A — `ordered_sequence`.
+ * Format A - `ordered_sequence`.
  *
  * Order is operationally consequential: a DNS cutover, a restore and a
  * certificate chain each have exactly one right sequence, and getting it wrong
  * produces a real failure mode rather than a style complaint.
  *
- * Dragging is offered but never required — every row also has ↑/↓ buttons and
+ * Dragging is offered but never required - every row also has ↑/↓ buttons and
  * full keyboard operation, because a drag-only puzzle is unplayable for some
  * people and this one is load-bearing for the lesson.
  */

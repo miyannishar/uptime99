@@ -5,7 +5,7 @@ import { matchActions } from './matchActions'
 
 const INCIDENT_DIR = 'data/incidents'
 const EXPECTED_FAMILIES: Record<string, number> = {
-  infrastructure: 10, capacity: 8, data: 8, queue: 6, security: 8, delivery: 4, business: 5,
+  infrastructure: 10, capacity: 8, data: 9, queue: 6, security: 8, delivery: 4, business: 5,
 }
 
 export type Incident = any
@@ -18,7 +18,7 @@ export function loadIncidents(): Incident[] {
 
 export function checkIncidentCount(incidents: Incident[]): string[] {
   const problems: string[] = []
-  if (incidents.length !== 49) problems.push(`expected 49 incidents, found ${incidents.length}`)
+  if (incidents.length !== 50) problems.push(`expected 50 incidents, found ${incidents.length}`)
   const seen = new Set<string>()
   for (const i of incidents) {
     if (seen.has(i.id)) problems.push(`duplicate incident id '${i.id}'`)

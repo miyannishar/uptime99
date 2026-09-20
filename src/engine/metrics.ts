@@ -1,6 +1,9 @@
 import { evaluateFormula, type FormulaScope } from './formula'
+import { createLogger } from './logger'
 import type { EngineCatalog } from './catalogFrom'
 import { METRIC_IDS, type GameState, type MetricId, type NodeInstance } from './types'
+
+const log = createLogger('metrics')
 
 export const SECONDS_PER_MONTH = 2_592_000
 
@@ -44,6 +47,12 @@ export function buildScope(
   if (path.length === 0) {
     throw new Error('metrics: no on-path nodes in state — cannot derive p95 or error_rate')
   }
+  log.debug('buildScope', {
+    pathNodes: path.length,
+    totalInstances: state.instances.length,
+    activeIncidents: state.incidents.length,
+    ticksPerMonth,
+  })
   const vec = (xs: readonly NodeInstance[], f: (i: NodeInstance) => number) => xs.map(f)
 
   // incident_severity is not stored anywhere: it is the sum over active
@@ -116,10 +125,18 @@ export function deriveMetrics(
   state: GameState, catalog: EngineCatalog,
 ): Record<MetricId, number> {
   const out: Partial<Record<MetricId, number>> = {}
+  log.debug('deriveMetrics start', { tick: state.tick, metricCount: METRIC_IDS.length })
   for (const id of METRIC_IDS) {
     const def = catalog.metricById.get(id)
     if (!def?.formula) throw new Error(`metrics: '${id}' has no formula`)
     out[id] = evaluateFormula(def.formula, buildScope(state, catalog, out))
+    log.debug(`metric computed: ${id}`, { value: (out[id] as number).toFixed(2) })
   }
+  log.debug('deriveMetrics complete', {
+    uptime: (out.uptime_pct as number).toFixed(1),
+    p95: (out.p95_latency_ms as number).toFixed(0),
+    errors: (out.error_rate_pct as number).toFixed(1),
+    reputation: (out.reputation as number).toFixed(0),
+  })
   return out as Record<MetricId, number>
 }

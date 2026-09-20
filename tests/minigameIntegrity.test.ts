@@ -15,10 +15,10 @@ describe('the shipped minigame data', () => {
     expect(runIntegrityChecks()).toEqual([])
   })
 
-  it('loads 5 formats, 15 minigames and 29 instances', () => {
+  it('loads 5 formats, 15 minigames and 32 instances', () => {
     expect(d.formats).toHaveLength(5)
     expect(d.minigames).toHaveLength(15)
-    expect(d.instances).toHaveLength(29)
+    expect(d.instances).toHaveLength(32)
   })
 })
 

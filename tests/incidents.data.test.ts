@@ -10,11 +10,11 @@ describe('data/incidents/data.json', () => {
     expectValidIncidentFile('data/incidents/data.json')
   })
 
-  it('defines the eight data incidents', () => {
+  it('defines the nine data incidents', () => {
     expect(incidents.map((i: any) => i.id).sort()).toEqual([
       'backup_corruption', 'cache_eviction_storm', 'cache_invalidation_storm',
-      'data_loss_incident', 'redis_restart', 'replication_lag_spike',
-      'schema_migration_failure', 'silent_failure',
+      'connection_pool_exhaustion', 'data_loss_incident', 'redis_restart',
+      'replication_lag_spike', 'schema_migration_failure', 'silent_failure',
     ])
   })
 

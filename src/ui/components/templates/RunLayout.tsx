@@ -3,7 +3,7 @@ import { AppShell } from './AppShell'
 
 export interface RunLayoutProps {
   header: ReactNode
-  /** IncidentFeed — left, because it is what forces the player to act. */
+  /** IncidentFeed - left, because it is what forces the player to act. */
   feed: ReactNode
   /** BoardCanvas. */
   board: ReactNode
@@ -12,14 +12,16 @@ export interface RunLayoutProps {
   /** TaskDock: provisioning, cooldowns, recent charges. */
   dock?: ReactNode
   overlay?: ReactNode
+  /** Tutorial spotlight: dims all regions except this one. */
+  spotlightRegion?: 'header' | 'left' | 'main' | 'right' | 'dock' | null
 }
 
 /**
- * The live phase. The catalog is gone — during a run the player changes the
+ * The live phase. The catalog is gone - during a run the player changes the
  * system through ACTIONS, not by dragging in new components, and leaving the
  * catalog open would suggest otherwise.
  */
-export function RunLayout({ header, feed, board, inspector, dock, overlay }: RunLayoutProps) {
+export function RunLayout({ header, feed, board, inspector, dock, overlay, spotlightRegion }: RunLayoutProps) {
   return (
     <AppShell
       header={header}
@@ -28,6 +30,7 @@ export function RunLayout({ header, feed, board, inspector, dock, overlay }: Run
       right={inspector}
       dock={dock}
       overlay={overlay}
+      spotlightRegion={spotlightRegion}
     />
   )
 }

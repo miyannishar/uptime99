@@ -12,7 +12,7 @@ export interface SignalRowProps {
  *
  * Two rules from the incident design are load-bearing here:
  *
- * 1. **Level 0 is always unlocked.** Its `requires` is null by authoring rule —
+ * 1. **Level 0 is always unlocked.** Its `requires` is null by authoring rule -
  *    it is what an on-call engineer sees on their phone before opening a
  *    dashboard, and it must never name a layer, component or root cause.
  *

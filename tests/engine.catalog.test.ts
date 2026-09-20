@@ -6,15 +6,15 @@ const c = loadEngineCatalog()
 
 describe('loadEngineCatalog', () => {
   it('loads the shipped catalogue at its known sizes', () => {
-    expect(c.nodes).toHaveLength(26)
+    expect(c.nodes).toHaveLength(27)
     expect(c.layers).toHaveLength(7)
-    expect(c.tags).toHaveLength(47)
+    expect(c.tags).toHaveLength(48)
     expect(c.actions).toHaveLength(33)
     expect(c.metrics).toHaveLength(7)
-    expect(c.incidents).toHaveLength(49)
+    expect(c.incidents).toHaveLength(50)
     expect(c.formats).toHaveLength(5)
     expect(c.minigames).toHaveLength(15)
-    expect(c.minigameInstances).toHaveLength(29)
+    expect(c.minigameInstances).toHaveLength(32)
     expect(c.scenarios).toHaveLength(6)
   })
 

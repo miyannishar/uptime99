@@ -69,7 +69,7 @@ export function formatMetric(value: number, unit: MetricUnit): string {
 
 /**
  * Buckets a metric against its own `healthy_range` and `direction`. Nothing is
- * special-cased per metric id — the thresholds are authored data.
+ * special-cased per metric id - the thresholds are authored data.
  */
 export function metricStatus(value: number, def: MetricDef): Status {
   const [lo, hi] = def.healthy_range
@@ -140,7 +140,7 @@ interface StatMeta { readonly label: string; readonly unit?: string; readonly di
 
 /**
  * Display metadata for every key the `stats` object allows. The list is closed
- * by `additionalProperties: false`, so this map is exhaustive by construction —
+ * by `additionalProperties: false`, so this map is exhaustive by construction -
  * if a new stat is added to the schema, TypeScript will not complain but the
  * inspector will fall back to a humanised key, which is the safe failure.
  */
@@ -202,7 +202,7 @@ export function formatStat(
   value: number | string | null,
   capacityUnit?: CapacityUnit,
 ): string {
-  if (value === null) return '—'
+  if (value === null) return '-'
   if (typeof value === 'string') return humanise(value)
   if (key === 'capacity') return formatCapacity(value, capacityUnit ?? 'none')
   if (key === 'cost_month') return `${formatMoney(value)}/mo`
@@ -318,7 +318,7 @@ export function ratio(value: number, lo: number, hi: number): number {
 }
 
 /**
- * Class joiner. Takes `unknown` so `someReactNode && styles.x` is safe — a
+ * Class joiner. Takes `unknown` so `someReactNode && styles.x` is safe - a
  * ReactNode can legitimately be `0` or `0n`, which a boolean-only signature
  * rejects and `filter(Boolean)` would silently drop anyway.
  */

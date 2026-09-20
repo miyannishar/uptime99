@@ -11,7 +11,7 @@ export interface CooldownRingProps {
 
 /**
  * Countdown ring for an action on cooldown. The remaining seconds are also
- * printed next to it by ActionRow — the ring is never the only encoding.
+ * printed next to it by ActionRow - the ring is never the only encoding.
  */
 export function CooldownRing({ remainingS, totalS, size = 14 }: CooldownRingProps) {
   const r = (size - 2) / 2

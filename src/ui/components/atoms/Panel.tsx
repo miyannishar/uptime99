@@ -12,7 +12,7 @@ export interface PanelProps extends HTMLAttributes<HTMLDivElement> {
   selected?: boolean
   /**
    * Something is wrong here. In DEPTH this glows and pulses; in FLAT it is a
-   * plain red border. Never the sole carrier of that fact — the text inside
+   * plain red border. Never the sole carrier of that fact - the text inside
    * always says so too.
    */
   alarm?: boolean

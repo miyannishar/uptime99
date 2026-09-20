@@ -10,7 +10,7 @@ export interface PortSlotProps {
 }
 
 /**
- * One `requires` port on a node — what it needs wired in for the board to run.
+ * One `requires` port on a node - what it needs wired in for the board to run.
  *
  * `min: 0` ports are genuinely optional (app_cluster can run with no cache);
  * `min: 1` ports are not (a worker_pool with no queue has nothing to consume).

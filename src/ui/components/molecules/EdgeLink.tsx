@@ -12,7 +12,7 @@ export interface EdgeLinkProps {
   to: Point
   /** Drives the colour. Derived from the DOWNSTREAM node's condition. */
   status?: Status
-  /** Traffic is not flowing — the downstream node is unreachable. */
+  /** Traffic is not flowing - the downstream node is unreachable. */
   severed?: boolean
   /** Dims links not connected to the selected node. */
   dimmed?: boolean

@@ -15,7 +15,7 @@ export interface DesignPhasePanelProps {
  *
  * The projected metrics are the whole point of having a design phase: the player
  * gets to see what their architecture will do before an incident tells them. Each
- * number is derived from the tier stats on the board — no projection is authored
+ * number is derived from the tier stats on the board - no projection is authored
  * anywhere, so it cannot drift from what the tiers actually cost.
  *
  * Unsatisfied required ports block the commit rather than failing later, and
@@ -63,7 +63,7 @@ export function DesignPhasePanel({ summary, onCommit, blockedReason }: DesignPha
           <ul className={s.problems}>
             {unsatisfiedPorts.map(({ node, port }) => (
               <li key={`${node.inst.instance_id}:${port.port.port}`} className={s.problem}>
-                <b>{node.def.name}</b> needs {port.port.min}× {port.port.port} — has{' '}
+                <b>{node.def.name}</b> needs {port.port.min}× {port.port.port} - has{' '}
                 {port.filled.length}
               </li>
             ))}

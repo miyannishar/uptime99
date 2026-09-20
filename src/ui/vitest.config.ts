@@ -12,7 +12,7 @@ import { fileURLToPath } from 'node:url'
  */
 export default defineConfig({
   // vitest 2.1 bundles vite 5's types while the app runs vite 7, so the `Plugin`
-  // shapes differ at the type level only — the plugin itself works (see
+  // shapes differ at the type level only - the plugin itself works (see
   // `npm run test:ui`). Upgrading vitest would touch the 280 data-layer tests
   // another session owns, so the skew is tolerated here rather than resolved.
   // When vitest is upgraded, this directive starts erroring as unused: delete it.

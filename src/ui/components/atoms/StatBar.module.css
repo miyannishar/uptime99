@@ -20,7 +20,7 @@
 .bad { background: var(--bad); }
 .unknown { background: var(--txt-faint); }
 
-/* utilisation past 100% — striped so it reads as overflow, not more capacity */
+/* utilisation past 100% - striped so it reads as overflow, not more capacity */
 .over {
   position: absolute;
   inset: 0 0 0 auto;

@@ -4,7 +4,7 @@ import s from './TierPip.module.css'
 export interface TierPipProps {
   /** Current tier, 1-based. */
   tier: number
-  /** How many tiers this node has — 3 or 4. */
+  /** How many tiers this node has - 3 or 4. */
   max: number
   /** Tier display name, e.g. "Anycast, two providers". */
   name?: string
@@ -19,7 +19,7 @@ export interface TierPipProps {
  */
 export function TierPip({ tier, max, name, compact }: TierPipProps) {
   return (
-    <span className={s.root} title={name ? `Tier ${tier} — ${name}` : `Tier ${tier} of ${max}`}>
+    <span className={s.root} title={name ? `Tier ${tier} - ${name}` : `Tier ${tier} of ${max}`}>
       <span className={s.num}>T{tier}</span>
       {!compact && (
         <span className={s.pips} aria-hidden="true">

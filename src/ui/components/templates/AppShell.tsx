@@ -1,50 +1,72 @@
 import type { ReactNode } from 'react'
 import { cx } from '../../utils/format'
+import { useResizableLayout } from '../../hooks/useResizableLayout'
 import s from './AppShell.module.css'
 
 export interface AppShellProps {
-  /** MetricsHeader. Always visible, in both phases. */
   header: ReactNode
-  /**
-   * Left column — what is coming at the player. IncidentFeed during a run,
-   * CatalogDrawer during design. Both answer "what do I have to deal with",
-   * which is why they share the column rather than competing for it.
-   */
   left?: ReactNode
-  /** BoardCanvas. The centre, because it is what the player reads. */
   main: ReactNode
-  /** Right column — what the player can do. NodeInspector or DesignPhasePanel. */
   right?: ReactNode
-  /** Full-width bottom dock: work in flight, cooldowns, recent charges. */
   dock?: ReactNode
-  /** MinigameOverlay / DebriefPanel. */
   overlay?: ReactNode
+  spotlightRegion?: 'header' | 'left' | 'main' | 'right' | 'dock' | null
 }
 
-/**
- * The frame every phase shares.
- *
- * Three columns, in the order the player's attention moves: the incident arrives
- * on the LEFT, they read the system in the MIDDLE, and they act on the RIGHT.
- * That ordering matters more than it looks — reading state before acting is the
- * habit the game exists to build, and a layout that puts the action list first
- * would teach the opposite.
- *
- * The board takes all the slack; both side columns are fixed-width so a node card
- * never reflows as the inspector's content changes length.
- */
-export function AppShell({ header, left, main, right, dock, overlay }: AppShellProps) {
+export function AppShell({ header, left, main, right, dock, overlay, spotlightRegion }: AppShellProps) {
+  const { layout, startDrag } = useResizableLayout()
+
+  const dim = (r: 'header' | 'left' | 'main' | 'right' | 'dock') =>
+    spotlightRegion != null && spotlightRegion !== r ? s.dimmed : ''
+  const lit = (r: 'header' | 'left' | 'main' | 'right' | 'dock') =>
+    spotlightRegion === r ? s.spotlight : ''
+
+  const cols = left && right
+    ? `${layout.leftW}px 6px minmax(0,1fr) 6px ${layout.rightW}px`
+    : left
+    ? `${layout.leftW}px 6px minmax(0,1fr)`
+    : right
+    ? `minmax(0,1fr) 6px ${layout.rightW}px`
+    : 'minmax(0,1fr)'
+
+  const rows = dock
+    ? `auto minmax(0,1fr) 8px ${layout.dockH}px`
+    : 'auto minmax(0,1fr)'
+
   return (
-    <div className={cx(s.root, left && s.withLeft, right && s.withRight, dock && s.withDock)}>
-      <div className={s.header}>{header}</div>
+    <div
+      className={cx(s.root, left && s.withLeft, right && s.withRight, dock && s.withDock)}
+      style={{ gridTemplateColumns: cols, gridTemplateRows: rows } as React.CSSProperties}
+    >
+      <div className={cx(s.header, dim('header'), lit('header'))}>{header}</div>
 
-      {left && <div className={s.left}>{left}</div>}
+      {left && (
+        <>
+          <div className={cx(s.left, dim('left'), lit('left'))}>{left}</div>
+          <div className={s.dividerV} onMouseDown={e => startDrag('left', e)} title="Drag to resize" />
+        </>
+      )}
 
-      <main className={s.main}>{main}</main>
+      <main className={cx(s.main, dim('main'), lit('main'))}>{main}</main>
 
-      {right && <div className={s.right}>{right}</div>}
+      {right && (
+        <>
+          <div className={s.dividerV} onMouseDown={e => startDrag('right', e)} title="Drag to resize" />
+          <div className={cx(s.right, dim('right'), lit('right'))}>{right}</div>
+        </>
+      )}
 
-      {dock && <div className={s.dock}>{dock}</div>}
+      {dock && (
+        <>
+          {/* Drag up/down to resize dock height */}
+          <div
+            className={s.dividerH}
+            onMouseDown={e => startDrag('dock', e)}
+            title="Drag up/down to resize"
+          />
+          <div className={cx(s.dock, dim('dock'), lit('dock'))}>{dock}</div>
+        </>
+      )}
 
       {overlay}
     </div>

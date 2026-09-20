@@ -12,7 +12,7 @@ export interface NodeCardProps {
   onSelect?: (instanceId: string) => void
   /** How many active incidents sit on this instance. */
   incidentCount?: number
-  /** `economy.saturation_knee` — where utilisation starts to hurt. */
+  /** `economy.saturation_knee` - where utilisation starts to hurt. */
   saturationKnee?: number
   /** Hides tags and capacity. Used in the off-path tray. */
   compact?: boolean
@@ -26,7 +26,7 @@ export interface NodeCardProps {
  * Shows, in priority order, the three things that decide whether the player
  * should act on it: whether it is reachable (`down`), how loaded it is
  * (`utilization_pct`), and what weaknesses it carries. `down` is rendered as
- * literal text, never only as a colour — `uptime_pct` reads `down` and not
+ * literal text, never only as a colour - `uptime_pct` reads `down` and not
  * `health`, so a node at health 0 that is still up is a genuinely different
  * situation and has to look different.
  */

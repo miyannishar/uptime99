@@ -73,3 +73,25 @@
   color: var(--txt-faint);
   letter-spacing: var(--ls-mid);
 }
+
+/* ---- incident badge pulse animation ---- */
+@keyframes incidentPulse {
+  0%   { box-shadow: 0 0 0 0 color-mix(in srgb, var(--bad) 70%, transparent); }
+  70%  { box-shadow: 0 0 0 6px color-mix(in srgb, var(--bad) 0%, transparent); }
+  100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--bad) 0%, transparent); }
+}
+.incident { animation: incidentPulse 2s ease-out infinite; }
+
+/* ---- node health-drop flash ---- */
+@keyframes healthDrop {
+  0%   { background: color-mix(in srgb, var(--bad) 30%, transparent); }
+  100% { background: transparent; }
+}
+.flashDamage { animation: healthDrop 0.6s ease-out; }
+
+/* ---- action resolved green flash ---- */
+@keyframes resolvedFlash {
+  0%   { background: color-mix(in srgb, var(--ok, #22c55e) 25%, transparent); }
+  100% { background: transparent; }
+}
+.flashResolved { animation: resolvedFlash 0.8s ease-out; }

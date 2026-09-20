@@ -124,11 +124,18 @@ export function applyOutcome(
   }
   const newUtil = Math.max(0, inst.utilization_pct + utilBump)
 
+  // --- Reset `down` flag on successful resolution ---
+  // An incident can set down:true (e.g. hardware_failure). A successful action
+  // means the node is operational again — always clear down on success so the
+  // node reappears in uptime_pct calculations.
+  const newDown = correct ? false : inst.down
+
   // --- Build updated instance ---
   const newInst = {
     ...inst,
     health: newHealth,
     tier: newTier,
+    down: newDown,
     utilization_pct: newUtil,
     tags_runtime: newTagsRuntime,
     action_cooldowns: newCooldowns,

@@ -3,7 +3,7 @@
    ----------------------------------------------------------------------------
    DEFINITIONS come from the real data/ directory (see ../data/catalog.ts).
    Only the INSTANCE STATE here is fabricated, because instance state has no
-   source in data/ by design — it is the other half of the two-layer rule and
+   source in data/ by design - it is the other half of the two-layer rule and
    belongs to a save file the engine has not been written to produce yet.
 
    Action gating is NOT faked: this file imports `matchActions` from
@@ -398,7 +398,7 @@ export const sampleScenarios: ScenarioSummary[] = [
   {
     id: 'blast-radius',
     name: 'Blast Radius',
-    blurb: 'A whole region goes dark. Nothing you do brings it back — only what you built before.',
+    blurb: 'A whole region goes dark. Nothing you do brings it back - only what you built before.',
     locked: true,
     stars: 0,
     startingBudget: 5200,

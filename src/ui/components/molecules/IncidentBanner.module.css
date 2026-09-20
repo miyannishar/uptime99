@@ -59,7 +59,7 @@
 
 .instance { color: var(--acc); border-color: var(--tag-property-line); }
 .group { color: var(--warn); border-color: #5e4c23; }
-/* No node is targeted at all — the gap IS the incident. */
+/* No node is targeted at all - the gap IS the incident. */
 .architecture { color: var(--mag); border-color: var(--tag-posture-line); }
 
 .survive {

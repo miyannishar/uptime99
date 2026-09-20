@@ -25,5 +25,5 @@
 
 .on { background: var(--acc); }
 
-/* Top tier reached — nothing left to buy here. */
+/* Top tier reached - nothing left to buy here. */
 .top { background: var(--mag); }

@@ -1,7 +1,10 @@
 import { nextInt, type Rng } from './rng'
 import { targetsOf } from './arrival'
+import { createLogger } from './logger'
 import type { EngineCatalog } from './catalogFrom'
 import type { GameState, NodeInstance } from './types'
+
+const log = createLogger('damage')
 
 /**
  * Who an incident hits.
@@ -51,6 +54,14 @@ export function applyDamage(
   const hit = new Set(instanceIds)
   const d = incident.damage
 
+  log.debug('applyDamage', {
+    incidentId: incident.id,
+    targetCount: instanceIds.length,
+    healthDelta: d.health_delta,
+    utilizationDelta: d.utilization_delta_pct,
+    tagsAdd: d.tags_add?.length ?? 0,
+  })
+
   return {
     ...state,
     instances: state.instances.map((inst) => {
@@ -64,6 +75,14 @@ export function applyDamage(
         : Math.max(0, inst.utilization_pct + d.utilization_delta_pct)
       const added: string[] = (d.tags_add ?? [])
         .filter((t: string) => !inst.tags_runtime.includes(t))
+      log.debug('instance damaged', {
+        instanceId: inst.instance_id,
+        oldHealth: inst.health,
+        newHealth: health,
+        oldUtilization: inst.utilization_pct,
+        newUtilization: utilization_pct,
+        tagsAdded: added,
+      })
       return {
         ...inst,
         health,

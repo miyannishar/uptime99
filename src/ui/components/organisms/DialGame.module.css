@@ -32,7 +32,7 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* `table_complete: false` — the player has to estimate this one. */
+/* `table_complete: false` - the player has to estimate this one. */
 .withheld .value {
   color: var(--txt-faint);
   font-style: italic;

@@ -15,8 +15,8 @@ export interface WrongOutcomeCardProps {
  * reasoning error behind it. Both are shown: the consequence teaches that it
  * mattered, the explanation teaches why.
  *
- * The `when` value that selected this outcome is format-specific — `below`/`above`
- * for a dial, `wrong_order` for a sequence, and so on — and the engine has
+ * The `when` value that selected this outcome is format-specific - `below`/`above`
+ * for a dial, `wrong_order` for a sequence, and so on - and the engine has
  * already done that matching.
  */
 export function WrongOutcomeCard({ outcome, attempt }: WrongOutcomeCardProps) {

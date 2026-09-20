@@ -15,7 +15,7 @@ export interface ActionRowProps {
  *
  * Every action carries a `minigame` and a `difficulty`, both required by the
  * schema, so the row always states which puzzle the player is about to face and
- * how hard it is. Committing to an action is committing to that puzzle — hiding
+ * how hard it is. Committing to an action is committing to that puzzle - hiding
  * it would make the cost of acting unknowable.
  */
 export function ActionRow({ action, onPlay, dense }: ActionRowProps) {

@@ -3,7 +3,7 @@ import { AppShell } from './AppShell'
 
 export interface DesignLayoutProps {
   header: ReactNode
-  /** CatalogDrawer — takes the left column the incident feed uses during a run. */
+  /** CatalogDrawer - takes the left column the incident feed uses during a run. */
   catalog: ReactNode
   /** BoardCanvas. */
   board: ReactNode
@@ -17,7 +17,7 @@ export interface DesignLayoutProps {
 /**
  * The untimed phase: catalog left, board centre, projection right.
  *
- * No incident feed, because nothing is firing yet — the left column is what the
+ * No incident feed, because nothing is firing yet - the left column is what the
  * player can add rather than what is happening to them, and the right column is
  * consequences they are choosing rather than reacting to.
  */

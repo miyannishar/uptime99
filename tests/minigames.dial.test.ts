@@ -9,8 +9,8 @@ describe('data/minigames/instances/c-dial.json', () => {
     expectValidInstanceFile('data/minigames/instances/c-dial.json')
   })
 
-  it('holds eight instances', () => {
-    expect(instances).toHaveLength(8)
+  it('holds nine instances', () => {
+    expect(instances).toHaveLength(9)
   })
 
   it('covers all six dial difficulty-slots', () => {

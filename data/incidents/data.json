@@ -7,18 +7,36 @@
       "severity": 2,
       "scope": "instance",
       "group_by": null,
-      "target": { "tags_all": ["has_replica"] },
+      "target": {
+        "tags_all": [
+          "has_replica"
+        ]
+      },
       "fires_when": null,
-      "gates": { "min_tick": 60, "min_users": 4000, "cooldown_ticks": 150 },
+      "gates": {
+        "min_tick": 60,
+        "min_users": 4000,
+        "cooldown_ticks": 150
+      },
       "base_weight": 8,
       "weight_per_target": 3,
-      "damage": { "health_delta": -20, "utilization_delta_pct": 25 },
-      "resolved_by": ["add_index", "vertical_scale"],
+      "damage": {
+        "health_delta": -20,
+        "utilization_delta_pct": 25
+      },
+      "resolved_by": [
+        "add_index",
+        "vertical_scale"
+      ],
       "duration_ticks": null,
       "escalates_to": "data_loss_incident",
       "escalate_after_ticks": 50,
       "ledger_events": [
-        { "kind": "overage", "when": "per_tick", "basis": "affected_instances * 2" }
+        {
+          "kind": "overage",
+          "when": "per_tick",
+          "basis": "affected_instances * 2"
+        }
       ],
       "signals": [
         {
@@ -28,18 +46,33 @@
         },
         {
           "level": 1,
-          "requires": { "node_ids": ["metrics_pipeline"], "min_tier": 1 },
+          "requires": {
+            "node_ids": [
+              "metrics_pipeline"
+            ],
+            "min_tier": 1
+          },
           "text": "Replication lag on the database layer has climbed to 38 seconds and is still rising. Read queries routed to replicas are returning data that is up to 38 seconds stale."
         },
         {
           "level": 2,
-          "requires": { "node_ids": ["alerting"], "min_tier": 2 },
+          "requires": {
+            "node_ids": [
+              "alerting"
+            ],
+            "min_tier": 2
+          },
           "text": "pg-replica-01's replication lag hit 38 seconds at 16:42 UTC and is not recovering. The replica is falling further behind the primary with each passing minute; lag was under 200 ms three hours ago."
         },
         {
           "level": 3,
-          "requires": { "node_ids": ["tracing"], "min_tier": 2 },
-          "text": "pg-primary is performing sequential scans on the orders table for every analytics query — no index on created_at. Each scan locks rows long enough to stall WAL flushing, causing pg-replica-01 to stall on replay. The lag accumulates in direct proportion to analytics query volume. Adding an index on the hot column or moving the primary to a larger instance class would stop the write stall."
+          "requires": {
+            "node_ids": [
+              "tracing"
+            ],
+            "min_tier": 2
+          },
+          "text": "pg-primary is performing sequential scans on the orders table for every analytics query \u2014 no index on created_at. Each scan locks rows long enough to stall WAL flushing, causing pg-replica-01 to stall on replay. The lag accumulates in direct proportion to analytics query volume. Adding an index on the hot column or moving the primary to a larger instance class would stop the write stall."
         }
       ]
     },
@@ -50,39 +83,70 @@
       "severity": 4,
       "scope": "instance",
       "group_by": null,
-      "target": { "node_ids": ["backup_system"] },
+      "target": {
+        "node_ids": [
+          "backup_system"
+        ]
+      },
       "fires_when": null,
-      "gates": { "min_tick": 100, "min_users": 8000, "cooldown_ticks": 300 },
+      "gates": {
+        "min_tick": 100,
+        "min_users": 8000,
+        "cooldown_ticks": 300
+      },
       "base_weight": 4,
       "weight_per_target": 3,
-      "damage": { "health_delta": -10 },
-      "resolved_by": ["verify_restore"],
+      "damage": {
+        "health_delta": -10
+      },
+      "resolved_by": [
+        "verify_restore"
+      ],
       "duration_ticks": null,
       "escalates_to": null,
       "escalate_after_ticks": null,
       "ledger_events": [
-        { "kind": "incident_remediation", "when": "on_resolve", "basis": "severity * 45" }
+        {
+          "kind": "incident_remediation",
+          "when": "on_resolve",
+          "basis": "severity * 45"
+        }
       ],
       "signals": [
         {
           "level": 0,
           "requires": null,
-          "text": "Compliance just flagged us — our SOC 2 auditors want proof of a successful restore test before the review in two weeks. Legal is cc'd on the email."
+          "text": "Compliance just flagged us \u2014 our SOC 2 auditors want proof of a successful restore test before the review in two weeks. Legal is cc'd on the email."
         },
         {
           "level": 1,
-          "requires": { "node_ids": ["metrics_pipeline"], "min_tier": 1 },
+          "requires": {
+            "node_ids": [
+              "metrics_pipeline"
+            ],
+            "min_tier": 1
+          },
           "text": "Backup completion rate on the persistence layer is nominal. Last snapshot reported as successful 6 hours ago. No metric anomaly is visible."
         },
         {
           "level": 2,
-          "requires": { "node_ids": ["alerting"], "min_tier": 2 },
+          "requires": {
+            "node_ids": [
+              "alerting"
+            ],
+            "min_tier": 2
+          },
           "text": "backup-us-01's last three snapshot jobs completed with exit code 0, but the verification checksum step was silently skipped after a configuration change deployed on Monday. The backups exist on disk; their integrity is unconfirmed."
         },
         {
           "level": 3,
-          "requires": { "node_ids": ["tracing"], "min_tier": 2 },
-          "text": "The Monday deploy changed the backup agent's config path. The agent found no checksum config and skipped verification rather than erroring. A spot-restore test against last night's snapshot failed: the gzip stream is truncated at byte 2,147,483,647 — a 2 GB integer overflow in the backup agent's file splitter. Every snapshot taken since Monday is corrupt. If a data loss event occurs before this is resolved, there is no valid restore point."
+          "requires": {
+            "node_ids": [
+              "tracing"
+            ],
+            "min_tier": 2
+          },
+          "text": "The Monday deploy changed the backup agent's config path. The agent found no checksum config and skipped verification rather than erroring. A spot-restore test against last night's snapshot failed: the gzip stream is truncated at byte 2,147,483,647 \u2014 a 2 GB integer overflow in the backup agent's file splitter. Every snapshot taken since Monday is corrupt. If a data loss event occurs before this is resolved, there is no valid restore point."
         }
       ]
     },
@@ -93,19 +157,38 @@
       "severity": 5,
       "scope": "instance",
       "group_by": null,
-      "target": { "tags_all": ["no_backup"] },
+      "target": {
+        "tags_all": [
+          "no_backup"
+        ]
+      },
       "fires_when": null,
-      "gates": { "min_tick": 80, "min_users": 5000, "cooldown_ticks": 400 },
+      "gates": {
+        "min_tick": 80,
+        "min_users": 5000,
+        "cooldown_ticks": 400
+      },
       "base_weight": 3,
       "weight_per_target": 7,
-      "damage": { "health_delta": -90, "down": true },
+      "damage": {
+        "health_delta": -90,
+        "down": true
+      },
       "resolved_by": [],
       "duration_ticks": 40,
       "escalates_to": null,
       "escalate_after_ticks": null,
       "ledger_events": [
-        { "kind": "sla_credit", "when": "per_tick", "basis": "affected_users * credit_rate * 2" },
-        { "kind": "incident_remediation", "when": "on_expire", "basis": "severity * 120" }
+        {
+          "kind": "sla_credit",
+          "when": "per_tick",
+          "basis": "affected_users * credit_rate * 2"
+        },
+        {
+          "kind": "incident_remediation",
+          "when": "on_expire",
+          "basis": "severity * 120"
+        }
       ],
       "signals": [
         {
@@ -115,17 +198,32 @@
         },
         {
           "level": 1,
-          "requires": { "node_ids": ["metrics_pipeline"], "min_tier": 1 },
+          "requires": {
+            "node_ids": [
+              "metrics_pipeline"
+            ],
+            "min_tier": 1
+          },
           "text": "Availability on the persistence layer has dropped to 0%. All read and write requests to the affected data store are failing with connection refused. The outage began 4 minutes ago and shows no sign of recovery."
         },
         {
           "level": 2,
-          "requires": { "node_ids": ["alerting"], "min_tier": 2 },
+          "requires": {
+            "node_ids": [
+              "alerting"
+            ],
+            "min_tier": 2
+          },
           "text": "pg-primary is unreachable. The instance failed its health check at 09:17 UTC and has not recovered. The host is reporting a disk I/O error at the block device level. No replica exists to promote."
         },
         {
           "level": 3,
-          "requires": { "node_ids": ["tracing"], "min_tier": 2 },
+          "requires": {
+            "node_ids": [
+              "tracing"
+            ],
+            "min_tier": 2
+          },
           "text": "pg-primary's underlying EBS volume experienced an unrecoverable hardware failure at 09:17 UTC. The filesystem is corrupt and the instance cannot be brought back. No backups were ever configured for this node. There is no snapshot, no replica, no restore path. All data written to this instance since provisioning is permanently gone."
         }
       ]
@@ -137,18 +235,35 @@
       "severity": 3,
       "scope": "instance",
       "group_by": null,
-      "target": { "node_ids": ["postgres"] },
+      "target": {
+        "node_ids": [
+          "postgres"
+        ]
+      },
       "fires_when": null,
-      "gates": { "min_tick": 70, "min_users": 3000, "cooldown_ticks": 250 },
+      "gates": {
+        "min_tick": 70,
+        "min_users": 3000,
+        "cooldown_ticks": 250
+      },
       "base_weight": 6,
       "weight_per_target": 4,
-      "damage": { "health_delta": -55, "down": true },
-      "resolved_by": ["restore_from_backup"],
+      "damage": {
+        "health_delta": -55,
+        "down": true
+      },
+      "resolved_by": [
+        "restore_from_backup"
+      ],
       "duration_ticks": null,
       "escalates_to": null,
       "escalate_after_ticks": null,
       "ledger_events": [
-        { "kind": "incident_remediation", "when": "on_resolve", "basis": "severity * 45" }
+        {
+          "kind": "incident_remediation",
+          "when": "on_resolve",
+          "basis": "severity * 45"
+        }
       ],
       "signals": [
         {
@@ -158,17 +273,32 @@
         },
         {
           "level": 1,
-          "requires": { "node_ids": ["metrics_pipeline"], "min_tier": 1 },
+          "requires": {
+            "node_ids": [
+              "metrics_pipeline"
+            ],
+            "min_tier": 1
+          },
           "text": "Error rate on the database layer jumped to 100% at 14:23 UTC. All read and write queries to the affected instance are failing. The spike correlates exactly with a deployment window."
         },
         {
           "level": 2,
-          "requires": { "node_ids": ["alerting"], "min_tier": 2 },
+          "requires": {
+            "node_ids": [
+              "alerting"
+            ],
+            "min_tier": 2
+          },
           "text": "pg-primary-01 is refusing all connections since 14:23 UTC. The instance is running but the database process is in recovery mode and cannot accept new queries. The deployment at 14:22 UTC included a schema migration."
         },
         {
           "level": 3,
-          "requires": { "node_ids": ["tracing"], "min_tier": 2 },
+          "requires": {
+            "node_ids": [
+              "tracing"
+            ],
+            "min_tier": 2
+          },
           "text": "Migration 20240914_add_user_locale added a NOT NULL column to the users table without a default value. Postgres attempted to backfill all 22 million existing rows in a single transaction. The statement timed out at 14:23 UTC, partially modifying the schema catalog. The transaction could not roll back cleanly; the users table is now in an inconsistent state and the database is in crash recovery. The only safe path forward is a full restore from the last known-good backup."
         }
       ]
@@ -180,18 +310,37 @@
       "severity": 2,
       "scope": "instance",
       "group_by": null,
-      "target": { "tags_all": ["cached"] },
+      "target": {
+        "tags_all": [
+          "cached"
+        ]
+      },
       "fires_when": null,
-      "gates": { "min_tick": 25, "min_users": 1000, "cooldown_ticks": 100 },
+      "gates": {
+        "min_tick": 25,
+        "min_users": 1000,
+        "cooldown_ticks": 100
+      },
       "base_weight": 12,
       "weight_per_target": 4,
-      "damage": { "tags_add": ["cold_cache"], "utilization_delta_pct": 35 },
-      "resolved_by": ["warm_cache"],
+      "damage": {
+        "tags_add": [
+          "cold_cache"
+        ],
+        "utilization_delta_pct": 35
+      },
+      "resolved_by": [
+        "warm_cache"
+      ],
       "duration_ticks": null,
       "escalates_to": "performance_degradation",
       "escalate_after_ticks": 20,
       "ledger_events": [
-        { "kind": "overage", "when": "per_tick", "basis": "affected_instances * 2" }
+        {
+          "kind": "overage",
+          "when": "per_tick",
+          "basis": "affected_instances * 2"
+        }
       ],
       "signals": [
         {
@@ -201,18 +350,33 @@
         },
         {
           "level": 1,
-          "requires": { "node_ids": ["metrics_pipeline"], "min_tier": 1 },
+          "requires": {
+            "node_ids": [
+              "metrics_pipeline"
+            ],
+            "min_tier": 1
+          },
           "text": "API p99 latency on the caching layer climbed from 45 ms to 2,100 ms over the last 8 minutes. Cache hit ratio has dropped from 94% to 12% in the same window."
         },
         {
           "level": 2,
-          "requires": { "node_ids": ["alerting"], "min_tier": 2 },
-          "text": "redis-us-01 is evicting keys at 18,000 entries per minute — 40x the normal rate. Cache hit ratio is at 12% and falling. The eviction policy is actively clearing recently written keys to make room for new ones."
+          "requires": {
+            "node_ids": [
+              "alerting"
+            ],
+            "min_tier": 2
+          },
+          "text": "redis-us-01 is evicting keys at 18,000 entries per minute \u2014 40x the normal rate. Cache hit ratio is at 12% and falling. The eviction policy is actively clearing recently written keys to make room for new ones."
         },
         {
           "level": 3,
-          "requires": { "node_ids": ["tracing"], "min_tier": 2 },
-          "text": "redis-us-01 hit its maxmemory limit after a traffic spike wrote 3.2 GB of session data in under 5 minutes. The allkeys-lru policy began evicting the most recently accessed keys — the opposite of the desired behavior for a session store. Nearly every subsequent request is a cache miss and falls through to the primary database, which is now absorbing 40x its baseline query load. The cache needs to be warmed before latency recovers."
+          "requires": {
+            "node_ids": [
+              "tracing"
+            ],
+            "min_tier": 2
+          },
+          "text": "redis-us-01 hit its maxmemory limit after a traffic spike wrote 3.2 GB of session data in under 5 minutes. The allkeys-lru policy began evicting the most recently accessed keys \u2014 the opposite of the desired behavior for a session store. Nearly every subsequent request is a cache miss and falls through to the primary database, which is now absorbing 40x its baseline query load. The cache needs to be warmed before latency recovers."
         }
       ]
     },
@@ -223,18 +387,36 @@
       "severity": 2,
       "scope": "instance",
       "group_by": null,
-      "target": { "tags_all": ["cached"] },
+      "target": {
+        "tags_all": [
+          "cached"
+        ]
+      },
       "fires_when": null,
-      "gates": { "min_tick": 30, "min_users": 1000, "cooldown_ticks": 120 },
+      "gates": {
+        "min_tick": 30,
+        "min_users": 1000,
+        "cooldown_ticks": 120
+      },
       "base_weight": 9,
       "weight_per_target": 4,
-      "damage": { "utilization_delta_pct": 55, "health_delta": -15 },
-      "resolved_by": ["warm_cache", "flush_cache"],
+      "damage": {
+        "utilization_delta_pct": 55,
+        "health_delta": -15
+      },
+      "resolved_by": [
+        "warm_cache",
+        "flush_cache"
+      ],
       "duration_ticks": null,
       "escalates_to": null,
       "escalate_after_ticks": null,
       "ledger_events": [
-        { "kind": "overage", "when": "per_tick", "basis": "affected_instances * 2" }
+        {
+          "kind": "overage",
+          "when": "per_tick",
+          "basis": "affected_instances * 2"
+        }
       ],
       "signals": [
         {
@@ -244,17 +426,32 @@
         },
         {
           "level": 1,
-          "requires": { "node_ids": ["metrics_pipeline"], "min_tier": 1 },
+          "requires": {
+            "node_ids": [
+              "metrics_pipeline"
+            ],
+            "min_tier": 1
+          },
           "text": "Cache write throughput on the caching layer has spiked to 5x its normal baseline. Database read load climbed 60% in the same window, consistent with a mass cache miss event."
         },
         {
           "level": 2,
-          "requires": { "node_ids": ["alerting"], "min_tier": 2 },
+          "requires": {
+            "node_ids": [
+              "alerting"
+            ],
+            "min_tier": 2
+          },
           "text": "redis-us-01 is processing 31,000 invalidation events per minute, up from a baseline of 2,200. Cache utilization has dropped sharply as keys are being purged faster than they are repopulated."
         },
         {
           "level": 3,
-          "requires": { "node_ids": ["tracing"], "min_tier": 2 },
+          "requires": {
+            "node_ids": [
+              "tracing"
+            ],
+            "min_tier": 2
+          },
           "text": "A background data migration job triggered a bulk UPDATE on the catalog table at 11:05 UTC, touching 480,000 rows. Each row update published a cache invalidation event. The event processor fanned out 480,000 DELETE calls to redis-us-01 in 90 seconds, emptying nearly the entire cache in one sweep. Every subsequent user request is a cold miss against the primary database until the cache is warmed or the stale key set is flushed and rebuilt."
         }
       ]
@@ -266,18 +463,38 @@
       "severity": 2,
       "scope": "instance",
       "group_by": null,
-      "target": { "node_ids": ["redis"] },
+      "target": {
+        "node_ids": [
+          "redis"
+        ]
+      },
       "fires_when": null,
-      "gates": { "min_tick": 20, "min_users": 500, "cooldown_ticks": 90 },
+      "gates": {
+        "min_tick": 20,
+        "min_users": 500,
+        "cooldown_ticks": 90
+      },
       "base_weight": 10,
       "weight_per_target": 5,
-      "damage": { "tags_add": ["cold_cache"], "health_delta": -30 },
-      "resolved_by": ["warm_cache", "restart"],
+      "damage": {
+        "tags_add": [
+          "cold_cache"
+        ],
+        "health_delta": -30
+      },
+      "resolved_by": [
+        "warm_cache",
+        "restart"
+      ],
       "duration_ticks": null,
       "escalates_to": null,
       "escalate_after_ticks": null,
       "ledger_events": [
-        { "kind": "overage", "when": "per_tick", "basis": "affected_instances * 2" }
+        {
+          "kind": "overage",
+          "when": "per_tick",
+          "basis": "affected_instances * 2"
+        }
       ],
       "signals": [
         {
@@ -287,18 +504,33 @@
         },
         {
           "level": 1,
-          "requires": { "node_ids": ["metrics_pipeline"], "min_tier": 1 },
+          "requires": {
+            "node_ids": [
+              "metrics_pipeline"
+            ],
+            "min_tier": 1
+          },
           "text": "Cache availability on the caching layer dropped to 0% for 90 seconds starting at 03:14 UTC and then recovered. API latency on all cache-dependent routes spiked sharply during the window and has not fully recovered; cache hit ratio is still near 0%."
         },
         {
           "level": 2,
-          "requires": { "node_ids": ["alerting"], "min_tier": 2 },
+          "requires": {
+            "node_ids": [
+              "alerting"
+            ],
+            "min_tier": 2
+          },
           "text": "redis-us-01 came back online at 03:15 UTC after a 90-second outage, but the in-memory dataset is completely empty. Cache hit ratio is 0.3% and every request is falling through to the primary database."
         },
         {
           "level": 3,
-          "requires": { "node_ids": ["tracing"], "min_tier": 2 },
-          "text": "redis-us-01's host was replaced during a scheduled infrastructure maintenance window at 03:14 UTC. The new instance started cold — Redis persistence (AOF and RDB) was never enabled on this node, so no data survived the restart. The in-memory state cannot be recovered automatically; the cache must be warmed before hit rates return to baseline and the database query load normalises."
+          "requires": {
+            "node_ids": [
+              "tracing"
+            ],
+            "min_tier": 2
+          },
+          "text": "redis-us-01's host was replaced during a scheduled infrastructure maintenance window at 03:14 UTC. The new instance started cold \u2014 Redis persistence (AOF and RDB) was never enabled on this node, so no data survived the restart. The in-memory state cannot be recovered automatically; the cache must be warmed before hit rates return to baseline and the database query load normalises."
         }
       ]
     },
@@ -309,18 +541,34 @@
       "severity": 3,
       "scope": "instance",
       "group_by": null,
-      "target": { "tags_all": ["no_monitoring"] },
+      "target": {
+        "tags_all": [
+          "no_monitoring"
+        ]
+      },
       "fires_when": null,
-      "gates": { "min_tick": 40, "min_users": 1000, "cooldown_ticks": 180 },
+      "gates": {
+        "min_tick": 40,
+        "min_users": 1000,
+        "cooldown_ticks": 180
+      },
       "base_weight": 8,
       "weight_per_target": 5,
-      "damage": { "health_delta": -50 },
-      "resolved_by": ["enable_observability"],
+      "damage": {
+        "health_delta": -50
+      },
+      "resolved_by": [
+        "enable_observability"
+      ],
       "duration_ticks": null,
       "escalates_to": null,
       "escalate_after_ticks": null,
       "ledger_events": [
-        { "kind": "sla_credit", "when": "per_tick", "basis": "affected_users * credit_rate" }
+        {
+          "kind": "sla_credit",
+          "when": "per_tick",
+          "basis": "affected_users * credit_rate"
+        }
       ],
       "signals": [
         {
@@ -330,18 +578,116 @@
         },
         {
           "level": 1,
-          "requires": { "node_ids": ["metrics_pipeline"], "min_tier": 1 },
+          "requires": {
+            "node_ids": [
+              "metrics_pipeline"
+            ],
+            "min_tier": 1
+          },
           "text": "Error rate on the affected layer has been at 47% for approximately 72 hours based on historical data. The metric was never surfaced in any alert or dashboard because this layer's instrumentation was not configured."
         },
         {
           "level": 2,
-          "requires": { "node_ids": ["alerting"], "min_tier": 2 },
-          "text": "export-worker-us-01 has been returning HTTP 500 on all export requests since Tuesday 08:14 UTC. The instance is running and passing its basic liveness probe, which only checks the health endpoint — not the export handler itself."
+          "requires": {
+            "node_ids": [
+              "alerting"
+            ],
+            "min_tier": 2
+          },
+          "text": "export-worker-us-01 has been returning HTTP 500 on all export requests since Tuesday 08:14 UTC. The instance is running and passing its basic liveness probe, which only checks the health endpoint \u2014 not the export handler itself."
         },
         {
           "level": 3,
-          "requires": { "node_ids": ["tracing"], "min_tier": 2 },
-          "text": "export-worker-us-01 began failing all export requests after a Tuesday deploy changed the output directory path. The handler silently catches the FileNotFoundError and returns a 500 with no log output. Because this node has no monitoring configured, no alert fired, no metric spiked anywhere visible, and no engineer was paged. The failure ran undetected for 72 hours across thousands of affected requests — none of which triggered a single automated notification."
+          "requires": {
+            "node_ids": [
+              "tracing"
+            ],
+            "min_tier": 2
+          },
+          "text": "export-worker-us-01 began failing all export requests after a Tuesday deploy changed the output directory path. The handler silently catches the FileNotFoundError and returns a 500 with no log output. Because this node has no monitoring configured, no alert fired, no metric spiked anywhere visible, and no engineer was paged. The failure ran undetected for 72 hours across thousands of affected requests \u2014 none of which triggered a single automated notification."
+        }
+      ]
+    },
+    {
+      "id": "connection_pool_exhaustion",
+      "name": "Connection pool exhausted",
+      "family": "data",
+      "severity": 3,
+      "scope": "instance",
+      "group_by": null,
+      "target": {
+        "node_ids": [
+          "postgres"
+        ],
+        "tags_any": [
+          "no_pooling"
+        ]
+      },
+      "fires_when": null,
+      "gates": {
+        "min_tick": 20,
+        "cooldown_ticks": 60
+      },
+      "base_weight": 8,
+      "weight_per_target": 3,
+      "damage": {
+        "health_delta": -50,
+        "utilization_delta_pct": 40
+      },
+      "resolved_by": [
+        "increase_connections",
+        "vertical_scale"
+      ],
+      "duration_ticks": null,
+      "escalates_to": null,
+      "escalate_after_ticks": null,
+      "ledger_events": [
+        {
+          "kind": "sla_credit",
+          "when": "per_tick",
+          "basis": "affected_users * credit_rate * 0.5"
+        },
+        {
+          "kind": "incident_remediation",
+          "when": "on_resolve",
+          "basis": "severity * 15"
+        }
+      ],
+      "signals": [
+        {
+          "level": 0,
+          "requires": null,
+          "text": "Users are getting intermittent 500 errors. The pattern is sporadic \u2014 some requests succeed, most fail."
+        },
+        {
+          "level": 1,
+          "requires": {
+            "node_ids": [
+              "metrics_pipeline"
+            ],
+            "min_tier": 1
+          },
+          "text": "Active database connections are at 100% of max_connections on the data layer. New queries queue and time out."
+        },
+        {
+          "level": 2,
+          "requires": {
+            "node_ids": [
+              "alerting"
+            ],
+            "min_tier": 2
+          },
+          "text": "postgres-1 is returning 'FATAL: remaining connection slots are reserved for non-replication superuser connections' on every new connection attempt."
+        },
+        {
+          "level": 3,
+          "requires": {
+            "node_ids": [
+              "tracing"
+            ],
+            "min_tier": 2
+          },
+          "text": "Connection acquisition time in the trace spans averages 4.2 seconds and never falls below 1 second. No pooler is sitting between the app and the database \u2014 every request acquires a direct connection."
         }
       ]
     }

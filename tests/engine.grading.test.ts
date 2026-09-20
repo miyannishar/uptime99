@@ -176,8 +176,8 @@ describe('applyOutcome', () => {
     )
 
     const newApp = next.instances.find((i) => i.instance_id === appClusterId)!
-    // restart on_success.health_delta = +25
-    expect(newApp.health).toBe(30 + 25)
+    // restart on_success.health_delta = +60
+    expect(newApp.health).toBe(30 + 60) // restart now gives +60
   })
 
   it('applies health_delta on fail', () => {

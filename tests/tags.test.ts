@@ -26,8 +26,8 @@ describe('data/tags.json', () => {
     expect(unresolvable.map((t) => t.id)).toEqual([])
   })
 
-  it('exposes 47 tag ids', () => {
-    expect(allTagIds().size).toBe(47)
+  it('exposes 48 tag ids', () => {
+    expect(allTagIds().size).toBe(48)
   })
 
   it('has no unreachable posture tags', () => {

@@ -12,7 +12,7 @@ export interface TierLadderRowProps {
 /**
  * One rung of a node's upgrade path.
  *
- * The cost delta is the answer to "what does the next nine cost?" — and it is
+ * The cost delta is the answer to "what does the next nine cost?" - and it is
  * DERIVED from `cost_month` on the tiers, never authored anywhere. Writing that
  * number into a data file would guarantee drift the next time a tier changes.
  */

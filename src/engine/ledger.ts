@@ -1,6 +1,9 @@
 import { evaluateFormula, type FormulaScope } from './formula'
+import { createLogger } from './logger'
 import type { EngineCatalog } from './catalogFrom'
 import type { GameState, LedgerEntry } from './types'
+
+const log = createLogger('ledger')
 
 export interface PriceContext {
   readonly economy: Readonly<Record<string, any>>
@@ -49,10 +52,17 @@ export function ledgerEntriesFor(
     affected_instances: affectedIds.length,
     affected_users: state.carried.users,
   }
-  return (incident.ledger_events ?? [])
+  const entries = (incident.ledger_events ?? [])
     .filter((e: any) => e.when === when)
     .map((e: any) => {
       const magnitude = priceLedgerEvent(e, incident, ctx)
+      log.debug('ledger event', {
+        incidentId: incident.id,
+        when,
+        kind: e.kind,
+        magnitude: magnitude.toFixed(2),
+        affectedInstances: affectedIds.length,
+      })
       return {
         kind: e.kind,
         basis: magnitude,
@@ -67,4 +77,9 @@ export function ledgerEntriesFor(
         instance_id: affectedIds.length === 1 ? affectedIds[0] : null,
       } satisfies LedgerEntry
     })
+  if (entries.length > 0) {
+    const totalAmount = entries.reduce((sum: number, e: LedgerEntry) => sum + e.amount, 0)
+    log.debug('ledger entries created', { count: entries.length, totalAmount: totalAmount.toFixed(2) })
+  }
+  return entries
 }

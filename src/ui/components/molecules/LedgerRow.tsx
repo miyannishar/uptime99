@@ -9,7 +9,7 @@ export interface LedgerRowProps {
 /**
  * One priced event.
  *
- * Incidents never contain a currency amount — they emit a `kind` and a `basis`
+ * Incidents never contain a currency amount - they emit a `kind` and a `basis`
  * expression, and the cost engine prices it from `economy`. By the time a line
  * reaches this component the pricing is done, so the row's job is to attribute
  * the charge: which kind of event, from which incident or action.

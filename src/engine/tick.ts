@@ -5,11 +5,14 @@ import { affectedInstanceIds, applyDamage } from './damage'
 import { ledgerEntriesFor } from './ledger'
 import { deriveMetrics } from './metrics'
 import { scenarioById } from './scenario'
+import { createLogger } from './logger'
 import type { EngineCatalog } from './catalogFrom'
 import {
   HISTORY_WINDOW, METRIC_IDS,
   type GameState, type IncidentRecord, type LedgerEntry, type MetricId,
 } from './types'
+
+const log = createLogger('tick')
 
 /**
  * A well-mixed starting position for the RNG. Raw seed 1 is pathological for
@@ -75,6 +78,7 @@ function oneTick(state: GameState, catalog: EngineCatalog): GameState {
   const scenario = scenarioById(state.scenario_id, catalog)
   const difficulty = difficultyFor(scenario, catalog)
   const tick = state.tick + 1
+  log.debug('oneTick start', { tick, activeIncidents: state.incidents.length })
   let rng = { seed: state.rng_seed ?? DEFAULT_RNG_SEED }
   let instances = state.instances
   let incidents: IncidentRecord[] = [...state.incidents]
@@ -88,6 +92,7 @@ function oneTick(state: GameState, catalog: EngineCatalog): GameState {
   //    Weighted: max_concurrent bounds random arrival pacing only.
   if (scenario.incident_source === 'scripted') {
     const due = (scenario.incidents ?? []).filter((e: any) => e.at_tick === tick)
+    log.debug('scripted arrivals', { tick, dueCount: due.length })
     for (const entry of due) {
       const inc = catalog.incidentById.get(entry.incident_id) ?? null
       if (!inc) {
@@ -98,6 +103,7 @@ function oneTick(state: GameState, catalog: EngineCatalog): GameState {
       }
       const hit = affectedInstanceIds(inc, { ...state, tick, instances }, catalog, rng)
       rng = hit.rng
+      log.info('incident fired (scripted)', { incidentId: inc.id, affectedCount: hit.ids.length })
       instances = applyDamage({ ...state, instances }, inc, hit.ids).instances
       incidents = [...incidents, ...makeRecords(inc, hit.ids, fired, tick)]
       lastFired[inc.id] = tick
@@ -114,6 +120,7 @@ function oneTick(state: GameState, catalog: EngineCatalog): GameState {
           const inc = pick.incident
           const hit = affectedInstanceIds(inc, { ...state, tick, instances }, catalog, rng)
           rng = hit.rng
+          log.info('incident fired (weighted)', { incidentId: inc.id, affectedCount: hit.ids.length })
           instances = applyDamage({ ...state, instances }, inc, hit.ids).instances
           incidents = [...incidents, ...makeRecords(inc, hit.ids, fired, tick)]
           lastFired[inc.id] = tick
@@ -127,12 +134,16 @@ function oneTick(state: GameState, catalog: EngineCatalog): GameState {
   //    incident emits one ledger set with the full affected-instance list, not
   //    one set per record (which would multiply affected_instances × n and
   //    overcharge incidents that price by affected_instances, e.g. ddos_attack).
+  let ledgerCount = 0
   for (const recs of groupByKey(incidents).values()) {
     const inc = catalog.incidentById.get(recs[0].incident_id)
     if (!inc) continue
     const ids = recs.flatMap((r) => r.instance_id ? [r.instance_id] : [])
-    ledger.push(...ledgerEntriesFor(inc, 'per_tick', { ...state, tick }, catalog, ids))
+    const entries = ledgerEntriesFor(inc, 'per_tick', { ...state, tick }, catalog, ids)
+    ledger.push(...entries)
+    ledgerCount += entries.length
   }
+  log.debug('per-tick ledger', { tickLedgerEntries: ledgerCount, totalLedgerEntries: ledger.length })
 
   // 3. escalations — grouped by key so a key-group (group-scope incident) escalates
   //    as a unit, applying escalated damage to all its instances at once.
@@ -141,6 +152,7 @@ function oneTick(state: GameState, catalog: EngineCatalog): GameState {
   //    specific node). No rng is consumed: re-drawing would change seeded streams
   //    and produce instance_id mismatches with the node that took damage.
   const escalatedIncidents: IncidentRecord[] = []
+  let escalationCount = 0
   for (const keyGroup of groupByKey(incidents).values()) {
     const rep = keyGroup[0]
     if (rep.escalate_at_tick === null || tick < rep.escalate_at_tick) {
@@ -154,6 +166,8 @@ function oneTick(state: GameState, catalog: EngineCatalog): GameState {
       escalatedIncidents.push(...keyGroup)
       continue
     }
+    escalationCount += 1
+    log.info('incident escalated', { from: rep.incident_id, to: toId, scope: to.scope })
     if (to.scope !== 'architecture') {
       const ids = keyGroup.flatMap((r) => r.instance_id ? [r.instance_id] : [])
       instances = applyDamage({ ...state, instances }, to, ids).instances
@@ -179,6 +193,7 @@ function oneTick(state: GameState, catalog: EngineCatalog): GameState {
       }
     }
   }
+  if (escalationCount > 0) log.debug('escalations processed', { count: escalationCount })
   incidents = escalatedIncidents
 
   // 4. expiries — grouped by key so a group incident emits one on_expire set with
@@ -191,10 +206,12 @@ function oneTick(state: GameState, catalog: EngineCatalog): GameState {
     expiredKeys.add(key)
     const inc = catalog.incidentById.get(rep.incident_id)
     if (!inc) continue
+    log.info('incident expired', { incidentId: rep.incident_id })
     const ids = recs.flatMap((r) => r.instance_id ? [r.instance_id] : [])
     ledger.push(...ledgerEntriesFor(inc, 'on_expire', { ...state, tick }, catalog, ids))
   }
   incidents = incidents.filter((r) => !expiredKeys.has(r.key))
+  if (expiredKeys.size > 0) log.debug('incidents expired', { count: expiredKeys.size })
 
   // 5. cooldowns
   instances = instances.map((inst) => {
@@ -213,6 +230,12 @@ function oneTick(state: GameState, catalog: EngineCatalog): GameState {
     ...state, tick, instances, incidents, ledger, last_fired: lastFired, rng_seed: rng.seed,
   }
   const metrics = deriveMetrics(mid, catalog)
+  log.debug('metrics derived', {
+    uptime: metrics.uptime_pct.toFixed(1),
+    p95: metrics.p95_latency_ms.toFixed(0),
+    errors: metrics.error_rate_pct.toFixed(1),
+    reputation: metrics.reputation.toFixed(0),
+  })
 
   // 7. history and bookkeeping
   const history: Partial<Record<MetricId, number[]>> = {}
@@ -221,7 +244,7 @@ function oneTick(state: GameState, catalog: EngineCatalog): GameState {
     history[id] = [...prev, metrics[id]].slice(-HISTORY_WINDOW)
   }
 
-  return {
+  const final = {
     ...mid,
     carried: { reputation: metrics.reputation, users: metrics.users },
     history,
@@ -231,6 +254,8 @@ function oneTick(state: GameState, catalog: EngineCatalog): GameState {
       incidents_fired: fired,
     },
   }
+  log.debug('oneTick complete', { tick, activeIncidents: final.incidents.length, totalLedgerEntries: final.ledger.length })
+  return final
 }
 
 /**
@@ -245,7 +270,9 @@ export function advance(state: GameState, dtTicks: number, catalog: EngineCatalo
   if (!Number.isInteger(dtTicks) || dtTicks < 1) {
     throw new Error(`advance: dtTicks must be a positive integer, got ${dtTicks}`)
   }
+  log.info('advance start', { from: state.tick, dtTicks, scenario: state.scenario_id })
   let s = state
   for (let i = 0; i < dtTicks; i += 1) s = oneTick(s, catalog)
+  log.info('advance complete', { to: s.tick, reputation: s.carried.reputation.toFixed(0), users: s.carried.users })
   return s
 }

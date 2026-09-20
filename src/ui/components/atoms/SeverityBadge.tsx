@@ -10,7 +10,7 @@ export interface SeverityBadgeProps {
 
 /**
  * `SEV4`. Each active incident contributes its severity to `incident_severity`,
- * which is the only direct hook an incident has into the metric layer — so this
+ * which is the only direct hook an incident has into the metric layer - so this
  * number is worth showing prominently rather than burying in a tooltip.
  */
 export function SeverityBadge({ severity, family }: SeverityBadgeProps) {

@@ -8,13 +8,25 @@
       "description": "Distributes inbound traffic across upstream application instances and health-checks each one. A single load balancer is a hard single point of failure; without health checking it silently routes requests to dead backends.",
       "singleton": false,
       "max_instances": 3,
-      "provides": ["origin"],
+      "provides": [
+        "origin"
+      ],
       "requires": [
         {
           "port": "upstream",
-          "accepts": ["app_backend"],
+          "accepts": [
+            "app_backend"
+          ],
           "min": 1,
           "max": 12
+        },
+        {
+          "port": "traffic_filter",
+          "accepts": [
+            "traffic_filter"
+          ],
+          "min": 0,
+          "max": 1
         }
       ],
       "overridable_edges": true,
@@ -32,7 +44,12 @@
             "blast_radius": 0.9,
             "max_connections": 10000
           },
-          "tags": ["stateless", "spof", "single_az", "no_ratelimit"]
+          "tags": [
+            "stateless",
+            "spof",
+            "single_az",
+            "no_ratelimit"
+          ]
         },
         {
           "tier": 2,
@@ -47,7 +64,12 @@
             "blast_radius": 0.5,
             "max_connections": 100000
           },
-          "tags": ["stateless", "managed", "multi_az", "auto_failover"]
+          "tags": [
+            "stateless",
+            "managed",
+            "multi_az",
+            "auto_failover"
+          ]
         },
         {
           "tier": 3,
@@ -65,8 +87,16 @@
           "cost_variable": {
             "per_gb_transfer": 0.02
           },
-          "tags": ["stateless", "managed", "multi_region", "auto_failover", "rate_limited"],
-          "actions_deny": ["upgrade_tier"]
+          "tags": [
+            "stateless",
+            "managed",
+            "multi_region",
+            "auto_failover",
+            "rate_limited"
+          ],
+          "actions_deny": [
+            "upgrade_tier"
+          ]
         }
       ]
     },
@@ -78,13 +108,25 @@
       "description": "Reverse proxy that enforces authentication, rate limits, and routing rules before requests reach your services. Misconfigured quotas or absent rate limiting allow one noisy client to saturate the entire backend undetected.",
       "singleton": false,
       "max_instances": 2,
-      "provides": ["origin"],
+      "provides": [
+        "origin"
+      ],
       "requires": [
         {
           "port": "upstream",
-          "accepts": ["app_backend"],
+          "accepts": [
+            "app_backend"
+          ],
           "min": 1,
           "max": 12
+        },
+        {
+          "port": "rate_control",
+          "accepts": [
+            "rate_gate"
+          ],
+          "min": 0,
+          "max": 1
         }
       ],
       "overridable_edges": true,
@@ -104,9 +146,13 @@
             "max_connections": 20000
           },
           "cost_variable": {
-            "per_million_requests": 3.50
+            "per_million_requests": 3.5
           },
-          "tags": ["stateless", "no_ratelimit", "single_az"]
+          "tags": [
+            "stateless",
+            "no_ratelimit",
+            "single_az"
+          ]
         },
         {
           "tier": 2,
@@ -123,9 +169,15 @@
             "max_connections": 200000
           },
           "cost_variable": {
-            "per_million_requests": 2.50
+            "per_million_requests": 2.5
           },
-          "tags": ["stateless", "managed", "multi_az", "rate_limited", "audit_logged"]
+          "tags": [
+            "stateless",
+            "managed",
+            "multi_az",
+            "rate_limited",
+            "audit_logged"
+          ]
         },
         {
           "tier": 3,
@@ -143,10 +195,89 @@
             "hit_ratio_pct": 45
           },
           "cost_variable": {
-            "per_million_requests": 1.50
+            "per_million_requests": 1.5
           },
-          "tags": ["stateless", "managed", "multi_region", "rate_limited", "cached", "audit_logged"],
-          "actions_deny": ["upgrade_tier"]
+          "tags": [
+            "stateless",
+            "managed",
+            "multi_region",
+            "rate_limited",
+            "cached",
+            "audit_logged"
+          ],
+          "actions_deny": [
+            "upgrade_tier"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "rate_limiter",
+      "name": "Rate Limiter",
+      "layer": "ingress",
+      "role": "traffic_shaping",
+      "description": "Sits in front of the origin and enforces per-client or global request rate ceilings. Without it, a single misbehaving client or bot can exhaust backend capacity. Fails open \u2014 a crash passes all traffic rather than dropping it.",
+      "singleton": false,
+      "max_instances": 2,
+      "provides": [
+        "rate_gate"
+      ],
+      "requires": [],
+      "overridable_edges": false,
+      "tiers": [
+        {
+          "tier": 1,
+          "name": "Fixed-window limiter",
+          "stats": {
+            "capacity": 2000,
+            "capacity_unit": "rps",
+            "base_latency_ms": 2,
+            "availability_pct": 99.5,
+            "cost_month": 10,
+            "provision_time_s": 15,
+            "blast_radius": 0.1
+          },
+          "tags": [
+            "stateless",
+            "no_ratelimit"
+          ]
+        },
+        {
+          "tier": 2,
+          "name": "Sliding-window limiter",
+          "stats": {
+            "capacity": 8000,
+            "capacity_unit": "rps",
+            "base_latency_ms": 2,
+            "availability_pct": 99.8,
+            "cost_month": 25,
+            "provision_time_s": 20,
+            "blast_radius": 0.1
+          },
+          "tags": [
+            "stateless",
+            "rate_limited"
+          ]
+        },
+        {
+          "tier": 3,
+          "name": "Token-bucket limiter",
+          "stats": {
+            "capacity": 20000,
+            "capacity_unit": "rps",
+            "base_latency_ms": 1,
+            "availability_pct": 99.9,
+            "cost_month": 55,
+            "provision_time_s": 30,
+            "blast_radius": 0.1
+          },
+          "tags": [
+            "stateless",
+            "rate_limited"
+          ],
+          "actions_deny": [
+            "upgrade_tier"
+          ]
         }
       ]
     }

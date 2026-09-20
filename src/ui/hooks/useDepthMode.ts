@@ -32,7 +32,7 @@ function persist(mode: DepthMode): void {
  * The mode is written to `<html data-depth>` and nothing else: every visual
  * difference between the modes is a token override in styles/tokens.css, so no
  * component ever reads this value. That is what guarantees FLAT cannot lose
- * information — there is no code path in which a component decides to render
+ * information - there is no code path in which a component decides to render
  * less.
  *
  * AUTO resolves to FLAT behaviour via the `prefers-reduced-motion` media query,

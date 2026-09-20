@@ -37,7 +37,7 @@ const ATTEMPTS_BEFORE_REVEAL = 3
  *
  * ENGINE NOTE: no floor exists yet on repeated-failure `on_fail` damage. A player
  * on attempt four is the one most in need of teaching rather than punishing, and
- * the cap belongs in the engine — not worked around in data by zeroing `on_fail`.
+ * the cap belongs in the engine - not worked around in data by zeroing `on_fail`.
  */
 export function MinigameShell({
   session,
@@ -64,7 +64,7 @@ export function MinigameShell({
           via <b>{action.name}</b> · {formatDuration(action.time_cost_s)} ·{' '}
           {action.money_cost === 0 ? 'free' : formatMoney(action.money_cost)}
           <span className={s.attempts}>
-            attempt {attempt}
+            try {attempt}
             {!showReveal && ` of ${ATTEMPTS_BEFORE_REVEAL} before the answer is shown`}
           </span>
         </p>
@@ -111,11 +111,11 @@ export function MinigameShell({
         <span className={s.footSpacer} />
         <span className={s.footNote}>
           {showReveal
-            ? 'You still execute the action and still pay the time cost.'
-            : 'A wrong answer costs time and makes things worse. It does not lock you out.'}
+            ? 'The fix applies even after seeing the answer - the action still runs.'
+            : 'A wrong answer costs time and worsens the incident. You cannot be locked out.'}
         </span>
         <Button variant="primary" size="md" onClick={onSubmit} disabled={solved}>
-          {showReveal ? 'execute' : 'commit'}
+          {showReveal ? 'Apply fix' : 'Submit'}
         </Button>
       </footer>
     </div>

@@ -116,7 +116,7 @@ describe('reputation and the severity sum', () => {
 
   it('recovers reputation when nothing is active', () => {
     const m = deriveMetrics(state(slice, { carried: { reputation: 90, users: 50000 } }), c)
-    expect(m.reputation).toBeCloseTo(90.2, 1)
+    expect(m.reputation).toBeCloseTo(90.8, 1)
   })
 })
 

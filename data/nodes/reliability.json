@@ -8,8 +8,20 @@
       "description": "Stores durable copies of persistent data so that accidental deletion, corruption, or a ransomware attack can be reversed. The failure mode is invisible: backups appear healthy until a restore is attempted under pressure and the procedure has never been exercised.",
       "singleton": true,
       "max_instances": 1,
-      "provides": [],
-      "requires": [],
+      "provides": [
+        "backup_target"
+      ],
+      "requires": [
+        {
+          "port": "data_source",
+          "accepts": [
+            "sql_query",
+            "blob_storage"
+          ],
+          "min": 0,
+          "max": 4
+        }
+      ],
       "overridable_edges": false,
       "tiers": [
         {
@@ -102,7 +114,16 @@
       "singleton": true,
       "max_instances": 1,
       "provides": [],
-      "requires": [],
+      "requires": [
+        {
+          "port": "backup_feed",
+          "accepts": [
+            "backup_target"
+          ],
+          "min": 0,
+          "max": 1
+        }
+      ],
       "overridable_edges": false,
       "tiers": [
         {

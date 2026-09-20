@@ -6,7 +6,7 @@ export interface MetricValueProps {
   value: number
   /** Pass the MetricDef and status/formatting derive themselves from the data. */
   def: MetricDef
-  /** Previous tick — renders the trend arrow, oriented by `def.direction`. */
+  /** Previous tick - renders the trend arrow, oriented by `def.direction`. */
   previous?: number
   /** Overrides the derived status. Rarely needed. */
   status?: Status

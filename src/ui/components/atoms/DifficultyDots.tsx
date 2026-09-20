@@ -9,7 +9,7 @@ export interface DifficultyDotsProps {
 }
 
 /**
- * Difficulty comes from the ACTION, never from the minigame — a minigame has no
+ * Difficulty comes from the ACTION, never from the minigame - a minigame has no
  * `difficulty_range` field anywhere. Together they form the difficulty-slot that
  * `checkSlotCoverage` requires an instance for.
  */

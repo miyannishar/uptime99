@@ -13,7 +13,7 @@ export const CARD_PITCH = 104
 /** Horizontal distance between layer bands. */
 export const BAND_W = 210
 /**
- * Where a link attaches, measured down from a card's top edge — level with the
+ * Where a link attaches, measured down from a card's top edge - level with the
  * card's title row. A fixed offset rather than the card's centre, because cards
  * vary in height with their tag count and a centre anchor would make links
  * twitch as tags come and go.

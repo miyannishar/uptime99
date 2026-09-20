@@ -12,7 +12,7 @@
 .clickable { cursor: pointer; }
 .clickable:hover { border-color: var(--line-strong); }
 
-/* A required port with nothing in it — the board will not run. */
+/* A required port with nothing in it - the board will not run. */
 .unmet {
   border-left-color: var(--bad);
   background: color-mix(in srgb, var(--bad) 6%, var(--bg-1));

@@ -2,14 +2,20 @@ import { unsatisfiedPorts } from './ports'
 import { scenarioById } from './scenario'
 import { seedFrom, rngFrom } from './rng'
 import { advance } from './tick'
+import { createLogger } from './logger'
 import type { EngineCatalog } from './catalogFrom'
 import type { GameState } from './types'
+
+const log = createLogger('session')
 
 export function canStartRun(
   state: GameState, catalog: EngineCatalog,
 ): { ok: boolean; unsatisfiedPorts: { instance_id: string; port: string }[] } {
   const bad = unsatisfiedPorts(state.instances, catalog)
     .map((u) => ({ instance_id: u.instance_id, port: u.port.port }))
+  if (bad.length > 0) {
+    log.warn('unsatisfied ports', { count: bad.length, ports: bad })
+  }
   return { ok: bad.length === 0, unsatisfiedPorts: bad }
 }
 
@@ -18,6 +24,7 @@ export function startRun(state: GameState, catalog: EngineCatalog): GameState {
   if (state.phase !== 'design') {
     throw new Error(`session: startRun requires the design phase, got '${state.phase}'`)
   }
+  log.info('startRun', { scenario: state.scenario_id, nodeCount: state.instances.length })
   const gate = canStartRun(state, catalog)
   if (!gate.ok) {
     throw new Error(
@@ -32,14 +39,19 @@ export function startRun(state: GameState, catalog: EngineCatalog): GameState {
   // would break the "12 single ticks == dt=12" equivalence asserted in
   // tests/engine.tick.test.ts. `startRun` is the single authoritative boundary
   // where an author- or player-supplied seed enters the system.
-  return { ...state, phase: 'run', rng_seed: rngFrom(state.rng_seed ?? seedFrom(state.scenario_id)).seed }
+  const newState: GameState = { ...state, phase: 'run', rng_seed: rngFrom(state.rng_seed ?? seedFrom(state.scenario_id)).seed }
+  log.debug('startRun complete', { phase: newState.phase, rngSeed: newState.rng_seed })
+  return newState
 }
 
 export function isSessionOver(state: GameState, catalog: EngineCatalog): boolean {
   const end = scenarioById(state.scenario_id, catalog).end
   switch (end.kind) {
-    case 'fixed_window':
-      return state.tick >= end.ticks
+    case 'fixed_window': {
+      const over = state.tick >= end.ticks
+      if (over) log.info('session window closed', { tick: state.tick, windowTicks: end.ticks })
+      return over
+    }
     case 'endless':
       return false  // never ends on its own; player quits via endSession
     case 'objectives':
@@ -54,6 +66,7 @@ export function isSessionOver(state: GameState, catalog: EngineCatalog): boolean
 
 /** run -> debrief. Terminal: advance refuses a debrief state. */
 export function endSession(state: GameState): GameState {
+  log.info('endSession', { finalTick: state.tick, finalReputation: state.carried.reputation.toFixed(0), finalUsers: state.carried.users })
   return {
     ...state,
     phase: 'debrief',
@@ -66,7 +79,9 @@ export function runSession(state: GameState, catalog: EngineCatalog): GameState 
   if (state.phase !== 'run') {
     throw new Error(`session: runSession requires the run phase, got '${state.phase}'`)
   }
+  log.info('runSession start', { scenario: state.scenario_id, startTick: state.tick })
   let s = state
   while (!isSessionOver(s, catalog)) s = advance(s, 1, catalog)
+  log.info('runSession end', { endTick: s.tick })
   return endSession(s)
 }

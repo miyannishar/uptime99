@@ -6,7 +6,7 @@ export interface DialGameProps {
   given: DialGiven
   value: number
   onChange: (value: number) => void
-  /** From `levers.table_complete` — false hides some rows, forcing estimation. */
+  /** From `levers.table_complete` - false hides some rows, forcing estimation. */
   tableComplete?: boolean
   disabled?: boolean
   /** After three failures: `solution.value`, plus the tolerance band. */
@@ -16,7 +16,7 @@ export interface DialGameProps {
 }
 
 /**
- * Format C — `dial`.
+ * Format C - `dial`.
  *
  * Thresholds, replica counts and instance sizes are continuous judgement calls
  * with cost consequences in BOTH directions, which is why every dial instance is

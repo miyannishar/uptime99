@@ -16,10 +16,14 @@ describe('off-path node files', () => {
     expect(delivery.map((n: any) => n.id).sort()).toEqual(['ci_cd', 'feature_flags', 'secrets_manager'])
   })
 
-  it('wire nothing into the request path', () => {
+  it('provide only off-path capabilities (not request-path endpoints)', () => {
+    // Request-path capabilities like 'origin', 'app_backend', 'sql_query' must not
+    // appear in off-path provides — they would put the node on the latency path.
+    const REQUEST_PATH_CAPS = new Set(['origin', 'app_backend', 'sql_query', 'cache', 'queue', 'blob_storage', 'search_query'])
     for (const n of [...reliability, ...delivery]) {
-      expect(n.provides, n.id).toEqual([])
-      expect(n.requires, n.id).toEqual([])
+      for (const cap of n.provides) {
+        expect(REQUEST_PATH_CAPS.has(cap), `${n.id} provides ${cap} — off-path nodes must not provide request-path capabilities`).toBe(false)
+      }
       expect(n.overridable_edges, n.id).toBe(false)
       expect(n.singleton, n.id).toBe(true)
     }

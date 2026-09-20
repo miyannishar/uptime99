@@ -6,7 +6,7 @@ export interface FillBlankGameProps {
   given: FillBlankGiven
   blanks: Readonly<Record<string, string>>
   onChange: (blanks: Record<string, string>) => void
-  /** From `levers.input_mode` — `free_text` removes the hint list. */
+  /** From `levers.input_mode` - `free_text` removes the hint list. */
   inputMode?: 'pick_from_list' | 'free_text'
   disabled?: boolean
   /** After three failures: `solution.blanks`. */
@@ -14,12 +14,12 @@ export interface FillBlankGameProps {
 }
 
 /**
- * Format B — `fill_blank`.
+ * Format B - `fill_blank`.
  *
  * This is where the "writing real config" feeling lives: genuine YAML, a real
  * IAM policy, an actual command. The structure is present and correct and only
  * the decision points are blank, so the player is never tested on syntax recall
- * against a clock — only on the judgement the blank represents.
+ * against a clock - only on the judgement the blank represents.
  *
  * `given.facts` carries the numbers the answer must be derived from. It is
  * rendered prominently, because an instance is only a judgement test if the

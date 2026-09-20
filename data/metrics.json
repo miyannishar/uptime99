@@ -1,54 +1,146 @@
 {
   "metrics": [
-    { "id": "uptime_pct", "name": "Uptime", "kind": "technical", "derived_from": "graph",
+    {
+      "id": "uptime_pct",
+      "name": "Uptime",
+      "kind": "technical",
+      "derived_from": "graph",
       "formula": "clamp(100 - sum(node.blast_radius * node.down), 0, 100)",
-      "unit": "percent", "healthy_range": [99.9, 100], "clamp": [0, 100],
-      "direction": "higher_is_better" },
-
-    { "id": "p95_latency_ms", "name": "p95 latency", "kind": "technical", "derived_from": "graph",
+      "unit": "percent",
+      "healthy_range": [
+        99.9,
+        100
+      ],
+      "clamp": [
+        0,
+        100
+      ],
+      "direction": "higher_is_better"
+    },
+    {
+      "id": "p95_latency_ms",
+      "name": "p95 latency",
+      "kind": "technical",
+      "derived_from": "graph",
       "formula": "sum(path.base_latency_ms * saturation_curve(path.utilization_pct / 100))",
-      "unit": "ms", "healthy_range": [0, 200], "clamp": [0, 30000],
-      "direction": "lower_is_better" },
-
-    { "id": "error_rate_pct", "name": "Error rate", "kind": "technical", "derived_from": "graph",
+      "unit": "ms",
+      "healthy_range": [
+        0,
+        200
+      ],
+      "clamp": [
+        0,
+        30000
+      ],
+      "direction": "lower_is_better"
+    },
+    {
+      "id": "error_rate_pct",
+      "name": "Error rate",
+      "kind": "technical",
+      "derived_from": "graph",
       "formula": "clamp(max(path.utilization_pct / 100 - 1) * 40, 0, 100)",
-      "unit": "percent", "healthy_range": [0, 1], "clamp": [0, 100],
-      "direction": "lower_is_better" },
-
-    { "id": "reputation", "name": "Reputation", "kind": "technical", "derived_from": "history",
+      "unit": "percent",
+      "healthy_range": [
+        0,
+        1
+      ],
+      "clamp": [
+        0,
+        100
+      ],
+      "direction": "lower_is_better"
+    },
+    {
+      "id": "reputation",
+      "name": "Reputation",
+      "kind": "technical",
+      "derived_from": "history",
       "formula": "clamp(decay(reputation, incident_severity), 0, 100)",
-      "unit": "score", "healthy_range": [70, 100], "clamp": [0, 100],
-      "direction": "higher_is_better" },
-
-    { "id": "users", "name": "Users", "kind": "business", "derived_from": "technical",
+      "unit": "score",
+      "healthy_range": [
+        70,
+        100
+      ],
+      "clamp": [
+        0,
+        100
+      ],
+      "direction": "higher_is_better"
+    },
+    {
+      "id": "users",
+      "name": "Users",
+      "kind": "business",
+      "derived_from": "technical",
       "formula": "max(users * (1 + reputation_growth - latency_churn - outage_churn), 0)",
-      "unit": "count", "healthy_range": [0, 10000000], "clamp": [0, 10000000],
-      "direction": "higher_is_better" },
-
-    { "id": "cost_month", "name": "Monthly cost", "kind": "business", "derived_from": "instances",
+      "unit": "count",
+      "healthy_range": [
+        0,
+        10000000
+      ],
+      "clamp": [
+        0,
+        10000000
+      ],
+      "direction": "higher_is_better"
+    },
+    {
+      "id": "cost_month",
+      "name": "Monthly cost",
+      "kind": "business",
+      "derived_from": "instances",
       "formula": "sum(instance.cost_month) + sum(instance.usage_cost) + sum(ledger.recurring)",
-      "unit": "currency_month", "healthy_range": [0, 100000], "clamp": [0, 10000000],
-      "direction": "lower_is_better" },
-
-    { "id": "profit_month", "name": "Monthly profit", "kind": "business", "derived_from": "business",
+      "unit": "currency_month",
+      "healthy_range": [
+        0,
+        100000
+      ],
+      "clamp": [
+        0,
+        10000000
+      ],
+      "direction": "lower_is_better"
+    },
+    {
+      "id": "profit_month",
+      "name": "Monthly profit",
+      "kind": "business",
+      "derived_from": "business",
       "formula": "users * arpu - cost_month",
-      "unit": "currency_month", "healthy_range": [0, 1000000], "clamp": [-10000000, 10000000],
-      "direction": "higher_is_better" }
+      "unit": "currency_month",
+      "healthy_range": [
+        0,
+        1000000
+      ],
+      "clamp": [
+        -10000000,
+        10000000
+      ],
+      "direction": "higher_is_better"
+    }
   ],
   "economy": {
-    "arpu": 0.10,
+    "arpu": 0.1,
     "starting_budget": 800,
     "credit_rate": 0.25,
     "emergency_premium_multiplier": 2.5,
     "reputation_decay_per_tick": 1.5,
-    "reputation_recovery_per_tick": 0.2,
+    "reputation_recovery_per_tick": 0.8,
     "tick_seconds": 5,
     "reputation_growth_rate": 0.03,
     "latency_churn_rate": 0.02,
     "outage_churn_rate": 0.08,
     "saturation_knee": 0.8,
     "saturation_exponent": 3.0,
-    "ledger_event_kinds": ["provision", "action", "sla_credit", "overage",
-                           "emergency_premium", "data_egress", "incident_remediation"]
+    "ledger_event_kinds": [
+      "provision",
+      "action",
+      "sla_credit",
+      "overage",
+      "emergency_premium",
+      "data_egress",
+      "incident_remediation"
+    ]
   }
 }

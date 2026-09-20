@@ -1,5 +1,5 @@
 /* ============================================================================
-   Definition types — a 1:1 mirror of the schemas in data/schema/.
+   Definition types - a 1:1 mirror of the schemas in data/schema/.
    ----------------------------------------------------------------------------
    These describe GLOBAL DEFINITIONS. Per CLAUDE.md §2 they are loaded once and
    never mutated: every field here is `readonly`, and nothing runtime-varying
@@ -32,7 +32,7 @@ export type TagKind = 'weakness' | 'capability' | 'property' | 'posture'
 
 export interface TagDef {
   readonly id: string
-  /** Display text. Note: `label`, NOT `name` — tags are the one type that differs. */
+  /** Display text. Note: `label`, NOT `name` - tags are the one type that differs. */
   readonly label: string
   readonly kind: TagKind
   readonly description: string
@@ -61,7 +61,7 @@ export interface UniversalStats {
   readonly availability_pct: number
   readonly cost_month: number
   readonly provision_time_s: number
-  /** 0.0–1.0 — fraction of overall uptime lost if this node goes down. */
+  /** 0.0–1.0 - fraction of overall uptime lost if this node goes down. */
   readonly blast_radius: number
 }
 
@@ -129,7 +129,7 @@ export interface TierDef {
   readonly name: string
   readonly stats: TierStats
   readonly cost_variable?: CostVariable
-  /** Definition tags only — never a runtime-only tag (CLAUDE.md §7). */
+  /** Definition tags only - never a runtime-only tag (CLAUDE.md §7). */
   readonly tags: readonly string[]
   readonly actions_extra?: readonly string[]
   /** Every node's top tier carries `['upgrade_tier']`. */
@@ -170,7 +170,7 @@ export interface Constraint {
   readonly layers?: readonly LayerId[]
   readonly roles?: readonly string[]
   readonly node_ids?: readonly string[]
-  /** minItems 1 in the schema — an empty array would be unsatisfiable. */
+  /** minItems 1 in the schema - an empty array would be unsatisfiable. */
   readonly tags_all?: readonly string[]
   readonly tags_any?: readonly string[]
   readonly tags_none?: readonly string[]
@@ -283,7 +283,7 @@ export interface IncidentDamage {
   readonly down?: boolean
   readonly health_delta?: number
   readonly utilization_delta_pct?: number
-  /** Where runtime-only tags come from — `cold_cache`, `unbounded_queue`. */
+  /** Where runtime-only tags come from - `cold_cache`, `unbounded_queue`. */
   readonly tags_add?: readonly string[]
 }
 

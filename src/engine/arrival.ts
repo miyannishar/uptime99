@@ -1,7 +1,10 @@
 import { nextFloat, type Rng } from './rng'
+import { createLogger } from './logger'
 import type { Difficulty } from './difficulty'
 import type { EngineCatalog } from './catalogFrom'
 import type { GameState, NodeInstance } from './types'
+
+const log = createLogger('arrival')
 
 /**
  * Instances an incident's `target` predicate matches. This is deliberately NOT
@@ -64,21 +67,31 @@ export function selectIncident(
   state: GameState, catalog: EngineCatalog, difficulty: Difficulty, rng: Rng,
 ): { incident: any | null; rng: Rng } {
   const pool = eligibleIncidents(state, catalog, difficulty)
-  if (pool.length === 0) return { incident: null, rng }
+  if (pool.length === 0) {
+    log.debug('selectIncident: no eligible incidents', { tick: state.tick, difficulty: difficulty.arrival_mean_ticks })
+    return { incident: null, rng }
+  }
 
   const weights = pool.map((inc) =>
     inc.scope === 'architecture'
       ? inc.base_weight
       : weightOf(inc, targetsOf(inc, state, catalog)))
   const total = weights.reduce((a, b) => a + b, 0)
-  if (total <= 0) return { incident: null, rng }
+  if (total <= 0) {
+    log.debug('selectIncident: zero total weight', { poolSize: pool.length })
+    return { incident: null, rng }
+  }
 
   const draw = nextFloat(rng)
   let acc = draw.value * total
   for (let i = 0; i < pool.length; i += 1) {
     acc -= weights[i]
-    if (acc < 0) return { incident: pool[i], rng: draw.rng }
+    if (acc < 0) {
+      log.debug('selectIncident selected', { incidentId: pool[i].id, severity: pool[i].severity, weight: weights[i] })
+      return { incident: pool[i], rng: draw.rng }
+    }
   }
+  log.debug('selectIncident selected (last)', { incidentId: pool[pool.length - 1].id })
   return { incident: pool[pool.length - 1], rng: draw.rng }
 }
 

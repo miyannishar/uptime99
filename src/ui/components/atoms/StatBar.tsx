@@ -8,7 +8,7 @@ export interface StatBarProps {
   status?: Status
   /** Draws a marker at this percentage, e.g. the saturation knee. */
   marker?: number
-  /** Accessible description. Required — the bar is never the only encoding. */
+  /** Accessible description. Required - the bar is never the only encoding. */
   label: string
   size?: 'sm' | 'md'
 }

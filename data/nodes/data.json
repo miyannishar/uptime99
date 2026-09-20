@@ -40,7 +40,8 @@
             "durable",
             "spof",
             "no_backup",
-            "single_az"
+            "single_az",
+            "no_pooling"
           ]
         },
         {

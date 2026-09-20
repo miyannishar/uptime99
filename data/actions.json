@@ -13,7 +13,7 @@
         "max_health": 60
       },
       "on_success": {
-        "health_delta": 25
+        "health_delta": 60
       },
       "on_fail": {
         "health_delta": -10,
@@ -41,7 +41,8 @@
         "stats_delta": {
           "capacity": "+50%"
         },
-        "cost_delta": 30
+        "cost_delta": 30,
+        "health_delta": 40
       },
       "on_fail": {
         "health_delta": -15,
@@ -71,7 +72,8 @@
         "cost_delta": 40,
         "tags_remove": [
           "spof"
-        ]
+        ],
+        "health_delta": 50
       },
       "on_fail": {
         "metrics": {
@@ -104,7 +106,8 @@
         "tags_remove": [
           "no_autoscale"
         ],
-        "cost_delta": 60
+        "cost_delta": 60,
+        "health_delta": 30
       },
       "on_fail": {
         "metrics": {
@@ -142,7 +145,8 @@
         "stats_delta": {
           "capacity": "+40%"
         },
-        "cost_delta": 80
+        "cost_delta": 80,
+        "health_delta": 30
       },
       "on_fail": {
         "health_delta": -20,
@@ -170,7 +174,7 @@
         ]
       },
       "on_success": {
-        "health_delta": 40,
+        "health_delta": 70,
         "metrics": {
           "uptime_pct": "-0.01"
         }
@@ -317,7 +321,8 @@
         "tags_remove": [
           "no_backup"
         ],
-        "cost_delta": 25
+        "cost_delta": 25,
+        "health_delta": 20
       },
       "on_fail": {
         "metrics": {
@@ -370,7 +375,8 @@
       "on_success": {
         "tags_remove": [
           "untested_restore"
-        ]
+        ],
+        "health_delta": 50
       },
       "on_fail": {
         "metrics": {
@@ -393,7 +399,7 @@
         ]
       },
       "on_success": {
-        "health_delta": 15,
+        "health_delta": 20,
         "tags_add": [
           "cold_cache"
         ]
@@ -425,7 +431,8 @@
         ],
         "metrics": {
           "p95_latency_ms": "-20%"
-        }
+        },
+        "health_delta": 40
       },
       "on_fail": {
         "metrics": {
@@ -448,7 +455,7 @@
         ]
       },
       "on_success": {
-        "health_delta": 45,
+        "health_delta": 50,
         "metrics": {
           "error_rate_pct": "-80%"
         }
@@ -483,7 +490,8 @@
         ],
         "tags_remove": [
           "shared_credentials"
-        ]
+        ],
+        "health_delta": 40
       },
       "on_fail": {
         "metrics": {
@@ -517,7 +525,8 @@
         "tags_remove": [
           "no_ratelimit"
         ],
-        "cost_delta": 30
+        "cost_delta": 30,
+        "health_delta": 35
       },
       "on_fail": {
         "metrics": {
@@ -549,7 +558,8 @@
         "tags_remove": [
           "no_dlq"
         ],
-        "cost_delta": 15
+        "cost_delta": 15,
+        "health_delta": 30
       },
       "on_fail": {
         "metrics": {
@@ -572,7 +582,7 @@
         ]
       },
       "on_success": {
-        "health_delta": 30,
+        "health_delta": 35,
         "tags_remove": [
           "unbounded_queue"
         ]
@@ -657,7 +667,8 @@
         },
         "metrics": {
           "p95_latency_ms": "-15%"
-        }
+        },
+        "health_delta": 30
       },
       "on_fail": {
         "health_delta": -20,
@@ -761,7 +772,8 @@
         "tags_remove": [
           "unencrypted"
         ],
-        "cost_delta": 20
+        "cost_delta": 20,
+        "health_delta": 20
       },
       "on_fail": {
         "metrics": {

@@ -1,7 +1,7 @@
 import s from './TeachesCallout.module.css'
 
 export interface TeachesCalloutProps {
-  /** The instance's `teaches` — a transferable principle, not the answer. */
+  /** The instance's `teaches` - a transferable principle, not the answer. */
   teaches: string
   /** Shown after success; muted while the puzzle is still open. */
   earned?: boolean

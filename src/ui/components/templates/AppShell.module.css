@@ -1,11 +1,6 @@
-/* Column widths live here so both phases agree on them.
-   clamp() rather than fixed px: at 1366px the two side columns would otherwise
-   claim 720px and squeeze the board to nothing, and below that they would force
-   the document to scroll sideways. They now give ground before the board does. */
+/* Column widths are set dynamically by useResizableLayout via inline style.
+   Grid areas include 6px divider tracks between columns. */
 .root {
-  --col-left: clamp(248px, 21vw, 330px);
-  --col-right: clamp(296px, 26vw, 390px);
-
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   grid-template-rows: auto minmax(0, 1fr);
@@ -14,126 +9,142 @@
     'main';
   height: 100vh;
   max-width: 100vw;
-  /* The shell is the viewport. Anything wider is a bug, not a scroll. */
   overflow: hidden;
   background: var(--bg-0);
 }
 
-/* left · main · right, then a full-width dock underneath all three */
 .withLeft {
-  grid-template-columns: var(--col-left) minmax(0, 1fr);
   grid-template-areas:
-    'header header'
-    'left   main';
+    'header header header'
+    'left   divL   main';
 }
 
 .withRight {
-  grid-template-columns: minmax(0, 1fr) var(--col-right);
   grid-template-areas:
-    'header header'
-    'main   right';
+    'header header header'
+    'main   divR   right';
 }
 
 .withLeft.withRight {
-  grid-template-columns: var(--col-left) minmax(0, 1fr) var(--col-right);
   grid-template-areas:
-    'header header header'
-    'left   main   right';
+    'header header header header header'
+    'left   divL   main   divR   right';
 }
 
-.withDock { grid-template-rows: auto minmax(0, 1fr) auto; }
+.withDock { grid-template-rows: auto minmax(0, 1fr) 8px auto; }
 
 .withDock.withLeft {
   grid-template-areas:
-    'header header'
-    'left   main'
-    'dock   dock';
+    'header header header'
+    'left   divL   main'
+    'divH   divH   divH'
+    'dock   dock   dock';
 }
 
 .withDock.withRight {
   grid-template-areas:
-    'header header'
-    'main   right'
-    'dock   dock';
+    'header header header'
+    'main   divR   right'
+    'divH   divH   divH'
+    'dock   dock   dock';
 }
 
 .withDock.withLeft.withRight {
   grid-template-areas:
-    'header header header'
-    'left   main   right'
-    'dock   dock   dock';
+    'header header header header header'
+    'left   divL   main   divR   right'
+    'divH   divH   divH   divH   divH'
+    'dock   dock   dock   dock   dock';
 }
 
 .header { grid-area: header; }
 
-.left,
-.right,
-.main {
-  min-width: 0;
+.left, .right, .main { min-width: 0; min-height: 0; }
+.left  { grid-area: left;  overflow: hidden; }
+.main  { grid-area: main;  overflow: auto; }
+.right { grid-area: right; overflow: hidden; }
+.dock  { grid-area: dock;  min-height: 0; height: 100%; display: flex; flex-direction: column; }
+
+/* ---- Drag handles ---- */
+.dividerV {
+  width: 6px;
+  cursor: ew-resize;
+  background: transparent;
+  position: relative;
+  z-index: 10;
   min-height: 0;
 }
-
-.left {
-  grid-area: left;
-  overflow: hidden;
+.dividerV::after {
+  content: '';
+  position: absolute;
+  inset: 0 2px;
+  background: var(--line);
+  border-radius: 3px;
+  opacity: 0;
+  transition: opacity 150ms;
 }
+.dividerV:hover::after { opacity: 1; }
+.dividerV:active::after { opacity: 1; background: var(--acc); }
 
-.main {
-  grid-area: main;
-  overflow: auto;
+.dividerH {
+  grid-area: divH;
+  height: 8px;
+  cursor: ns-resize;
+  background: transparent;
+  position: relative;
+  z-index: 10;
 }
-
-.right {
-  grid-area: right;
-  overflow: hidden;
+.dividerH::after {
+  content: '';
+  position: absolute;
+  left: 0; right: 0;
+  top: 3px; height: 2px;
+  background: var(--line);
+  border-radius: 1px;
+  opacity: 0;
+  transition: opacity 150ms;
 }
+.dividerH:hover::after { opacity: 1; }
+.dividerH:active::after { opacity: 1; background: var(--acc); }
 
-.dock {
-  grid-area: dock;
-  min-height: 0;
-}
-
-/* ---------------------------------------------------------------------------
-   Narrow: drop to a single column and stack. The board keeps the most room
-   because it is the thing that cannot be usefully summarised.
-   ------------------------------------------------------------------------ */
-@media (max-width: 1340px) {
-  .withLeft.withRight {
-    grid-template-columns: var(--col-left) minmax(0, 1fr);
-    grid-template-areas:
-      'header header'
-      'left   main'
-      'right  right';
-  }
-
-  .withDock.withLeft.withRight {
-    grid-template-areas:
-      'header header'
-      'left   main'
-      'right  right'
-      'dock   dock';
-  }
-
-  .withLeft.withRight,
-  .withDock.withLeft.withRight { grid-template-rows: auto minmax(0, 1fr) minmax(240px, auto) auto; }
-
-  .right { overflow: auto; }
-}
-
+/* Narrow screens: single column */
 @media (max-width: 900px) {
   .withLeft.withRight,
   .withDock.withLeft.withRight,
   .withLeft,
   .withRight {
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: auto minmax(280px, 1fr) minmax(0, auto) minmax(0, auto) auto;
+    grid-template-columns: minmax(0, 1fr) !important;
+    grid-template-rows: auto minmax(280px, 1fr) minmax(0, auto) minmax(0, auto) auto !important;
     grid-template-areas:
       'header'
       'main'
       'left'
       'right'
-      'dock';
+      'dock' !important;
   }
+  .dividerV, .dividerH { display: none; }
+  .left, .right { overflow: auto; }
+}
 
-  .left { overflow: auto; }
+/* ---- Tutorial spotlight ---- */
+.dimmed {
+  opacity: 0.28;
+  transition: opacity 0.3s;
+  pointer-events: none;
+  filter: brightness(0.6);
+}
+
+.spotlight {
+  opacity: 1;
+  transition: opacity 0.3s;
+  position: relative;
+  z-index: 1;
+  border-radius: 6px;
+  box-shadow: 0 0 0 3px var(--acc), 0 0 24px 4px color-mix(in srgb, var(--acc) 30%, transparent);
+  animation: spotPulse 2s ease-in-out infinite;
+}
+
+@keyframes spotPulse {
+  0%, 100% { box-shadow: 0 0 0 3px var(--acc), 0 0 24px 4px color-mix(in srgb, var(--acc) 30%, transparent); }
+  50%       { box-shadow: 0 0 0 3px var(--acc), 0 0 36px 8px color-mix(in srgb, var(--acc) 20%, transparent); }
 }

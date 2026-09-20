@@ -15,7 +15,7 @@ interface State {
  * Prints a thrown error on the page.
  *
  * Without this, any runtime throw unmounts the tree and the app is a black
- * rectangle with the real message only in the browser console — which is exactly
+ * rectangle with the real message only in the browser console - which is exactly
  * how the BoardCanvas render loop presented. A dev surface that fails invisibly
  * costs more time than the boundary costs to write.
  */

@@ -11,7 +11,7 @@ export interface RackModel3DProps {
 }
 
 /**
- * The 3D object in the node inspector — CSS 3D transforms, no engine, no assets.
+ * The 3D object in the node inspector - CSS 3D transforms, no engine, no assets.
  *
  * DECORATIVE BY CONTRACT. It restates facts the inspector already prints in
  * text, and it is removed entirely in FLAT mode via `--rack-display`. Nothing

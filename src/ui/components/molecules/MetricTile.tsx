@@ -7,14 +7,14 @@ export interface MetricTileProps {
   reading: MetricReading
   /** Compact single-line form for the header strip. */
   inline?: boolean
-  /** Reveals `def.formula` — opt-in, because it is implementation detail. */
+  /** Reveals `def.formula` - opt-in, because it is implementation detail. */
   showFormula?: boolean
   onClick?: () => void
 }
 
 /**
  * One metric. The healthy range is drawn as a band behind the sparkline so the
- * player can see not just the number but whether it is where it should be —
+ * player can see not just the number but whether it is where it should be -
  * `healthy_range` is authored in metrics.json precisely so the UI can show it.
  */
 export function MetricTile({ reading, inline, showFormula, onClick }: MetricTileProps) {
@@ -23,7 +23,7 @@ export function MetricTile({ reading, inline, showFormula, onClick }: MetricTile
 
   if (inline) {
     return (
-      <span className={s.inline} title={`${def.name} — healthy ${formatMetric(lo, def.unit)}–${formatMetric(hi, def.unit)}`}>
+      <span className={s.inline} title={`${def.name} - healthy ${formatMetric(lo, def.unit)}–${formatMetric(hi, def.unit)}`}>
         <span className={s.inlineLabel}>{def.name}</span>
         <MetricValue value={value} def={def} previous={previous} status={status} />
       </span>

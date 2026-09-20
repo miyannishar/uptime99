@@ -506,6 +506,18 @@
       "description": "Credentials and secrets are rotated on a schedule, ensuring that any leaked secret becomes invalid before it can be exploited.",
       "targeted_by": [],
       "resolved_by": []
+    },
+    {
+      "id": "no_pooling",
+      "kind": "weakness",
+      "description": "The node uses direct connections with no connection pooler \u2014 under load, connection exhaustion will cause widespread 'too many connections' failures.",
+      "targeted_by": [
+        "connection_pool_exhaustion"
+      ],
+      "resolved_by": [
+        "increase_connections"
+      ],
+      "label": "No connection pooling"
     }
   ]
 }

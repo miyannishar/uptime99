@@ -1,18 +1,18 @@
-/* adapt.ts — translates engine view models → UI view models.
+/* adapt.ts - translates engine view models to UI view models.
    Engine outputs are flat and serialisable (id strings, not resolved objects).
    This layer resolves them using the frozen engineCatalog.
    It is typed on both ends, so TypeScript fails here if either side's shape drifts.
 
-   TYPE MISMATCHES BETWEEN ENGINE AND UI — see report at .superpowers/sdd/ui-wiring/adapt-report.md
+   TYPE MISMATCHES BETWEEN ENGINE AND UI - see report at .superpowers/sdd/ui-wiring/adapt-report.md
    ─────────────────────────────────────────────────────────────────────────────────
-   1. BoardNode.inst — The UI type `BoardNode` carries `inst: NodeInstance` rather
+   1. BoardNode.inst - The UI type `BoardNode` carries `inst: NodeInstance` rather
       than the flat fields BoardNodeView exposes (health, region, down, …). The engine
       NodeInstance (from @engine/types) also lacks `active_incidents`, which the UI
       NodeInstance requires. adaptBoardNode therefore accepts the full GameState as a
       second argument to look up the real engine NodeInstance and derive
       active_incidents from state.incidents. The resulting inst is cast `as any` where
       the two NodeInstance types diverge.
-   2. BoardNode has no x / y / healthStatus / utilStatus — these are present in
+   2. BoardNode has no x / y / healthStatus / utilStatus - these are present in
       BoardNodeView but absent from the UI's BoardNode interface. They are dropped.
    3. PortFillView → PortFill adaptation is not yet required; port: string → PortDef
       resolution will be needed if any component renders port fills. */
@@ -43,10 +43,9 @@ export function adaptBoardNode(
     .map((id) => catalog.tagById.get(id))
     .filter((t): t is NonNullable<typeof t> => Boolean(t)) as any[]
 
-  // Look up the real engine NodeInstance from GameState so we can fill every
-  // field of the UI NodeInstance precisely (action_cooldowns, tags_runtime, etc.)
-  // TODO: field mismatch — active_incidents is in the UI NodeInstance but not in
-  //       the engine NodeInstance. Derived here from state.incidents.
+  // Look up the real engine NodeInstance from GameState.
+  // active_incidents is a UI-only field derived from state.incidents since the
+  // engine IncidentRecord stores instance_id separately from NodeInstance.
   const engineInst = state?.instances.find((i) => i.instance_id === view.instance_id)
 
   const activeIncidents: readonly string[] = state
@@ -55,12 +54,9 @@ export function adaptBoardNode(
         .map((r) => r.incident_id)
     : []
 
-  // Construct the UI NodeInstance. The spread pulls every field from the engine
-  // NodeInstance; we add active_incidents on top. Cast as `any` to bridge the two
-  // NodeInstance types (different modules, different `active_incidents` requirement).
-  // TODO: if engineInst is undefined (node was in the view but not in state.instances)
-  //       we fall back to the flat fields from BoardNodeView; fields not present in
-  //       the view (action_cooldowns, created_tick) are set to empty/zero defaults.
+  // Spread the engine instance and add active_incidents on top.
+  // The fallback (engineInst undefined) uses BoardNodeView fields; provisioning_until_tick
+  // and created_tick default to safe values since they're not in the flat view.
   const inst: BoardNode['inst'] = engineInst
     ? ({ ...engineInst, active_incidents: activeIncidents } as any)
     : ({
@@ -75,9 +71,7 @@ export function adaptBoardNode(
         action_cooldowns: {},
         active_incidents: activeIncidents,
         edges_out: view.edgesOut,
-        // TODO: only provisioningTicksLeft (derived) is in BoardNodeView; raw tick unknown
         provisioning_until_tick: null,
-        // TODO: created_tick is not in BoardNodeView
         created_tick: 0,
       } as any)
 
@@ -170,7 +164,7 @@ export function adaptIncidents(
 
     // Populate signals from the incident definition.
     // Level 0 is always visible (no observability required).
-    // Levels 1–3 require specific observability nodes — always shown as locked for now
+    // Levels 1-3 require specific observability nodes - always shown as locked for now
     // since signalsFor() (which checks the board) isn't built yet.
     const signals = ((def as any).signals ?? []).map((sig: any) => ({
       level: sig.level,
@@ -358,7 +352,7 @@ export function adaptDebriefSummary(
   const incidentsFaced: import('./types').DebriefSummary['incidentsFaced'] = []
 
   // Lessons: gather teaches from any minigame instances that were played
-  // (tracked via IncidentRecord.attempts — each key is a minigame instance id with a count)
+  // (tracked via IncidentRecord.attempts - each key is a minigame instance id with a count)
   const lessons: import('./types').DebriefSummary['lessons'] = []
 
   return {

@@ -14,7 +14,7 @@ export interface LedProps {
  *
  * Decorative by design: it restates a fact the inspector already prints as
  * text. It disappears entirely in FLAT mode, so it must never be the only place
- * a fact appears — see the note at the top of styles/tokens.css.
+ * a fact appears - see the note at the top of styles/tokens.css.
  */
 export function Led({ state, delayMs = 0 }: LedProps) {
   return (

@@ -27,8 +27,8 @@ describe('CLAUDE.md', () => {
 
   it('documents the incident model', () => {
     expect(doc).toContain('data/incidents/')
-    expect(doc).toMatch(/49 incidents/)
-    expect(doc).toMatch(/47 tags/)
+    expect(doc).toMatch(/50 incidents/)
+    expect(doc).toMatch(/48 tags/)
   })
 
   it('states the runtime-tag production rule', () => {

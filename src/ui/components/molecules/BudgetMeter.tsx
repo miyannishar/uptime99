@@ -7,7 +7,7 @@ export interface BudgetMeterProps {
   budget: number
   /** `economy.starting_budget`, for the proportion. */
   startingBudget: number
-  /** `profit_month` — positive means the budget is growing. */
+  /** `profit_month` - positive means the budget is growing. */
   profitMonth?: number
   /** Pending commitment in the design phase. */
   pending?: number
@@ -18,7 +18,7 @@ export interface BudgetMeterProps {
  * Money in hand, plus whether it is going up or down.
  *
  * `profit_month` is `users * arpu - cost_month`, so a negative number here means
- * the architecture costs more than it earns — the single most important thing a
+ * the architecture costs more than it earns - the single most important thing a
  * player can misread, and the reason it sits next to the budget rather than
  * buried among the other metrics.
  */

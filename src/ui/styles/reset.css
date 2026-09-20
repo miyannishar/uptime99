@@ -14,7 +14,7 @@ body,
    locally is better than sliding the entire UI sideways. Panels that legitimately
    need to scroll (CodeBlock, the catalog, the dock) opt in themselves. */
 html,
-body { overflow: hidden; }   /* fixed-viewport console — no document scroll */
+body { overflow: hidden; }   /* fixed-viewport console - no document scroll */
 
 body {
   margin: 0;

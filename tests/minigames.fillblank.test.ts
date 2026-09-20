@@ -9,8 +9,8 @@ describe('data/minigames/instances/b-fill-blank.json', () => {
     expectValidInstanceFile('data/minigames/instances/b-fill-blank.json')
   })
 
-  it('holds eight instances', () => {
-    expect(instances).toHaveLength(8)
+  it('holds nine instances', () => {
+    expect(instances).toHaveLength(9)
   })
 
   it('covers all seven fill-blank difficulty-slots', () => {

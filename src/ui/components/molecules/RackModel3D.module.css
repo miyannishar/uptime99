@@ -1,4 +1,4 @@
-/* Hidden wholesale in FLAT — the token is `none` there. */
+/* Hidden wholesale in FLAT - the token is `none` there. */
 .stage {
   display: var(--rack-display);
   perspective: 600px;

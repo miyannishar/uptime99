@@ -21,13 +21,13 @@ describe('runIntegrityChecks', () => {
 describe('loadCatalog', () => {
   const catalog = loadCatalog()
 
-  it('loads 26 nodes', () => {
-    expect(catalog.nodes).toHaveLength(26)
+  it('loads 27 nodes', () => {
+    expect(catalog.nodes).toHaveLength(27)
   })
 
   it('has unique node ids across every file', () => {
     const ids = catalog.nodes.map((n) => n.id)
-    expect(new Set(ids).size).toBe(26)
+    expect(new Set(ids).size).toBe(27)
   })
 
   it('places every node on a declared layer', () => {
@@ -162,7 +162,7 @@ describe('action registry reference checks', () => {
     expect(checkActionReachability(catalog.actions, catalog.nodes, runtimeOnlyTags)).toEqual([])
   })
 
-  it('checkPortAcceptsDisjoint returns empty for the real 26-node catalogue', () => {
+  it('checkPortAcceptsDisjoint returns empty for the real 27-node catalogue', () => {
     expect(checkPortAcceptsDisjoint(catalog.nodes)).toEqual([])
   })
 

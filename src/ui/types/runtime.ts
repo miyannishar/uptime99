@@ -1,12 +1,12 @@
 /* ============================================================================
-   Runtime types — per-save instance state, plus the view models components take.
+   Runtime types - per-save instance state, plus the view models components take.
    ----------------------------------------------------------------------------
    Two distinct things live here:
 
-   1. `NodeInstance` / `GameState` — a 1:1 mirror of data/schema/state.schema.json.
+   1. `NodeInstance` / `GameState` - a 1:1 mirror of data/schema/state.schema.json.
       This is the mutable half of the two-layer rule (CLAUDE.md §2).
 
-   2. View models (`BoardNode`, `ResolvedAction`, `ResolvedSignal`, …) — the
+   2. View models (`BoardNode`, `ResolvedAction`, `ResolvedSignal`, ...) - the
       shapes components actually accept. Every one pairs a definition with the
       instance state that varies, so a component never has to resolve a def_id,
       evaluate a constraint predicate, or compute a cooldown itself. That work
@@ -24,14 +24,14 @@ import type {
 
 /** Mirrors state.schema.json `instances[]`. All 13 fields are required there. */
 export interface NodeInstance {
-  /** `^[a-z][a-z0-9-]*$` — e.g. `app-us-01`. Distinct from `def_id`. */
+  /** `^[a-z][a-z0-9-]*$` - e.g. `app-us-01`. Distinct from `def_id`. */
   readonly instance_id: string
-  /** `^[a-z][a-z0-9_]*$` — the NodeDef id this instance is built from. */
+  /** `^[a-z][a-z0-9_]*$` - the NodeDef id this instance is built from. */
   readonly def_id: string
   /** 1–4. */
   readonly tier: number
   readonly region: string
-  /** 0–100. `health: 0` means up but failing under load — not the same as `down`. */
+  /** 0-100. `health: 0` means up but failing under load - not the same as `down`. */
   readonly health: number
   /** May exceed 100; that is what drives error_rate_pct. */
   readonly utilization_pct: number
@@ -86,7 +86,7 @@ export interface BoardNode {
   /**
    * True when this node contributes to the p95 sum: its layer has
    * `on_request_path` AND the tier carries neither `async` nor `scheduled`.
-   * Resolved by the caller — layers.json is the single source of truth for
+   * Resolved by the caller - layers.json is the single source of truth for
    * this and there is deliberately no per-node tag for it (CLAUDE.md §10).
    */
   readonly onRequestPath: boolean
@@ -148,7 +148,7 @@ export interface ResolvedSignal {
 
 export interface ActiveIncident {
   readonly def: IncidentDef
-  /** Stable key — the same def can fire more than once over a run. */
+  /** Stable key - the same def can fire more than once over a run. */
   readonly key: string
   /** Empty for architecture scope. */
   readonly affectedInstanceIds: readonly string[]
@@ -210,7 +210,7 @@ export type MinigameAnswer =
 
 /**
  * One attempt at a minigame. `attempt` is 1-based; at `attempt > 3` the shell
- * shows `solution` and `reveal` in full — the player still executes and still
+ * shows `solution` and `reveal` in full - the player still executes and still
  * pays the time cost.
  */
 export interface MinigameSession {
@@ -236,7 +236,7 @@ export interface DesignSummary {
   readonly projected: readonly MetricReading[]
   /** Weakness tags on the board that some incident hunts. */
   readonly exposedWeaknesses: readonly TagDef[]
-  /** `requires` ports not satisfied — the board will not run. */
+  /** `requires` ports not satisfied - the board will not run. */
   readonly unsatisfiedPorts: readonly { readonly node: BoardNode; readonly port: PortFill }[]
 }
 
@@ -246,7 +246,7 @@ export interface DebriefSummary {
   readonly ticks: number
   readonly finalMetrics: readonly MetricReading[]
   readonly incidentsFaced: readonly { readonly def: IncidentDef; readonly resolved: boolean }[]
-  /** `teaches` from every instance played, deduped — the takeaway list. */
+  /** `teaches` from every instance played, deduped - the takeaway list. */
   readonly lessons: readonly { readonly instanceId: string; readonly teaches: string }[]
   readonly ledger: readonly LedgerLine[]
 }

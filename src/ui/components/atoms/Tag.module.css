@@ -42,7 +42,7 @@
   background: var(--mag-bg);
 }
 
-/* `cold_cache` / `unbounded_queue` — applied by an incident, not by a tier. */
+/* `cold_cache` / `unbounded_queue` - applied by an incident, not by a tier. */
 .runtime {
   font-size: 7px;
   opacity: 0.9;

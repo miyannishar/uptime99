@@ -20,7 +20,7 @@ export interface DebriefPanelProps {
  * 250m" lines would be worthless.
  *
  * The ledger is shown in full because every charge traces back to a `kind` and a
- * `basis` — the player can see exactly what the outage cost and why.
+ * `basis` - the player can see exactly what the outage cost and why.
  */
 export function DebriefPanel({ summary, onRetry, onContinue }: DebriefPanelProps) {
   const { scenarioName, cleared, ticks, finalMetrics, incidentsFaced, lessons, ledger } = summary
@@ -50,7 +50,7 @@ export function DebriefPanel({ summary, onRetry, onContinue }: DebriefPanelProps
       <section className={s.section}>
         <SectionLabel rule aside={`${lessons.length}`}>What you learned</SectionLabel>
         {lessons.length === 0 ? (
-          <p className={s.none}>No minigames played — nothing to take away.</p>
+          <p className={s.none}>No tasks completed - nothing to take away.</p>
         ) : (
           <div className={s.lessons}>
             {lessons.map((lesson) => (

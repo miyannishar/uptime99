@@ -20,8 +20,8 @@ import s from './Gallery.module.css'
 
 /** Counts CLAUDE.md asserts. A mismatch here means the data moved. */
 const EXPECTED = {
-  layers: 7, tags: 47, nodes: 26, actions: 33, metrics: 7,
-  incidents: 49, formats: 5, minigames: 15, instances: 29,
+  layers: 7, tags: 48, nodes: 27, actions: 33, metrics: 7,
+  incidents: 50, formats: 5, minigames: 15, instances: 32,
 } as const
 
 function Specimen({ label, note, children }: { label: string; note?: string; children: ReactNode }) {
@@ -62,7 +62,7 @@ export function Gallery() {
       <header className={s.head}>
         <h1 className={s.title}>Component library</h1>
         <p className={s.sub}>
-          Rendered against the real <code>data/</code> directory. Definitions are never fixtures —
+          Rendered against the real <code>data/</code> directory. Definitions are never fixtures -
           only instance state is fabricated, because it has no source in <code>data/</code> by design.
         </p>
       </header>
@@ -84,7 +84,7 @@ export function Gallery() {
           <div className={s.cell} data-ok={tiers === 80}>
             <span className={s.k}>tiers</span>
             <span className={s.v}>{tiers}</span>
-            {tiers !== 80 && <span className={s.warn}>expected 80</span>}
+            {tiers !== 83 && <span className={s.warn}>expected 83</span>}
           </div>
         </div>
         <p className={s.note}>
@@ -257,7 +257,7 @@ export function Gallery() {
           </div>
         </Specimen>
 
-        <Specimen label="ActionRow" note={`real gating — ${appActions.length} match app_cluster T2`}>
+        <Specimen label="ActionRow" note={`real gating - ${appActions.length} match app_cluster T2`}>
           <div className={s.stackTight}>
             {appActions.slice(0, 5).map((a) => (
               <ActionRow key={a.def.id} action={a} onPlay={() => {}} />
@@ -265,7 +265,7 @@ export function Gallery() {
           </div>
         </Specimen>
 
-        <Specimen label="ActionRow" note={`postgres T1 — ${pgActions.length} match, some resolve the live incident`}>
+        <Specimen label="ActionRow" note={`postgres T1 - ${pgActions.length} match, some resolve the live incident`}>
           <div className={s.stackTight}>
             {pgActions.slice(0, 4).map((a) => (
               <ActionRow key={a.def.id} action={a} onPlay={() => {}} />
@@ -323,7 +323,7 @@ export function Gallery() {
           </div>
         </Specimen>
 
-        <Specimen label="RackModel3D" note="DEPTH only — disappears in FLAT, carries no unique information">
+        <Specimen label="RackModel3D" note="DEPTH only - disappears in FLAT, carries no unique information">
           <div className={s.row}>
             <RackModel3D sleds={['ok', 'ok', 'off', 'off', 'ok']} />
             <RackModel3D sleds={['ok', 'bad', 'off', 'off', 'ok']} alarm />

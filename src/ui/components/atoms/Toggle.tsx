@@ -11,7 +11,7 @@ export interface ToggleProps<T extends string> {
   options: readonly ToggleOption<T>[]
   value: T
   onChange: (value: T) => void
-  /** Required — the control has no visible caption of its own. */
+  /** Required - the control has no visible caption of its own. */
   ariaLabel: string
   size?: 'xs' | 'sm'
 }

@@ -14,7 +14,7 @@ export interface SliderProps {
   ariaLabel: string
   disabled?: boolean
   /**
-   * Shades an acceptable band. Only ever passed AFTER the answer is revealed —
+   * Shades an acceptable band. Only ever passed AFTER the answer is revealed -
    * showing the target band up front would turn the judgement into tracing.
    */
   targetBand?: readonly [number, number]

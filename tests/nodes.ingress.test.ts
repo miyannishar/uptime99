@@ -9,8 +9,8 @@ describe('data/nodes/ingress.json', () => {
     expectValidNodeFile('data/nodes/ingress.json')
   })
 
-  it('defines the two ingress nodes', () => {
-    expect(nodes.map((n: any) => n.id).sort()).toEqual(['api_gateway', 'load_balancer'])
+  it('defines the three ingress nodes', () => {
+    expect(nodes.map((n: any) => n.id).sort()).toEqual(['api_gateway', 'load_balancer', 'rate_limiter'])
   })
 
   it('has the load balancer require an app backend', () => {

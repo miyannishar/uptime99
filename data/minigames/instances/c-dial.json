@@ -6,22 +6,43 @@
       "difficulty": 2,
       "brief": "Queue depth is 14,200 and climbing. Consumers are keeping up with less than half the inbound.",
       "teaches": "A queue only drains when total consumer throughput exceeds the arrival rate; below that line the backlog grows no matter how long you wait.",
-      "levers": { "tolerance_pct": 0, "table_complete": true, "second_constraint": false },
+      "levers": {
+        "tolerance_pct": 0,
+        "table_complete": true,
+        "second_constraint": false
+      },
       "given": {
         "table": [
-          { "label": "Arrival rate", "value": "4,800 msg/s" },
-          { "label": "Per-worker throughput", "value": "1,200 msg/s" },
-          { "label": "Current workers", "value": "2" },
-          { "label": "Queue depth", "value": "14,200" }
+          {
+            "label": "Arrival rate",
+            "value": "4,800 msg/s"
+          },
+          {
+            "label": "Per-worker throughput",
+            "value": "1,200 msg/s"
+          },
+          {
+            "label": "Current workers",
+            "value": "2"
+          },
+          {
+            "label": "Queue depth",
+            "value": "14,200"
+          }
         ],
         "unit": "workers",
-        "range": { "min": 1, "max": 20 }
+        "range": {
+          "min": 1,
+          "max": 20
+        }
       },
-      "solution": { "value": 5 },
+      "solution": {
+        "value": 5
+      },
       "wrong_outcomes": [
         {
           "when": "below",
-          "shows": "Four workers reach exactly 4,800 msg/s — the arrival rate. The queue depth holds at 14,200 and does not move. Ten minutes later it is still 14,200, and the oldest message in it is ten minutes older.",
+          "shows": "Four workers reach exactly 4,800 msg/s \u2014 the arrival rate. The queue depth holds at 14,200 and does not move. Ten minutes later it is still 14,200, and the oldest message in it is ten minutes older.",
           "why_wrong": "Four workers match the arrival rate, so the queue stops growing but never drains. Only throughput above arrival does any draining, and the margin above it sets how fast."
         },
         {
@@ -30,254 +51,533 @@
           "why_wrong": "It works, but you provisioned well over twice the capacity the steady state needs, and you keep paying for it after the backlog is gone."
         }
       ],
-      "reveal": "4,800 arriving at 1,200 per worker needs four workers just to break even — at exactly four the depth stops growing but never falls. Five is the first count that both keeps pace and drains the existing 14,200. More than five drains faster but you pay for capacity that idles once the backlog clears."
+      "reveal": "4,800 arriving at 1,200 per worker needs four workers just to break even \u2014 at exactly four the depth stops growing but never falls. Five is the first count that both keeps pace and drains the existing 14,200. More than five drains faster but you pay for capacity that idles once the backlog clears."
     },
     {
       "id": "queue_drain_with_deadline",
       "minigame": "queue_triage",
       "difficulty": 3,
       "brief": "A consumer deployment was rolled back four hours ago and nobody scaled the replacement. 198,000 orders are queued and the fulfilment SLA gives you 15 minutes to clear them. The consumers share the order database's connection pool.",
-      "teaches": "Clearing a backlog against a deadline needs throughput above the arrival rate plus the backlog divided by the time remaining — and the surge you provision is still bounded by whatever downstream resource the consumers share.",
-      "levers": { "tolerance_pct": 10, "table_complete": false, "second_constraint": true },
+      "teaches": "Clearing a backlog against a deadline needs throughput above the arrival rate plus the backlog divided by the time remaining \u2014 and the surge you provision is still bounded by whatever downstream resource the consumers share.",
+      "levers": {
+        "tolerance_pct": 10,
+        "table_complete": false,
+        "second_constraint": true
+      },
       "given": {
         "table": [
-          { "label": "Arrival rate", "value": "3,600 msg/s" },
-          { "label": "Current workers", "value": "4" },
-          { "label": "Current combined throughput", "value": "2,880 msg/s" },
-          { "label": "Backlog", "value": "198,000 messages" },
-          { "label": "SLA deadline", "value": "15 minutes" },
-          { "label": "Order DB connection pool", "value": "48 connections" },
-          { "label": "Connections held per worker", "value": "6" }
+          {
+            "label": "Arrival rate",
+            "value": "3,600 msg/s"
+          },
+          {
+            "label": "Current workers",
+            "value": "4"
+          },
+          {
+            "label": "Current combined throughput",
+            "value": "2,880 msg/s"
+          },
+          {
+            "label": "Backlog",
+            "value": "198,000 messages"
+          },
+          {
+            "label": "SLA deadline",
+            "value": "15 minutes"
+          },
+          {
+            "label": "Order DB connection pool",
+            "value": "48 connections"
+          },
+          {
+            "label": "Connections held per worker",
+            "value": "6"
+          }
         ],
         "unit": "workers",
-        "range": { "min": 1, "max": 16 }
+        "range": {
+          "min": 1,
+          "max": 16
+        }
       },
-      "solution": { "value": 6 },
+      "solution": {
+        "value": 6
+      },
       "wrong_outcomes": [
         {
           "when": "below",
-          "shows": "Five workers reach 3,600 msg/s — exactly the arrival rate. The backlog holds at 198,000 and does not move for fifteen minutes. The deadline passes with every one of those orders still queued, and 198,000 fulfilment SLAs breach at once.",
-          "why_wrong": "Five workers match the arrival rate, so the queue neither grows nor drains — it just sits there. Clearing a backlog needs throughput above arrival; the margin above it is the only thing that does any draining."
+          "shows": "Five workers reach 3,600 msg/s \u2014 exactly the arrival rate. The backlog holds at 198,000 and does not move for fifteen minutes. The deadline passes with every one of those orders still queued, and 198,000 fulfilment SLAs breach at once.",
+          "why_wrong": "Five workers match the arrival rate, so the queue neither grows nor drains \u2014 it just sits there. Clearing a backlog needs throughput above arrival; the margin above it is the only thing that does any draining."
         },
         {
           "when": "above",
-          "shows": "Nine workers claim 54 connections against a pool of 48. Eight start; the ninth blocks. Then the API tier's own queries begin timing out — the pool is shared. Checkout error rate hits 22% while the backlog drains. Monthly cost rises by $310.",
-          "why_wrong": "Nine is the first count that oversubscribes the pool — eight fit exactly, at 48 connections. Past that you size the consumers into the API's own connection budget, so the surge causes a second incident on the way to fixing the first."
+          "shows": "Nine workers claim 54 connections against a pool of 48. Eight start; the ninth blocks. Then the API tier's own queries begin timing out \u2014 the pool is shared. Checkout error rate hits 22% while the backlog drains. Monthly cost rises by $310.",
+          "why_wrong": "Nine is the first count that oversubscribes the pool \u2014 eight fit exactly, at 48 connections. Past that you size the consumers into the API's own connection budget, so the surge causes a second incident on the way to fixing the first."
         }
       ],
-      "reveal": "Per-worker throughput is not given, but four workers producing 2,880 msg/s makes it 720 each. Clearing the backlog needs the arrival rate plus the drain rate: 3,600 plus 198,000 over 900 seconds, which is 3,600 plus 220, or 3,820 msg/s. At 720 per worker that is 5.3 workers — six, since you cannot run a third of a consumer. The pool is the second constraint and it permits exactly eight (48 connections at 6 each), so six fits with room to spare. Nine or more oversubscribes the pool and takes the API tier down with it, which is why the ceiling matters as much as the floor."
+      "reveal": "Per-worker throughput is not given, but four workers producing 2,880 msg/s makes it 720 each. Clearing the backlog needs the arrival rate plus the drain rate: 3,600 plus 198,000 over 900 seconds, which is 3,600 plus 220, or 3,820 msg/s. At 720 per worker that is 5.3 workers \u2014 six, since you cannot run a third of a consumer. The pool is the second constraint and it permits exactly eight (48 connections at 6 each), so six fits with room to spare. Nine or more oversubscribes the pool and takes the API tier down with it, which is why the ceiling matters as much as the floor."
     },
     {
       "id": "threshold_cpu_autoscale",
       "minigame": "threshold_tuning",
       "difficulty": 2,
       "brief": "Traffic has been growing all week. The autoscaler is set to add pods at 85% CPU, and every scale-up so far has arrived after latency had already breached the SLO.",
-      "teaches": "A scale-up trigger must fire early enough that the new capacity is serving traffic before load reaches the point where latency degrades — the provisioning delay, not the saturation point, sets the threshold.",
-      "levers": { "tolerance_pct": 0, "table_complete": true, "second_constraint": false },
+      "teaches": "A scale-up trigger must fire early enough that the new capacity is serving traffic before load reaches the point where latency degrades \u2014 the provisioning delay, not the saturation point, sets the threshold.",
+      "levers": {
+        "tolerance_pct": 0,
+        "table_complete": true,
+        "second_constraint": false
+      },
       "given": {
         "table": [
-          { "label": "p95 latency at 55% CPU", "value": "140 ms" },
-          { "label": "p95 latency at 70% CPU", "value": "250 ms" },
-          { "label": "p95 latency at 85% CPU", "value": "780 ms" },
-          { "label": "Latency SLO", "value": "250 ms p95" },
-          { "label": "CPU climb under current growth", "value": "10 points per minute" },
-          { "label": "Time to provision and warm a new pod", "value": "90 s" },
-          { "label": "Ordinary CPU variation at steady load", "value": "±8 points around the current level" }
+          {
+            "label": "p95 latency at 55% CPU",
+            "value": "140 ms"
+          },
+          {
+            "label": "p95 latency at 70% CPU",
+            "value": "250 ms"
+          },
+          {
+            "label": "p95 latency at 85% CPU",
+            "value": "780 ms"
+          },
+          {
+            "label": "Latency SLO",
+            "value": "250 ms p95"
+          },
+          {
+            "label": "CPU climb under current growth",
+            "value": "10 points per minute"
+          },
+          {
+            "label": "Time to provision and warm a new pod",
+            "value": "90 s"
+          },
+          {
+            "label": "Ordinary CPU variation at steady load",
+            "value": "\u00b18 points around the current level"
+          }
         ],
         "unit": "% CPU",
-        "range": { "min": 30, "max": 95 }
+        "range": {
+          "min": 30,
+          "max": 95
+        }
       },
-      "solution": { "value": 55 },
+      "solution": {
+        "value": 55
+      },
       "wrong_outcomes": [
         {
           "when": "below",
           "shows": "Pods are added at 09:04, removed at 09:11, added again at 09:16, removed at 09:23. Eleven scaling events in an hour. Monthly cost rises by $680 for capacity that spends most of its life terminating.",
-          "why_wrong": "The trigger fires inside the range of ordinary load variation, so the autoscaler chases noise instead of trend — and you pay full price for every pod that lives ninety seconds."
+          "why_wrong": "The trigger fires inside the range of ordinary load variation, so the autoscaler chases noise instead of trend \u2014 and you pay full price for every pod that lives ninety seconds."
         },
         {
           "when": "above",
-          "shows": "The trigger fires at 70% and a pod begins provisioning. Ninety seconds later it starts serving — but CPU climbed 15 points to 85% while you waited, and p95 peaked at 780 ms, more than three times the SLO. The help arrived after the breach, exactly as it did all week.",
+          "shows": "The trigger fires at 70% and a pod begins provisioning. Ninety seconds later it starts serving \u2014 but CPU climbed 15 points to 85% while you waited, and p95 peaked at 780 ms, more than three times the SLO. The help arrived after the breach, exactly as it did all week.",
           "why_wrong": "The threshold is correct about where the system is unhealthy and wrong about when to act; provisioning is not instant, so triggering at the problem means arriving after it."
         }
       ],
-      "reveal": "p95 reaches the 250 ms SLO at 70% CPU, so 70% is where the system breaches, not where you should act. A pod takes 90 seconds to provision and warm, and CPU is climbing 10 points per minute, so load rises 15 points while you wait. Trigger at 70 minus 15, or 55% — the new pod begins serving just as the old capacity would have hit the breach point. The useful habit here is to read a scale-up threshold as the saturation point minus the provisioning delay, which means a slower-provisioning service needs an earlier trigger even though its saturation point is identical."
+      "reveal": "p95 reaches the 250 ms SLO at 70% CPU, so 70% is where the system breaches, not where you should act. A pod takes 90 seconds to provision and warm, and CPU is climbing 10 points per minute, so load rises 15 points while you wait. Trigger at 70 minus 15, or 55% \u2014 the new pod begins serving just as the old capacity would have hit the breach point. The useful habit here is to read a scale-up threshold as the saturation point minus the provisioning delay, which means a slower-provisioning service needs an earlier trigger even though its saturation point is identical."
     },
     {
       "id": "threshold_alert_on_burn",
       "minigame": "threshold_tuning",
       "difficulty": 3,
       "brief": "The error-rate alert pages on any five-minute window above 0.5% errors. It has fired nine times this month, every time during a marketing spike, and every time it was nothing. Eighteen days in, you are replacing it with an error-budget burn-rate alert and have to pick the rate that pages.",
-      "teaches": "Page on error-budget burn rate rather than raw error rate, and set the trigger above the highest burn your benign traffic already produces — an alert that fires on ordinary noise trains its own audience to ignore it, which costs more than having no alert.",
-      "levers": { "tolerance_pct": 10, "table_complete": true, "second_constraint": true },
+      "teaches": "Page on error-budget burn rate rather than raw error rate, and set the trigger above the highest burn your benign traffic already produces \u2014 an alert that fires on ordinary noise trains its own audience to ignore it, which costs more than having no alert.",
+      "levers": {
+        "tolerance_pct": 10,
+        "table_complete": true,
+        "second_constraint": true
+      },
       "given": {
         "table": [
-          { "label": "SLO", "value": "99.9% availability over a 30-day window" },
-          { "label": "Error budget for the window", "value": "43.2 minutes" },
-          { "label": "Budget spent so far", "value": "9.0 minutes, over the first 18 days" },
-          { "label": "Days remaining in the window", "value": "12" },
-          { "label": "Highest burn rate observed during a benign traffic spike (last 90 days)", "value": "5×" },
-          { "label": "Burn rate definition", "value": "1× consumes the full budget exactly over the 30-day window" }
+          {
+            "label": "SLO",
+            "value": "99.9% availability over a 30-day window"
+          },
+          {
+            "label": "Error budget for the window",
+            "value": "43.2 minutes"
+          },
+          {
+            "label": "Budget spent so far",
+            "value": "9.0 minutes, over the first 18 days"
+          },
+          {
+            "label": "Days remaining in the window",
+            "value": "12"
+          },
+          {
+            "label": "Highest burn rate observed during a benign traffic spike (last 90 days)",
+            "value": "5\u00d7"
+          },
+          {
+            "label": "Burn rate definition",
+            "value": "1\u00d7 consumes the full budget exactly over the 30-day window"
+          }
         ],
-        "unit": "× error budget burn rate",
-        "range": { "min": 1, "max": 20 }
+        "unit": "\u00d7 error budget burn rate",
+        "range": {
+          "min": 1,
+          "max": 20
+        }
       },
-      "solution": { "value": 6 },
+      "solution": {
+        "value": 6
+      },
       "wrong_outcomes": [
         {
           "when": "below",
-          "shows": "Three benign spikes cross the threshold in the first week. Nine pages, seven of them between 1 a.m. and 5 a.m., none actionable. On day four the on-call engineer routes the alert to a muted channel. On day six a real regression burns at 9× for two hours and nobody is paged.",
-          "why_wrong": "The threshold sits below the burn your ordinary traffic produces, so it pages on noise — and an alert that pages on noise gets muted, which is strictly worse than the alert you replaced."
+          "shows": "Three benign spikes cross the threshold in the first week. Nine pages, seven of them between 1 a.m. and 5 a.m., none actionable. On day four the on-call engineer routes the alert to a muted channel. On day six a real regression burns at 9\u00d7 for two hours and nobody is paged.",
+          "why_wrong": "The threshold sits below the burn your ordinary traffic produces, so it pages on noise \u2014 and an alert that pages on noise gets muted, which is strictly worse than the alert you replaced."
         },
         {
           "when": "above",
-          "shows": "You set 12×. A checkout regression starts burning at 9× on day 22 and the alert stays silent. By day 24 the remaining 34.2 minutes of budget are gone; the page finally fires on day 26 only because a second fault pushes the rate past 12×. The SLO misses for the month, $4,200 in SLA credits go out to enterprise customers, and the post-mortem asks why the alert you had just rebuilt did not catch it.",
+          "shows": "You set 12\u00d7. A checkout regression starts burning at 9\u00d7 on day 22 and the alert stays silent. By day 24 the remaining 34.2 minutes of budget are gone; the page finally fires on day 26 only because a second fault pushes the rate past 12\u00d7. The SLO misses for the month, $4,200 in SLA credits go out to enterprise customers, and the post-mortem asks why the alert you had just rebuilt did not catch it.",
           "why_wrong": "A threshold this high only fires once the budget is nearly spent, so it reports the outcome instead of warning you in time to change it."
         }
       ],
-      "reveal": "Two constraints bound this from opposite sides. The floor: 34.2 minutes remain across 12 days, which is 2.85 minutes per day, while 1× burn is 43.2 over 30 days, or 1.44 minutes per day — so any sustained burn above roughly 2× exhausts the budget before the window closes, and 2× is where a burn genuinely becomes a threat. The ceiling on your choice is the noise floor: benign spikes have reached 5×, so a trigger at or below 5× pages on traffic that is behaving. The lowest rate that clears benign noise and still catches a real threat early is 6×. Note that the floor came from arithmetic and the ceiling came from history — a burn-rate alert is only as good as your record of what normal looks like."
+      "reveal": "Two constraints bound this from opposite sides. The floor: 34.2 minutes remain across 12 days, which is 2.85 minutes per day, while 1\u00d7 burn is 43.2 over 30 days, or 1.44 minutes per day \u2014 so any sustained burn above roughly 2\u00d7 exhausts the budget before the window closes, and 2\u00d7 is where a burn genuinely becomes a threat. The ceiling on your choice is the noise floor: benign spikes have reached 5\u00d7, so a trigger at or below 5\u00d7 pages on traffic that is behaving. The lowest rate that clears benign noise and still catches a real threat early is 6\u00d7. Note that the floor came from arithmetic and the ceiling came from history \u2014 a burn-rate alert is only as good as your record of what normal looks like."
     },
     {
       "id": "sizing_memory_headroom",
       "minigame": "resource_sizing",
       "difficulty": 2,
-      "brief": "The payment service has been OOM-killing pods twice a day for the past week. Memory profiling shows average RSS of 1.8 GB and a peak observed RSS of 2.4 GB under high traffic. GC pressure at peak is causing the kills — the compaction cycle needs working space that the current 2.5 GB limit does not provide.",
-      "teaches": "Size memory limits to peak observed usage plus a GC headroom buffer, not to average — average RSS tells you nothing about the burst the garbage collector needs during heap compaction, and that burst is when the OOM killer fires.",
-      "levers": { "tolerance_pct": 0, "table_complete": true, "second_constraint": false },
+      "brief": "The payment service has been OOM-killing pods twice a day for the past week. Memory profiling shows average RSS of 1.8 GB and a peak observed RSS of 2.4 GB under high traffic. GC pressure at peak is causing the kills \u2014 the compaction cycle needs working space that the current 2.5 GB limit does not provide.",
+      "teaches": "Size memory limits to peak observed usage plus a GC headroom buffer, not to average \u2014 average RSS tells you nothing about the burst the garbage collector needs during heap compaction, and that burst is when the OOM killer fires.",
+      "levers": {
+        "tolerance_pct": 0,
+        "table_complete": true,
+        "second_constraint": false
+      },
       "given": {
         "table": [
-          { "label": "Average RSS", "value": "1.8 GB" },
-          { "label": "Peak observed RSS (last 7 days)", "value": "2.4 GB" },
-          { "label": "GC headroom rule", "value": "allocate 25% above peak working set" },
-          { "label": "Memory cost", "value": "$18 per GB-month per instance" },
-          { "label": "Instances in cluster", "value": "12" }
+          {
+            "label": "Average RSS",
+            "value": "1.8 GB"
+          },
+          {
+            "label": "Peak observed RSS (last 7 days)",
+            "value": "2.4 GB"
+          },
+          {
+            "label": "GC headroom rule",
+            "value": "allocate 25% above peak working set"
+          },
+          {
+            "label": "Memory cost",
+            "value": "$18 per GB-month per instance"
+          },
+          {
+            "label": "Instances in cluster",
+            "value": "12"
+          }
         ],
         "unit": "GB",
-        "range": { "min": 1, "max": 8 }
+        "range": {
+          "min": 1,
+          "max": 8
+        }
       },
-      "solution": { "value": 3 },
+      "solution": {
+        "value": 3
+      },
       "wrong_outcomes": [
         {
           "when": "below",
-          "shows": "Pods run stable for 20 minutes, then memory climbs as peak traffic begins. At a 2 GB limit the pod is killed before it even reaches its 2.4 GB observed peak — the GC never gets the chance to compact. Kubernetes restarts it. Three minutes later it OOM-kills again.",
-          "why_wrong": "Setting the limit below peak RSS plus headroom leaves the GC nowhere to expand during compaction — the OOM killer fires the moment the heap needs breathing room, which is exactly the failure mode the current 2.5 GB limit produces."
+          "shows": "Pods run stable for 20 minutes, then memory climbs as peak traffic begins. At a 2 GB limit the pod is killed before it even reaches its 2.4 GB observed peak \u2014 the GC never gets the chance to compact. Kubernetes restarts it. Three minutes later it OOM-kills again.",
+          "why_wrong": "Setting the limit below peak RSS plus headroom leaves the GC nowhere to expand during compaction \u2014 the OOM killer fires the moment the heap needs breathing room, which is exactly the failure mode the current 2.5 GB limit produces."
         },
         {
           "when": "above",
-          "shows": "Pods stop OOM-killing. Average utilisation stays at 1.8 GB, leaving 4.2 GB unused per pod. Monthly memory spend rises to $1,296 against a correct limit of $648 — a $648/month premium for idle virtual memory on a twelve-pod cluster.",
+          "shows": "Pods stop OOM-killing. Average utilisation stays at 1.8 GB, leaving 4.2 GB unused per pod. Monthly memory spend rises to $1,296 against a correct limit of $648 \u2014 a $648/month premium for idle virtual memory on a twelve-pod cluster.",
           "why_wrong": "The service is stable at 3 GB; the extra capacity sits unused and pays full price every month. Sizing to fear rather than to measurement compounds the waste across every pod in the cluster."
         }
       ],
-      "reveal": "Peak observed RSS is 2.4 GB. The GC headroom rule requires 25% above that: 2.4 × 1.25 = 3.0 GB. Setting 2.5 GB — only 4% above peak — leaves no room for the compaction burst, which is why the current limit is failing. Setting 3 GB at $18/GB-month costs $54 per instance, or $648 across 12 instances; a 6 GB limit costs $1,296 for the same workload. The useful habit is to measure at peak load, not at average, and then add the GC buffer on top of that measured peak — sizing to average RSS would produce a limit of 2.25 GB, which would OOM even faster than the current setting."
+      "reveal": "Peak observed RSS is 2.4 GB. The GC headroom rule requires 25% above that: 2.4 \u00d7 1.25 = 3.0 GB. Setting 2.5 GB \u2014 only 4% above peak \u2014 leaves no room for the compaction burst, which is why the current limit is failing. Setting 3 GB at $18/GB-month costs $54 per instance, or $648 across 12 instances; a 6 GB limit costs $1,296 for the same workload. The useful habit is to measure at peak load, not at average, and then add the GC buffer on top of that measured peak \u2014 sizing to average RSS would produce a limit of 2.25 GB, which would OOM even faster than the current setting."
     },
     {
       "id": "capacity_tier_for_growth",
       "minigame": "capacity_planning",
       "difficulty": 3,
       "brief": "The API gateway is running on Tier 2 at 730 rps average, rising 12 rps each day as new customers onboard. Provisioning a tier migration takes 14 days. Finance has approved a monthly spend ceiling of $2,000. You need to select the destination tier before current capacity is exhausted.",
-      "teaches": "Pick the cheapest tier whose capacity survives the full provisioning window at the measured growth rate — committing to excess capacity wastes budget, but selecting a tier that fills up mid-migration forces an emergency re-provision at emergency prices.",
-      "levers": { "tolerance_pct": 10, "table_complete": true, "second_constraint": true },
+      "teaches": "Pick the cheapest tier whose capacity survives the full provisioning window at the measured growth rate \u2014 committing to excess capacity wastes budget, but selecting a tier that fills up mid-migration forces an emergency re-provision at emergency prices.",
+      "levers": {
+        "tolerance_pct": 10,
+        "table_complete": true,
+        "second_constraint": true
+      },
       "given": {
         "table": [
-          { "label": "Current RPS (today)", "value": "730 rps" },
-          { "label": "Daily growth rate", "value": "12 rps per day" },
-          { "label": "Provisioning window", "value": "14 days" },
-          { "label": "Monthly spend ceiling", "value": "$2,000" },
-          { "label": "Tier 1", "value": "500 rps · $400/month" },
-          { "label": "Tier 2", "value": "750 rps · $750/month" },
-          { "label": "Tier 3", "value": "1,000 rps · $1,400/month" },
-          { "label": "Tier 4", "value": "1,500 rps · $2,400/month" },
-          { "label": "Tier 5", "value": "2,500 rps · $3,800/month" },
-          { "label": "Tier 6", "value": "4,000 rps · $6,200/month" }
+          {
+            "label": "Current RPS (today)",
+            "value": "730 rps"
+          },
+          {
+            "label": "Daily growth rate",
+            "value": "12 rps per day"
+          },
+          {
+            "label": "Provisioning window",
+            "value": "14 days"
+          },
+          {
+            "label": "Monthly spend ceiling",
+            "value": "$2,000"
+          },
+          {
+            "label": "Tier 1",
+            "value": "500 rps \u00b7 $400/month"
+          },
+          {
+            "label": "Tier 2",
+            "value": "750 rps \u00b7 $750/month"
+          },
+          {
+            "label": "Tier 3",
+            "value": "1,000 rps \u00b7 $1,400/month"
+          },
+          {
+            "label": "Tier 4",
+            "value": "1,500 rps \u00b7 $2,400/month"
+          },
+          {
+            "label": "Tier 5",
+            "value": "2,500 rps \u00b7 $3,800/month"
+          },
+          {
+            "label": "Tier 6",
+            "value": "4,000 rps \u00b7 $6,200/month"
+          }
         ],
         "unit": "tier",
-        "range": { "min": 1, "max": 6 }
+        "range": {
+          "min": 1,
+          "max": 6
+        }
       },
-      "solution": { "value": 3 },
+      "solution": {
+        "value": 3
+      },
       "wrong_outcomes": [
         {
           "when": "below",
           "shows": "Migration begins. On day 2 load reaches 754 rps and Tier 2 is already past its 750 rps ceiling; by day 9 it is 838 rps against a tier that stopped coping a week earlier. Requests start shedding. A second emergency migration opens but provisioning takes another 14 days. The service runs saturated for 5 days before the new capacity arrives.",
-          "why_wrong": "Tier 2 capacity is 750 rps. By the end of the 14-day provisioning window, load will be 730 plus 168, or 898 rps — past the ceiling. You saturate mid-migration and must reprovision at emergency rates."
+          "why_wrong": "Tier 2 capacity is 750 rps. By the end of the 14-day provisioning window, load will be 730 plus 168, or 898 rps \u2014 past the ceiling. You saturate mid-migration and must reprovision at emergency rates."
         },
         {
           "when": "above",
-          "shows": "Tier 4 is provisioned cleanly and handles the growth with ease. Monthly spend lands at $2,400 — $400 over the approved ceiling. Finance flags the overrun at month-end and freezes the infrastructure budget for Q4.",
+          "shows": "Tier 4 is provisioned cleanly and handles the growth with ease. Monthly spend lands at $2,400 \u2014 $400 over the approved ceiling. Finance flags the overrun at month-end and freezes the infrastructure budget for Q4.",
           "why_wrong": "Tier 4 covers the growth window on capacity but costs $2,400/month, exceeding the $2,000 ceiling. Tier 3 handles the same window at $1,400/month, $600 under budget, with 102 rps of headroom to spare."
         }
       ],
-      "reveal": "Load at the end of the provisioning window: 730 + (12 × 14) = 730 + 168 = 898 rps. The new tier must handle at least 898 rps. Tier 2 (750 rps) is already saturated at that point. Tier 3 (1,000 rps) fits and costs $1,400/month — inside the $2,000 ceiling. Tier 4 (1,500 rps) also handles 898 rps, but at $2,400/month it breaches the budget. Tier 3 is the only tier that satisfies both the growth constraint and the budget constraint. The second constraint is the spend ceiling, and without it Tier 4 would look like a safer choice; the gap between 'covers the load' and 'fits the budget' is precisely where this decision lives."
+      "reveal": "Load at the end of the provisioning window: 730 + (12 \u00d7 14) = 730 + 168 = 898 rps. The new tier must handle at least 898 rps. Tier 2 (750 rps) is already saturated at that point. Tier 3 (1,000 rps) fits and costs $1,400/month \u2014 inside the $2,000 ceiling. Tier 4 (1,500 rps) also handles 898 rps, but at $2,400/month it breaches the budget. Tier 3 is the only tier that satisfies both the growth constraint and the budget constraint. The second constraint is the spend ceiling, and without it Tier 4 would look like a safer choice; the gap between 'covers the load' and 'fits the budget' is precisely where this decision lives."
     },
     {
       "id": "threshold_ratelimit_budget",
       "minigame": "threshold_tuning",
       "difficulty": 3,
-      "brief": "The search API has no inbound rate limit and is hit by credential-stuffing bots roughly twice a month. Each event saturates the service, triggers SLA penalties, and pages the on-call team at 3 a.m. You are setting a gateway rate limit on total inbound traffic — high enough to pass all legitimate users at peak, low enough to stop the service saturating before the bot is noticed.",
-      "teaches": "A rate limit must sit above legitimate peak traffic and below the service saturation point — setting it below legitimate peak rejects paying users, and setting it above the saturation point offers no protection when abuse arrives.",
-      "levers": { "tolerance_pct": 0, "table_complete": false, "second_constraint": false },
+      "brief": "The search API has no inbound rate limit and is hit by credential-stuffing bots roughly twice a month. Each event saturates the service, triggers SLA penalties, and pages the on-call team at 3 a.m. You are setting a gateway rate limit on total inbound traffic \u2014 high enough to pass all legitimate users at peak, low enough to stop the service saturating before the bot is noticed.",
+      "teaches": "A rate limit must sit above legitimate peak traffic and below the service saturation point \u2014 setting it below legitimate peak rejects paying users, and setting it above the saturation point offers no protection when abuse arrives.",
+      "levers": {
+        "tolerance_pct": 0,
+        "table_complete": false,
+        "second_constraint": false
+      },
       "given": {
         "table": [
-          { "label": "Registered active users", "value": "40,000" },
-          { "label": "Average sessions per user per day", "value": "3" },
-          { "label": "Average requests per session", "value": "15" },
-          { "label": "Peak traffic window", "value": "4 hours" },
-          { "label": "Service saturation point", "value": "200 rps total inbound" },
-          { "label": "Monthly compute cost at legitimate load", "value": "$1,100/month" },
-          { "label": "Monthly compute cost at saturation (200 rps)", "value": "$2,300/month" },
-          { "label": "Share of daily traffic inside the peak window", "value": "100% — the service is regional and idle outside business hours" },
-          { "label": "Rate-limit margin policy", "value": "set the limit 20% above measured legitimate peak" }
+          {
+            "label": "Registered active users",
+            "value": "40,000"
+          },
+          {
+            "label": "Average sessions per user per day",
+            "value": "3"
+          },
+          {
+            "label": "Average requests per session",
+            "value": "15"
+          },
+          {
+            "label": "Peak traffic window",
+            "value": "4 hours"
+          },
+          {
+            "label": "Service saturation point",
+            "value": "200 rps total inbound"
+          },
+          {
+            "label": "Monthly compute cost at legitimate load",
+            "value": "$1,100/month"
+          },
+          {
+            "label": "Monthly compute cost at saturation (200 rps)",
+            "value": "$2,300/month"
+          },
+          {
+            "label": "Share of daily traffic inside the peak window",
+            "value": "100% \u2014 the service is regional and idle outside business hours"
+          },
+          {
+            "label": "Rate-limit margin policy",
+            "value": "set the limit 20% above measured legitimate peak"
+          }
         ],
         "unit": "rps total inbound",
-        "range": { "min": 10, "max": 300 }
+        "range": {
+          "min": 10,
+          "max": 300
+        }
       },
-      "solution": { "value": 150 },
+      "solution": {
+        "value": 150
+      },
       "wrong_outcomes": [
         {
           "when": "below",
           "shows": "Rate-limit events spike at 14:00 and 20:00. Support tickets open: search returning 429 errors. Legitimate users during peak are capped below their natural request rate. Session completion drops 18% and the product team pages you.",
-          "why_wrong": "The threshold sits below the legitimate peak traffic rate. Ordinary users are rate-limited before any abuse is present — the limit is cutting your own traffic, not the attacker's. Any limit below the 125 rps legitimate peak rejects paying customers at peak; between 126 and 149 you pass all real traffic but leave less margin than the policy requires."
+          "why_wrong": "The threshold sits below the legitimate peak traffic rate. Ordinary users are rate-limited before any abuse is present \u2014 the limit is cutting your own traffic, not the attacker's. Any limit below the 125 rps legitimate peak rejects paying customers at peak; between 126 and 149 you pass all real traffic but leave less margin than the policy requires."
         },
         {
           "when": "above",
           "shows": "You set 240 rps. A bot campaign starts at 03:00 at 220 rps. The rate limit never fires. The service saturates, error rates climb above the SLO, and the on-call alert fires at 03:04. Monthly compute cost climbs from $1,100 to $2,300. The threshold changed nothing.",
-          "why_wrong": "The threshold is above the saturation point, so abuse traffic reaches saturation before the limit fires. A rate limit set above saturation is a label on a door with no lock — the service degrades before it can defend itself."
+          "why_wrong": "The threshold is above the saturation point, so abuse traffic reaches saturation before the limit fires. A rate limit set above saturation is a label on a door with no lock \u2014 the service degrades before it can defend itself."
         }
       ],
-      "reveal": "Legitimate peak traffic is not given, but 40,000 active users × 3 sessions × 15 requests = 1,800,000 daily requests, concentrated into a 4-hour peak window of 4 × 3,600 = 14,400 seconds. Legitimate peak = 1,800,000 ÷ 14,400 = 125 rps. The rate limit must clear 125 rps — any threshold below that rejects paying users at peak. The saturation point is 200 rps, so the ceiling for the limit is 200. Setting 150 rps puts the threshold 20% above legitimate peak and 25% below saturation, leaving margin in both directions while still stopping a bot driving 220 rps before it reaches 200. The absent figure was recoverable by multiplying the three user-traffic rows and dividing by the peak window in seconds — that arithmetic is the only way to set a rate limit that does not cut your own traffic."
+      "reveal": "Legitimate peak traffic is not given, but 40,000 active users \u00d7 3 sessions \u00d7 15 requests = 1,800,000 daily requests, concentrated into a 4-hour peak window of 4 \u00d7 3,600 = 14,400 seconds. Legitimate peak = 1,800,000 \u00f7 14,400 = 125 rps. The rate limit must clear 125 rps \u2014 any threshold below that rejects paying users at peak. The saturation point is 200 rps, so the ceiling for the limit is 200. Setting 150 rps puts the threshold 20% above legitimate peak and 25% below saturation, leaving margin in both directions while still stopping a bot driving 220 rps before it reaches 200. The absent figure was recoverable by multiplying the three user-traffic rows and dividing by the peak window in seconds \u2014 that arithmetic is the only way to set a rate limit that does not cut your own traffic."
     },
     {
       "id": "queue_dlq_retry_ceiling",
       "minigame": "queue_triage",
       "difficulty": 2,
-      "brief": "The order processing queue sees roughly four poison messages per week — corrupted payloads that will never deserialise. The current max-retries setting of 25 blocks each partition for over 12 minutes before the message finally reaches the DLQ. The partition SLA is 5 minutes.",
-      "teaches": "Set the retry ceiling to the maximum that fits the partition lag SLA, not to an arbitrary round number — it must exhaust all transient-error recovery time without blocking the partition past the point where downstream penalties begin.",
-      "levers": { "tolerance_pct": 0, "table_complete": true, "second_constraint": false },
+      "brief": "The order processing queue sees roughly four poison messages per week \u2014 corrupted payloads that will never deserialise. The current max-retries setting of 25 blocks each partition for over 12 minutes before the message finally reaches the DLQ. The partition SLA is 5 minutes.",
+      "teaches": "Set the retry ceiling to the maximum that fits the partition lag SLA, not to an arbitrary round number \u2014 it must exhaust all transient-error recovery time without blocking the partition past the point where downstream penalties begin.",
+      "levers": {
+        "tolerance_pct": 0,
+        "table_complete": true,
+        "second_constraint": false
+      },
       "given": {
         "table": [
-          { "label": "Processing timeout per attempt", "value": "8 s" },
-          { "label": "Retry backoff per attempt", "value": "22 s" },
-          { "label": "Typical transient error recovery window", "value": "75 s" },
-          { "label": "Maximum tolerable partition lag", "value": "5 minutes" },
-          { "label": "SLA penalty for partition lag beyond 5 minutes", "value": "$80 per minute" },
-          { "label": "Observed poison-message rate", "value": "4 per week" },
-          { "label": "Retry count convention", "value": "max retries excludes the initial attempt" }
+          {
+            "label": "Processing timeout per attempt",
+            "value": "8 s"
+          },
+          {
+            "label": "Retry backoff per attempt",
+            "value": "22 s"
+          },
+          {
+            "label": "Typical transient error recovery window",
+            "value": "75 s"
+          },
+          {
+            "label": "Maximum tolerable partition lag",
+            "value": "5 minutes"
+          },
+          {
+            "label": "SLA penalty for partition lag beyond 5 minutes",
+            "value": "$80 per minute"
+          },
+          {
+            "label": "Observed poison-message rate",
+            "value": "4 per week"
+          },
+          {
+            "label": "Retry count convention",
+            "value": "max retries excludes the initial attempt"
+          }
         ],
         "unit": "max retries",
-        "range": { "min": 1, "max": 30 }
+        "range": {
+          "min": 1,
+          "max": 30
+        }
       },
-      "solution": { "value": 10 },
+      "solution": {
+        "value": 10
+      },
       "wrong_outcomes": [
         {
           "when": "below",
           "shows": "A transient dependency timeout clears after 68 seconds. The message has already exhausted 2 retries in 60 seconds and moved to the DLQ. An engineer spots it 40 minutes later and replays it. The order misses the 30-minute fulfilment SLA.",
-          "why_wrong": "Two retries span 60 seconds — below the 75-second transient recovery window. The message was discarded before the dependency had time to recover, turning a transient fault into a false DLQ entry and a missed fulfilment SLA."
+          "why_wrong": "Two retries span 60 seconds \u2014 below the 75-second transient recovery window. The message was discarded before the dependency had time to recover, turning a transient fault into a false DLQ entry and a missed fulfilment SLA."
         },
         {
           "when": "above",
-          "shows": "A poison message arrives at 14:22. It retries 20 times over 600 seconds, blocking its partition for 10 minutes — 5 minutes past the SLA. At 4 occurrences per week and $80 per excess minute, monthly SLA penalties reach $6,800.",
-          "why_wrong": "Twenty retries × 30 seconds per attempt is 600 seconds — 10 minutes of partition lag. The SLA allows 5 minutes; the excess 5 minutes costs $400 per incident. At roughly 17 incidents per month, the preventable monthly penalty is $6,800."
+          "shows": "A poison message arrives at 14:22. It retries 20 times over 600 seconds, blocking its partition for 10 minutes \u2014 5 minutes past the SLA. At 4 occurrences per week and $80 per excess minute, monthly SLA penalties reach $6,800.",
+          "why_wrong": "Twenty retries \u00d7 30 seconds per attempt is 600 seconds \u2014 10 minutes of partition lag. The SLA allows 5 minutes; the excess 5 minutes costs $400 per incident. At roughly 17 incidents per month, the preventable monthly penalty is $6,800."
         }
       ],
-      "reveal": "Each attempt is 8 s processing plus 22 s backoff — 30 s total per retry cycle. The partition SLA budget is 5 minutes, or 300 seconds. 300 ÷ 30 = 10: the maximum retries before penalties begin. The floor is set by the transient recovery window: faults may need up to 75 seconds to clear, which takes 3 retry cycles (90 s) to survive. Ten retries clears the 75-second floor with room to spare and lands exactly at the 300-second SLA ceiling — the partition blocks for at most 300 seconds and the DLQ receives the message before penalties begin. The current setting of 25 retries spends 750 seconds per poison message, generating $10,400/month in penalties from a one-line configuration change."
+      "reveal": "Each attempt is 8 s processing plus 22 s backoff \u2014 30 s total per retry cycle. The partition SLA budget is 5 minutes, or 300 seconds. 300 \u00f7 30 = 10: the maximum retries before penalties begin. The floor is set by the transient recovery window: faults may need up to 75 seconds to clear, which takes 3 retry cycles (90 s) to survive. Ten retries clears the 75-second floor with room to spare and lands exactly at the 300-second SLA ceiling \u2014 the partition blocks for at most 300 seconds and the DLQ receives the message before penalties begin. The current setting of 25 retries spends 750 seconds per poison message, generating $10,400/month in penalties from a one-line configuration change."
+    },
+    {
+      "id": "sizing_cpu_requests",
+      "minigame": "resource_sizing",
+      "difficulty": 2,
+      "brief": "An API service is throttling intermittently, causing p99 latency spikes to 800ms. CPU profiling shows steady-state usage of 190m cores with bursts to 340m under load. The current CPU request is 150m, which means Kubernetes is throttling the container when it tries to burst.",
+      "teaches": "CPU requests in Kubernetes are specified in millicores and should be set to steady-state usage rounded up to the nearest 25m step. The limit handles bursts; the request guarantees baseline capacity.",
+      "levers": {
+        "tolerance_pct": 0,
+        "table_complete": true,
+        "second_constraint": false
+      },
+      "given": {
+        "table": [
+          {
+            "label": "Steady-state CPU",
+            "value": "190m",
+            "unit": "millicores"
+          },
+          {
+            "label": "Peak burst CPU",
+            "value": "340m",
+            "unit": "millicores"
+          },
+          {
+            "label": "CPU limit (already set)",
+            "value": "500m",
+            "unit": "millicores"
+          },
+          {
+            "label": "Current CPU request",
+            "value": "150m",
+            "unit": "millicores"
+          },
+          {
+            "label": "Rounding step",
+            "value": "25m",
+            "unit": "millicores"
+          }
+        ],
+        "unit": "millicores",
+        "range": {
+          "min": 50,
+          "max": 500
+        },
+        "context": "Set the CPU request to guarantee the container gets the cores it needs at steady state. Round up to the nearest 25m step."
+      },
+      "solution": {
+        "value": 200
+      },
+      "wrong_outcomes": [
+        {
+          "when": "below",
+          "shows": "p99 latency stays elevated at 750ms. The container is still being CPU-throttled during normal load \u2014 it requested fewer millicores than it regularly uses.",
+          "why_wrong": "A CPU request below steady-state means the container is not guaranteed the cores it needs in normal operation and will be throttled whenever load hits steady-state."
+        },
+        {
+          "when": "above",
+          "shows": "Latency improves, but cluster utilisation drops 18%. Other services that could have used those cores are now idle. The scheduler reports 340m of over-committed CPU across the fleet.",
+          "why_wrong": "Setting the request at or above burst usage wastes cluster capacity. Requests reserve CPU \u2014 holding cores at burst level means they sit idle most of the time. The CPU limit already handles burst headroom."
+        }
+      ],
+      "reveal": "The correct CPU request is 200m: 190m steady-state rounded up to the nearest 25m step. The request guarantees those cores under normal load; the limit of 500m allows burst to 340m. Setting requests at peak wastes capacity \u2014 requests are reservations, limits are ceilings."
     }
   ]
 }

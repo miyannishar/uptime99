@@ -266,7 +266,7 @@ export function runIntegrityChecks(): string[] {
   }
 
   // 3. Node count
-  if (c.nodes.length !== 26) problems.push(`expected 26 nodes, found ${c.nodes.length}`)
+  if (c.nodes.length !== 27) problems.push(`expected 27 nodes, found ${c.nodes.length}`)
 
   // 4. Unique node ids
   const seen = new Set<string>()

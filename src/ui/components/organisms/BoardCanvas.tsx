@@ -23,13 +23,13 @@ export interface BoardCanvasProps {
  * The board: a graph of draggable nodes.
  *
  * Nodes are absolutely positioned and can be dragged anywhere; drag the
- * background to pan. Link endpoints are pure arithmetic off those positions —
+ * background to pan. Link endpoints are pure arithmetic off those positions -
  * there is deliberately no DOM measurement here, which is both simpler and the
  * reason this component can no longer enter a layout/measure feedback loop.
  *
  * The layer bands behind the nodes are GUIDES, not containers. A node's `layer`
  * is fixed in `data/nodes/*.json` and dragging a card out of its band changes
- * nothing — the band is there so the request path stays readable left to right
+ * nothing - the band is there so the request path stays readable left to right
  * and the off-path shelf stays visibly separate, since those three layers are
  * never in the p95 sum.
  */
@@ -145,7 +145,7 @@ export function BoardCanvas({
             transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
           }}
         >
-          {/* layer bands — guides, not containers */}
+          {/* layer bands - guides, not containers */}
           {requestPathLayers.map((layer, i) => (
             <div
               key={layer.id}

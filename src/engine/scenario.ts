@@ -1,6 +1,9 @@
 import { autoWire } from './ports'
+import { createLogger } from './logger'
 import type { EngineCatalog } from './catalogFrom'
 import type { GameState, NodeInstance, ScenarioDef } from './types'
+
+const log = createLogger('scenario')
 
 /**
  * The canonical instance-id rule. `src/engine/view.ts` regenerates ids to key
@@ -28,6 +31,7 @@ export function scenarioById(scenarioId: string, catalog: EngineCatalog): Scenar
 }
 
 export function loadScenario(scenarioId: string, catalog: EngineCatalog): GameState {
+  log.info('loadScenario', { scenarioId })
   const scenario = scenarioById(scenarioId, catalog)
   const counts: Record<string, number> = {}
 
@@ -49,8 +53,14 @@ export function loadScenario(scenarioId: string, catalog: EngineCatalog): GameSt
     }
   })
 
-  return {
-    save_version: 1,
+  log.debug('scenario board loaded', {
+    boardSize: instances.length,
+    uniqueNodes: Object.keys(counts).length,
+    budget: scenario.starting_budget,
+  })
+
+  const state: GameState = {
+    save_version: 1 as const,
     scenario_id: scenario.id,
     phase: 'design',
     tick: 0,
@@ -70,4 +80,6 @@ export function loadScenario(scenarioId: string, catalog: EngineCatalog): GameSt
       peak_p95_ms: 0, incidents_fired: 0, incidents_resolved: 0, status: 'running',
     },
   }
+  log.debug('scenario initialized', { instanceCount: state.instances.length })
+  return state
 }

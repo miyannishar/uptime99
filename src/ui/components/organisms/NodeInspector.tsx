@@ -14,7 +14,7 @@ import s from './NodeInspector.module.css'
 
 export interface NodeInspectorProps {
   node: BoardNode
-  /** Already gated by `constraint` — the inspector only renders. */
+  /** Already gated by `constraint` - the inspector only renders. */
   actions: readonly ResolvedAction[]
   ladder: readonly TierLadderEntry[]
   ports: readonly PortFill[]
@@ -24,7 +24,7 @@ export interface NodeInspectorProps {
   onUpgradeTier?: (tier: number) => void
   /** Plain-language condition, e.g. "host fault · sled 2 failed · no replica". */
   conditionNote?: string
-  /** One entry per rack sled. Decorative — mirrors `conditionNote`. */
+  /** One entry per rack sled. Decorative - mirrors `conditionNote`. */
   sleds?: readonly LedState[]
   saturationKnee?: number
 }
@@ -77,7 +77,7 @@ export function NodeInspector({
         </div>
         <p className={s.sub}>
           <span className={s.instId}>{inst.instance_id}</span>
-          {' · '}tier {inst.tier} — {tier.name}
+          {' · '}tier {inst.tier} - {tier.name}
           {' · '}{inst.region}
         </p>
         <p className={s.desc}>{def.description}</p>
@@ -119,7 +119,7 @@ export function NodeInspector({
           {/* `down` and `health: 0` are different situations; spell out which. */}
           {inst.down && (
             <p className={s.note}>
-              Unreachable — no traffic is being routed here. Costs {stats.blast_radius.toFixed(2)} of
+              Unreachable - no traffic is being routed here. Costs {stats.blast_radius.toFixed(2)} of
               total uptime while it stays down.
             </p>
           )}
@@ -132,7 +132,7 @@ export function NodeInspector({
           {conditionNote && <p className={s.conditionNote}>{conditionNote}</p>}
           {node.provisioningTicksLeft !== null && node.provisioningTicksLeft > 0 && (
             <p className={s.note}>
-              Provisioning — {formatDuration(node.provisioningTicksLeft * 5)} remaining.
+              Provisioning - {formatDuration(node.provisioningTicksLeft * 5)} remaining.
             </p>
           )}
         </div>
