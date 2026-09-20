@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { loadEngineCatalog, catalogFrom } from '../src/engine/catalog'
+import { loadEngineCatalog } from '../src/engine/catalog'
+import { catalogFrom } from '../src/engine/catalogFrom'
 import { loadScenario } from '../src/engine/scenario'
 import { canStartRun, startRun, isSessionOver, endSession, runSession } from '../src/engine/session'
 import { advance } from '../src/engine/tick'
@@ -88,11 +89,12 @@ describe('isSessionOver', () => {
     })
   }
 
-  it('throws a clear not-implemented error for an endless end kind', () => {
+  it('endless end kind never ends on its own — returns false', () => {
     const cat = withEnd('endless')
-    expect(() =>
+    // endless sessions run until the player calls endSession; isSessionOver always returns false
+    expect(
       isSessionOver({ ...startRun(fresh(), c), scenario_id: 'end-kind-probe' }, cat),
-    ).toThrow(/not implemented/)
+    ).toBe(false)
   })
 
   it('throws a clear not-implemented error for an objectives end kind', () => {

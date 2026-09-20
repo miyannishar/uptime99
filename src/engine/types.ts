@@ -122,7 +122,14 @@ export interface BoardNodeView {
   readonly health: number
   readonly utilization_pct: number
   readonly down: boolean
+  /** Combined status folding health, down, and utilisation together.
+   * Use `healthStatus` and `utilStatus` when rendering two independent
+   * bars — a node at health 95 but utilisation 140% needs them to differ. */
   readonly status: Status
+  /** Health dimension only: bad ≤ 0 or down; warn < 60; ok otherwise. */
+  readonly healthStatus: Status
+  /** Utilisation dimension only: bad ≥ 150%; warn ≥ saturation_knee (80%); ok otherwise. */
+  readonly utilStatus: Status
   /** Definition tags for the current tier merged with tags_runtime. */
   readonly tags: readonly string[]
   /** Contributes to the p95 sum: on-path layer AND not async/scheduled. */
@@ -152,8 +159,10 @@ export interface ScenarioDef {
   readonly id: string
   readonly name: string
   readonly blurb: string
-  /** Target star count authored in the definition. Earned progress is save-state, not authored data. */
-  readonly stars: number
+  /** Maximum stars a player can earn on this scenario, authored in the definition.
+   * Deliberately NOT named `stars` to prevent a straight-through assignment in adapt.ts —
+   * earned stars are save-state (UI-local), not authored data. */
+  readonly star_target: number
   readonly level: number | null
   readonly unlocked_by: readonly string[]
   readonly incident_source: 'scripted' | 'weighted'

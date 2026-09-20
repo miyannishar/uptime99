@@ -1,0 +1,23 @@
+{
+  "id": "level-4-queue-depth",
+  "name": "Queue Everything",
+  "blurb": "You have async jobs now. The queue is growing faster than the workers can drain it. Two concurrent incidents. No slack.",
+  "level": 4,
+  "unlocked_by": ["level-3-reliability"],
+  "incident_source": "weighted",
+  "star_target": 3,
+  "starting_budget": 800,
+  "allowed_layers": ["edge", "ingress", "compute", "data", "reliability", "observability", "delivery"],
+  "board": [
+    { "def_id": "cdn", "tier": 1, "region": "us-east-1a", "x": 40, "y": 120 },
+    { "def_id": "load_balancer", "tier": 2, "region": "us-east-1a", "x": 190, "y": 120 },
+    { "def_id": "app_cluster", "tier": 2, "region": "us-east-1a", "x": 340, "y": 80 },
+    { "def_id": "worker_pool", "tier": 1, "region": "us-east-1a", "x": 340, "y": 200 },
+    { "def_id": "redis", "tier": 2, "region": "us-east-1a", "x": 490, "y": 80 },
+    { "def_id": "message_queue", "tier": 1, "region": "us-east-1a", "x": 490, "y": 200 },
+    { "def_id": "postgres", "tier": 2, "region": "us-east-1a", "x": 640, "y": 140 },
+    { "def_id": "backup_system", "tier": 1, "region": "us-east-1a", "x": 640, "y": 260 }
+  ],
+  "end": { "kind": "fixed_window", "ticks": 100 },
+  "incidents": []
+}

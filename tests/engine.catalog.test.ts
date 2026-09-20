@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { loadEngineCatalog, deepFreeze } from '../src/engine/catalog'
+import { loadEngineCatalog } from '../src/engine/catalog'
+import { deepFreeze } from '../src/engine/catalogFrom'
 
 const c = loadEngineCatalog()
 
@@ -14,7 +15,7 @@ describe('loadEngineCatalog', () => {
     expect(c.formats).toHaveLength(5)
     expect(c.minigames).toHaveLength(15)
     expect(c.minigameInstances).toHaveLength(29)
-    expect(c.scenarios).toHaveLength(1)
+    expect(c.scenarios).toHaveLength(6)
   })
 
   it('indexes by id', () => {

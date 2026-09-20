@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { loadEngineCatalog, catalogFrom } from '../src/engine/catalog'
+import { loadEngineCatalog } from '../src/engine/catalog'
+import { catalogFrom } from '../src/engine/catalogFrom'
 import { loadScenario } from '../src/engine/scenario'
 import { advance } from '../src/engine/tick'
 import { HISTORY_WINDOW, type GameState, type IncidentRecord } from '../src/engine/types'

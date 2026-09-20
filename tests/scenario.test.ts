@@ -85,14 +85,19 @@ describe('scenario.schema.json', () => {
   })
 })
 
-describe('the shipped scenario', () => {
-  it('loads exactly one scenario', () => {
-    expect(scenarios).toHaveLength(1)
-    expect(scenarios[0].id).toBe('slice-oom-kill')
+describe('the shipped scenarios', () => {
+  const slice = scenarios.find((s: any) => s.id === 'slice-oom-kill')!
+
+  it('loads 6 scenarios (5 levels + free play)', () => {
+    expect(scenarios).toHaveLength(6)
+    expect(scenarios.map((s: any) => s.id).sort()).toEqual([
+      'free-play', 'level-2-cache-miss', 'level-3-reliability',
+      'level-4-queue-depth', 'level-5-production', 'slice-oom-kill',
+    ])
   })
 
-  it('puts one node on each on-path layer', () => {
-    const layers = scenarios[0].board.map(
+  it('puts one node on each on-path layer on the slice board', () => {
+    const layers = slice.board.map(
       (b: any) => catalog.nodes.find((n: any) => n.id === b.def_id)!.layer,
     )
     expect([...layers].sort()).toEqual(['compute', 'data', 'edge', 'ingress'])
@@ -106,14 +111,21 @@ describe('the shipped scenario', () => {
     expect(checkScenarioBoards(scenarios, catalog)).toEqual([])
   })
 
-  it('fires an incident that can actually target the board', () => {
-    expect(scenarios[0].incidents.map((i: any) => i.incident_id)).toEqual(['oom_kill'])
+  it('fires an incident that can actually target the slice board', () => {
+    expect(slice.incidents.map((i: any) => i.incident_id)).toEqual(['oom_kill'])
   })
 
-  it('is level 1 of the campaign, unlocked from the start, with a scripted schedule', () => {
-    expect(scenarios[0].level).toBe(1)
-    expect(scenarios[0].unlocked_by).toEqual([])
-    expect(scenarios[0].incident_source).toBe('scripted')
+  it('slice is level 1 of the campaign, unlocked from the start, with a scripted schedule', () => {
+    expect(slice.level).toBe(1)
+    expect(slice.unlocked_by).toEqual([])
+    expect(slice.incident_source).toBe('scripted')
+  })
+
+  it('free-play has no time limit and a difficulty block', () => {
+    const fp = scenarios.find((s: any) => s.id === 'free-play')!
+    expect(fp.end.kind).toBe('endless')
+    expect(fp.level).toBeNull()
+    expect(fp.difficulty).toBeDefined()
   })
 })
 
@@ -130,19 +142,22 @@ describe('checkScenarioProgression', () => {
 
   it('fires when a scenario unlocks itself', () => {
     const bad = structuredClone(scenarios)
-    bad[0].unlocked_by = ['slice-oom-kill']
+    const idx = bad.findIndex((s: any) => s.id === 'free-play')
+    bad[idx].unlocked_by = ['free-play']
     expect(checkScenarioProgression(bad).join()).toMatch(/itself|cycle/i)
   })
 
   it('fires when a weighted scenario also authors an incident schedule', () => {
     const bad = structuredClone(scenarios)
-    bad[0].incident_source = 'weighted'
+    const idx = bad.findIndex((s: any) => s.id === 'slice-oom-kill')
+    bad[idx].incident_source = 'weighted'
     expect(checkScenarioProgression(bad).join()).toMatch(/weighted/)
   })
 
   it('fires when a scripted scenario authors no incidents at all', () => {
     const bad = structuredClone(scenarios)
-    bad[0].incidents = []
+    const idx = bad.findIndex((s: any) => s.id === 'slice-oom-kill')
+    bad[idx].incidents = []
     expect(checkScenarioProgression(bad).join()).toMatch(/scripted/)
   })
 })
@@ -156,19 +171,22 @@ describe('checkScenarioRefs', () => {
 
   it('fires on an unknown incident_id', () => {
     const bad = structuredClone(scenarios)
-    bad[0].incidents[0].incident_id = 'gremlins'
+    const idx = bad.findIndex((s: any) => s.id === 'slice-oom-kill')
+    bad[idx].incidents[0].incident_id = 'gremlins'
     expect(checkScenarioRefs(bad, catalog).join()).toMatch(/gremlins/)
   })
 
   it('accepts at_tick equal to end.ticks — fires on the last tick', () => {
     const s = structuredClone(scenarios)
-    s[0].incidents[0].at_tick = s[0].end.ticks  // 40 for slice-oom-kill
+    const idx = s.findIndex((x: any) => x.id === 'slice-oom-kill')
+    s[idx].incidents[0].at_tick = s[idx].end.ticks  // 40
     expect(checkScenarioRefs(s, catalog)).toEqual([])
   })
 
   it('fires when at_tick exceeds end.ticks — fires after the window', () => {
     const s = structuredClone(scenarios)
-    s[0].incidents[0].at_tick = s[0].end.ticks + 1
+    const idx = s.findIndex((x: any) => x.id === 'slice-oom-kill')
+    s[idx].incidents[0].at_tick = s[idx].end.ticks + 1
     expect(checkScenarioRefs(s, catalog).join()).toMatch(/after|never appear/i)
   })
 

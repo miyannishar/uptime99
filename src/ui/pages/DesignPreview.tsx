@@ -1,41 +1,47 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import type { DepthMode } from '../types'
 import { BoardCanvas, CatalogDrawer, DesignPhasePanel, MetricsHeader } from '../components/organisms'
 import { DesignLayout } from '../components/templates'
 import type { Speed } from '../components/molecules'
-import {
-  economy, index, layers, offPathLayers, requestPathLayers,
-} from '../data/catalog'
-import {
-  allNodeDefs, placedCounts, sampleBoard, sampleDesignSummary, sampleMetrics, sampleTick,
-} from '../fixtures/sampleRun'
+import { economy, engineCatalog, layers, nodes, offPathLayers, requestPathLayers } from '../data/catalog'
+import { adaptDesignSummary } from '../adapt'
+import { designSummary } from '@engine/summary'
+import type { UseGameStateReturn } from '../hooks/useGameState'
 
 export interface DesignPreviewProps {
   depthMode: DepthMode
   onDepthChange: (mode: DepthMode) => void
+  game: UseGameStateReturn
 }
 
-/**
- * The untimed design phase.
- *
- * Note the right-hand panel reports one unsatisfied port: the fixture board has a
- * worker_pool with nothing wired into its `queue` port, whose `min` is 1. That is
- * a real board error the design phase is supposed to catch before the run starts,
- * and it is why the commit button is disabled here.
- */
-export function DesignPreview({ depthMode, onDepthChange }: DesignPreviewProps) {
+export function DesignPreview({ depthMode, onDepthChange, game }: DesignPreviewProps) {
+  const { state, board, metrics, tick, startGame } = game
   const [speed, setSpeed] = useState<Speed>(0)
+
+  const placedCounts = useMemo(
+    () => state.instances.reduce<Record<string, number>>((acc, inst) => {
+      acc[inst.def_id] = (acc[inst.def_id] ?? 0) + 1
+      return acc
+    }, {}),
+    [state.instances],
+  )
+
+  const engineSummary = useMemo(() => designSummary(state, engineCatalog), [state])
+  const summary = useMemo(
+    () => adaptDesignSummary(engineSummary, board, metrics),
+    [engineSummary, board, metrics],
+  )
 
   return (
     <DesignLayout
       header={
         <MetricsHeader
-          readings={sampleMetrics}
-          tick={sampleTick}
+          readings={metrics}
+          tick={tick}
           tickSeconds={economy.tick_seconds}
           speed={speed}
           onSpeedChange={setSpeed}
-          budget={sampleDesignSummary.budget}
+          budget={state.budget}
           startingBudget={economy.starting_budget}
           depthMode={depthMode}
           onDepthChange={onDepthChange}
@@ -43,17 +49,17 @@ export function DesignPreview({ depthMode, onDepthChange }: DesignPreviewProps) 
       }
       catalog={
         <CatalogDrawer
-          nodes={allNodeDefs}
-          layers={layers}
-          tagById={index.tagById}
+          nodes={nodes as any}
+          layers={layers as any}
+          tagById={engineCatalog.tagById as any}
           placedCounts={placedCounts}
-          budget={sampleDesignSummary.budget}
+          budget={state.budget}
           onAdd={() => {}}
         />
       }
       board={
         <BoardCanvas
-          nodes={sampleBoard}
+          nodes={board}
           requestPathLayers={requestPathLayers}
           offPathLayers={offPathLayers}
           saturationKnee={economy.saturation_knee}
@@ -61,13 +67,13 @@ export function DesignPreview({ depthMode, onDepthChange }: DesignPreviewProps) 
       }
       summary={
         <DesignPhasePanel
-          summary={sampleDesignSummary}
+          summary={summary}
           blockedReason={
-            sampleDesignSummary.unsatisfiedPorts.length > 0
+            summary.unsatisfiedPorts.length > 0
               ? 'A required port is unwired. The board will not start.'
               : undefined
           }
-          onCommit={() => {}}
+          onCommit={startGame}
         />
       }
     />

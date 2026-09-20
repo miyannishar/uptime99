@@ -1,6 +1,6 @@
 import { nextFloat, type Rng } from './rng'
 import type { Difficulty } from './difficulty'
-import type { EngineCatalog } from './catalog'
+import type { EngineCatalog } from './catalogFrom'
 import type { GameState, NodeInstance } from './types'
 
 /**

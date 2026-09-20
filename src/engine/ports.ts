@@ -1,4 +1,4 @@
-import type { EngineCatalog } from './catalog'
+import type { EngineCatalog } from './catalogFrom'
 import type { NodeInstance, PortFillView } from './types'
 
 /** Instances whose definition `provides` at least one of `accepts`. */

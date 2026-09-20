@@ -66,3 +66,30 @@
 }
 
 .survive { color: var(--bad); }
+
+.actionButtons {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  margin-top: var(--sp-2);
+}
+
+.actionBtn {
+  padding: 3px 10px;
+  font-size: var(--fs-1);
+  color: var(--acc);
+  background: var(--acc-bg);
+  border: 1px solid var(--tag-property-line);
+  border-radius: var(--r-1);
+  cursor: pointer;
+  transition: background 80ms;
+}
+
+.actionBtn:hover:not(:disabled) {
+  background: var(--acc-bg-hover, color-mix(in srgb, var(--acc) 20%, transparent));
+}
+
+.actionBtn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}

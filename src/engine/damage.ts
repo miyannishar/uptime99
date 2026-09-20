@@ -1,6 +1,6 @@
 import { nextInt, type Rng } from './rng'
 import { targetsOf } from './arrival'
-import type { EngineCatalog } from './catalog'
+import type { EngineCatalog } from './catalogFrom'
 import type { GameState, NodeInstance } from './types'
 
 /**

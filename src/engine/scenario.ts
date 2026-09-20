@@ -1,5 +1,5 @@
 import { autoWire } from './ports'
-import type { EngineCatalog } from './catalog'
+import type { EngineCatalog } from './catalogFrom'
 import type { GameState, NodeInstance, ScenarioDef } from './types'
 
 /**

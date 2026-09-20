@@ -1,5 +1,5 @@
 import { evaluateFormula, type FormulaScope } from './formula'
-import type { EngineCatalog } from './catalog'
+import type { EngineCatalog } from './catalogFrom'
 import { METRIC_IDS, type GameState, type MetricId, type NodeInstance } from './types'
 
 export const SECONDS_PER_MONTH = 2_592_000

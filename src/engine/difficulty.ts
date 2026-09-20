@@ -1,4 +1,4 @@
-import type { EngineCatalog } from './catalog'
+import type { EngineCatalog } from './catalogFrom'
 import type { ScenarioDef } from './types'
 
 export interface Difficulty {

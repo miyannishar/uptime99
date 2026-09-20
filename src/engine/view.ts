@@ -1,4 +1,4 @@
-import type { EngineCatalog } from './catalog'
+import type { EngineCatalog } from './catalogFrom'
 import { deriveMetrics, onRequestPath } from './metrics'
 import { instanceIdFor } from './scenario'
 import {
@@ -21,6 +21,22 @@ export function nodeStatusOf(i: NodeInstance, catalog: EngineCatalog): Status {
   if (i.down || i.health <= 0) return 'bad'
   const knee = (catalog.economy.saturation_knee as number) * 100
   if (i.health < 60 || i.utilization_pct >= knee) return 'warn'
+  return 'ok'
+}
+
+/** Health dimension only — so the UI can show two independent bars on a node
+ * at health 95 but utilisation 140% (green bar + red bar, not a combined warn). */
+export function healthStatusOf(i: NodeInstance): Status {
+  if (i.down || i.health <= 0) return 'bad'
+  if (i.health < 60) return 'warn'
+  return 'ok'
+}
+
+/** Utilisation dimension only. */
+export function utilStatusOf(i: NodeInstance, catalog: EngineCatalog): Status {
+  if (i.utilization_pct >= 150) return 'bad'
+  const knee = (catalog.economy.saturation_knee as number) * 100
+  if (i.utilization_pct >= knee) return 'warn'
   return 'ok'
 }
 
@@ -50,6 +66,8 @@ export function boardOf(state: GameState, catalog: EngineCatalog): BoardNodeView
       utilization_pct: i.utilization_pct,
       down: i.down,
       status: nodeStatusOf(i, catalog),
+      healthStatus: healthStatusOf(i),
+      utilStatus: utilStatusOf(i, catalog),
       tags: [...(tier?.tags ?? []), ...i.tags_runtime],
       onRequestPath: onRequestPath(i, catalog),
       edgesOut: i.edges_out,

@@ -1,22 +1,17 @@
+/* The Node-only half of the catalogue: reads the data files off disk and hands
+   them to the pure constructor in `catalogFrom.ts`.
+
+   This module imports `node:fs` and `node:path` and is therefore the ONE engine
+   module deliberately excluded from `check:browser`. Everything a browser needs
+   — `catalogFrom`, `deepFreeze`, `EngineCatalog` — lives in `catalogFrom.ts`
+   instead. Do not re-export them from here: a value re-export would make it
+   possible to import them through this module again and silently pull `node:fs`
+   into a browser bundle, which is the exact failure this split fixed. */
+
 import { readdirSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { loadJson } from '../validate/loadJson'
-
-function _deepFreeze<T>(o: T, seen: WeakSet<object>): T {
-  if (o === null || typeof o !== 'object') return o
-  if (seen.has(o as object)) return o
-  seen.add(o as object)
-  if (o instanceof Map) { for (const v of (o as Map<unknown, unknown>).values()) _deepFreeze(v, seen) }
-  else if (o instanceof Set) { for (const v of (o as Set<unknown>).values()) _deepFreeze(v, seen) }
-  for (const v of Object.values(o as Record<string, unknown>)) _deepFreeze(v, seen)
-  return Object.freeze(o)
-}
-
-/** Deep-freeze an object graph. The recursion sentinel is private; the public
- * signature takes only the value to freeze. */
-export function deepFreeze<T>(o: T): T {
-  return _deepFreeze(o, new WeakSet())
-}
+import { catalogFrom, type EngineCatalog } from './catalogFrom'
 
 function loadDir(dir: string, key: string): any[] {
   const abs = resolve(import.meta.dirname, '../..', dir)
@@ -30,80 +25,6 @@ function loadDirObjects(dir: string): any[] {
   return readdirSync(abs)
     .filter((f) => f.endsWith('.json')).sort()
     .map((f) => loadJson<any>(`${dir}/${f}`))
-}
-
-export interface EngineCatalog {
-  readonly nodes: readonly any[]
-  readonly layers: readonly any[]
-  readonly tags: readonly any[]
-  readonly actions: readonly any[]
-  readonly metrics: readonly any[]
-  readonly economy: Readonly<Record<string, any>>
-  readonly incidents: readonly any[]
-  readonly formats: readonly any[]
-  readonly minigames: readonly any[]
-  /** Minigame instances. Renamed from `instances` (I4) to avoid collision with
-   * `GameState.instances`, which are node instances. */
-  readonly minigameInstances: readonly any[]
-  readonly scenarios: readonly any[]
-  readonly levels: readonly any[]
-  readonly nodeById: ReadonlyMap<string, any>
-  readonly layerById: ReadonlyMap<string, any>
-  readonly tagById: ReadonlyMap<string, any>
-  readonly actionById: ReadonlyMap<string, any>
-  readonly metricById: ReadonlyMap<string, any>
-  readonly incidentById: ReadonlyMap<string, any>
-  readonly scenarioById: ReadonlyMap<string, any>
-  readonly levelByNumber: ReadonlyMap<number, any>
-}
-
-/** Pure constructor: takes already-parsed JSON arrays, does no I/O.
- * The browser uses this after fetching the data files over HTTP;
- * Node uses it via `loadEngineCatalog`. */
-export function catalogFrom(rawData: {
-  nodes: any[]
-  layers: any[]
-  tags: any[]
-  actions: any[]
-  metrics: any[]
-  economy: Record<string, any>
-  incidents: any[]
-  formats: any[]
-  minigames: any[]
-  minigameInstances: any[]
-  scenarios: any[]
-  levels: any[]
-}): EngineCatalog {
-  const {
-    nodes, layers, tags, actions, metrics, economy,
-    incidents, formats, minigames, minigameInstances, scenarios, levels,
-  } = rawData
-
-  const index = <T extends { id: string }>(xs: T[]) =>
-    new Map(xs.map((x) => [x.id, x]))
-
-  return deepFreeze({
-    nodes,
-    layers,
-    tags,
-    actions,
-    metrics,
-    economy,
-    incidents,
-    formats,
-    minigames,
-    minigameInstances,
-    scenarios,
-    levels,
-    nodeById: index(nodes),
-    layerById: index(layers),
-    tagById: index(tags),
-    actionById: index(actions),
-    metricById: index(metrics),
-    incidentById: index(incidents),
-    scenarioById: index(scenarios),
-    levelByNumber: new Map(levels.map((l: any) => [l.level, l])),
-  }) as EngineCatalog
 }
 
 /** Node-only thin wrapper: reads the data files and calls `catalogFrom`. */

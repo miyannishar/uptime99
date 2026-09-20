@@ -1,0 +1,24 @@
+{
+  "id": "free-play",
+  "name": "Free Play",
+  "blurb": "No time limit. No score. Build any system you want and let incidents come. The clock never stops.",
+  "level": null,
+  "difficulty": {
+    "arrival_mean_ticks": 25,
+    "severity_max": 5,
+    "max_concurrent": 3
+  },
+  "unlocked_by": ["slice-oom-kill"],
+  "incident_source": "weighted",
+  "star_target": 0,
+  "starting_budget": 800,
+  "allowed_layers": ["edge", "ingress", "compute", "data", "reliability", "observability", "delivery"],
+  "board": [
+    { "def_id": "cdn", "tier": 1, "region": "us-east-1a", "x": 40, "y": 120 },
+    { "def_id": "load_balancer", "tier": 1, "region": "us-east-1a", "x": 190, "y": 120 },
+    { "def_id": "app_cluster", "tier": 1, "region": "us-east-1a", "x": 340, "y": 90 },
+    { "def_id": "postgres", "tier": 1, "region": "us-east-1a", "x": 340, "y": 200 }
+  ],
+  "end": { "kind": "endless" },
+  "incidents": []
+}

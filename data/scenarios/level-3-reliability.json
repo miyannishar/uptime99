@@ -1,0 +1,21 @@
+{
+  "id": "level-3-reliability",
+  "name": "No Backup Plan",
+  "blurb": "A severity-4 incident is coming. You don't have a backup system. You don't have a queue. Your SLO is already slipping.",
+  "level": 3,
+  "unlocked_by": ["level-2-cache-miss"],
+  "incident_source": "weighted",
+  "star_target": 3,
+  "starting_budget": 800,
+  "allowed_layers": ["edge", "ingress", "compute", "data", "reliability", "observability"],
+  "board": [
+    { "def_id": "cdn", "tier": 1, "region": "us-east-1a", "x": 40, "y": 120 },
+    { "def_id": "load_balancer", "tier": 1, "region": "us-east-1a", "x": 190, "y": 120 },
+    { "def_id": "app_cluster", "tier": 2, "region": "us-east-1a", "x": 340, "y": 80 },
+    { "def_id": "redis", "tier": 1, "region": "us-east-1a", "x": 340, "y": 190 },
+    { "def_id": "postgres", "tier": 2, "region": "us-east-1a", "x": 490, "y": 120 },
+    { "def_id": "backup_system", "tier": 1, "region": "us-east-1a", "x": 490, "y": 230 }
+  ],
+  "end": { "kind": "fixed_window", "ticks": 80 },
+  "incidents": []
+}

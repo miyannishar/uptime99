@@ -1,0 +1,24 @@
+{
+  "id": "level-5-production",
+  "name": "This Is Production",
+  "blurb": "Full stack. Three concurrent incidents possible. Severity 5. Your on-call rotation fires. You have two minutes per incident.",
+  "level": 5,
+  "unlocked_by": ["level-4-queue-depth"],
+  "incident_source": "weighted",
+  "star_target": 3,
+  "starting_budget": 800,
+  "allowed_layers": ["edge", "ingress", "compute", "data", "reliability", "observability", "delivery"],
+  "board": [
+    { "def_id": "cdn", "tier": 1, "region": "us-east-1a", "x": 40, "y": 120 },
+    { "def_id": "load_balancer", "tier": 2, "region": "us-east-1a", "x": 190, "y": 120 },
+    { "def_id": "app_cluster", "tier": 2, "region": "us-east-1a", "x": 340, "y": 80 },
+    { "def_id": "worker_pool", "tier": 1, "region": "us-east-1a", "x": 340, "y": 210 },
+    { "def_id": "redis", "tier": 2, "region": "us-east-1a", "x": 490, "y": 60 },
+    { "def_id": "message_queue", "tier": 1, "region": "us-east-1a", "x": 490, "y": 190 },
+    { "def_id": "postgres", "tier": 2, "region": "us-east-1a", "x": 640, "y": 120 },
+    { "def_id": "backup_system", "tier": 1, "region": "us-east-1a", "x": 640, "y": 260 },
+    { "def_id": "metrics_pipeline", "tier": 1, "region": "us-east-1a", "x": 190, "y": 280 }
+  ],
+  "end": { "kind": "fixed_window", "ticks": 120 },
+  "incidents": []
+}

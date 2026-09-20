@@ -1,69 +1,100 @@
 import { useState } from 'react'
 import { useDepthMode } from './hooks/useDepthMode'
 import { DepthToggle } from './components/molecules'
-import { Gallery } from './pages/Gallery'
+import { DebriefPanel, ScenarioSelect } from './components/organisms'
 import { RunPreview } from './pages/RunPreview'
 import { DesignPreview } from './pages/DesignPreview'
-import { MinigamePreview } from './pages/MinigamePreview'
-import { OutcomePreview } from './pages/OutcomePreview'
 import { cx } from './utils/format'
+import { adaptScenarios, adaptDebriefSummary } from './adapt'
+import { debriefSummary } from '@engine/summary'
+import { engineCatalog } from './data/catalog'
+import { useGameState } from './hooks/useGameState'
 import s from './App.module.css'
 
-type View = 'run' | 'design' | 'minigames' | 'outcome' | 'library'
+const scenarios = adaptScenarios()
 
-const VIEWS: { id: View; label: string; hint: string; full: boolean }[] = [
-  { id: 'run', label: 'Run phase', hint: 'Board, inspector, incidents, ⌘K', full: true },
-  { id: 'design', label: 'Design phase', hint: 'Catalog, projection, commit gate', full: true },
-  { id: 'minigames', label: 'Minigames', hint: 'All five interaction formats', full: false },
-  { id: 'outcome', label: 'Scenarios & debrief', hint: 'Entry and exit screens', full: false },
-  { id: 'library', label: 'Library', hint: 'Every atom and molecule', full: false },
-]
-
+/**
+ * The real game: scenario select → design → run → debrief.
+ * The engine drives phase transitions; this component routes to the right screen.
+ */
 export function App() {
   const [depthMode, setDepthMode] = useDepthMode()
-  const [view, setView] = useState<View>('run')
-  const active = VIEWS.find((v) => v.id === view) ?? VIEWS[0]
+  const [scenarioId, setScenarioId] = useState<string | null>(null)
+
+  if (!scenarioId) {
+    return (
+      <div className={s.root}>
+        <nav className={s.nav}>
+          <span className={s.brand}>uptime99</span>
+          <span className={s.spacer} />
+          <DepthToggle mode={depthMode} onChange={setDepthMode} includeAuto />
+        </nav>
+        <div className={cx(s.body, s.padded)}>
+          <ScenarioSelect scenarios={scenarios} onPick={setScenarioId} />
+        </div>
+      </div>
+    )
+  }
 
   return (
-    <div className={cx(s.root, active.full && s.full)}>
-      <nav className={s.nav}>
-        <span className={s.brand}>uptime99</span>
-        <span className={s.tag}>UI</span>
+    <GameApp
+      key={scenarioId}
+      scenarioId={scenarioId}
+      depthMode={depthMode}
+      setDepthMode={setDepthMode}
+      onBack={() => setScenarioId(null)}
+    />
+  )
+}
 
-        <div className={s.tabs}>
-          {VIEWS.map((v) => (
-            <button
-              key={v.id}
-              type="button"
-              title={v.hint}
-              className={cx(s.tab, v.id === view && s.tabOn)}
-              onClick={() => setView(v.id)}
-            >
-              {v.label}
-            </button>
-          ))}
+interface GameAppProps {
+  scenarioId: string
+  depthMode: ReturnType<typeof useDepthMode>[0]
+  setDepthMode: ReturnType<typeof useDepthMode>[1]
+  onBack: () => void
+}
+
+function GameApp({ scenarioId, depthMode, setDepthMode, onBack }: GameAppProps) {
+  const game = useGameState(scenarioId)
+  const { state, phase } = game
+
+  if (phase === 'debrief') {
+    const summary = debriefSummary(state, engineCatalog)
+    const adapted = adaptDebriefSummary(summary)
+    return (
+      <div className={s.root}>
+        <nav className={s.nav}>
+          <span className={s.brand}>uptime99</span>
+          <span className={s.spacer} />
+          <DepthToggle mode={depthMode} onChange={setDepthMode} includeAuto />
+        </nav>
+        <div className={cx(s.body, s.padded)}>
+          <DebriefPanel
+            summary={adapted as any}
+            onRetry={game.reset}
+            onContinue={onBack}
+          />
         </div>
-
-        <span className={s.spacer} />
-        <span className={s.hint}>{active.hint}</span>
-        <DepthToggle mode={depthMode} onChange={setDepthMode} includeAuto />
-      </nav>
-
-      <div className={s.body}>
-        {view === 'run' && <RunPreview depthMode={depthMode} onDepthChange={setDepthMode} />}
-        {view === 'design' && <DesignPreview depthMode={depthMode} onDepthChange={setDepthMode} />}
-        {view === 'minigames' && (
-          <div className={s.padded}>
-            <MinigamePreview />
-          </div>
-        )}
-        {view === 'outcome' && (
-          <div className={s.padded}>
-            <OutcomePreview />
-          </div>
-        )}
-        {view === 'library' && <Gallery />}
       </div>
-    </div>
+    )
+  }
+
+  if (phase === 'design') {
+    return (
+      <DesignPreview
+        depthMode={depthMode}
+        onDepthChange={setDepthMode}
+        game={game}
+      />
+    )
+  }
+
+  return (
+    <RunPreview
+      depthMode={depthMode}
+      onDepthChange={setDepthMode}
+      game={game}
+      onQuit={onBack}
+    />
   )
 }

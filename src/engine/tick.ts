@@ -5,7 +5,7 @@ import { affectedInstanceIds, applyDamage } from './damage'
 import { ledgerEntriesFor } from './ledger'
 import { deriveMetrics } from './metrics'
 import { scenarioById } from './scenario'
-import type { EngineCatalog } from './catalog'
+import type { EngineCatalog } from './catalogFrom'
 import {
   HISTORY_WINDOW, METRIC_IDS,
   type GameState, type IncidentRecord, type LedgerEntry, type MetricId,

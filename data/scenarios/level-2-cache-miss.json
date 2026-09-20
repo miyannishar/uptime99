@@ -1,0 +1,20 @@
+{
+  "id": "level-2-cache-miss",
+  "name": "Cache or Crash",
+  "blurb": "Traffic doubled overnight. Your app cluster is fine. Your database is not. Add a cache before the query storm takes everything down.",
+  "level": 2,
+  "unlocked_by": ["slice-oom-kill"],
+  "incident_source": "weighted",
+  "star_target": 3,
+  "starting_budget": 800,
+  "allowed_layers": ["edge", "ingress", "compute", "data", "reliability"],
+  "board": [
+    { "def_id": "cdn", "tier": 1, "region": "us-east-1a", "x": 40, "y": 120 },
+    { "def_id": "load_balancer", "tier": 1, "region": "us-east-1a", "x": 190, "y": 120 },
+    { "def_id": "app_cluster", "tier": 1, "region": "us-east-1a", "x": 340, "y": 80 },
+    { "def_id": "redis", "tier": 1, "region": "us-east-1a", "x": 340, "y": 190 },
+    { "def_id": "postgres", "tier": 1, "region": "us-east-1a", "x": 490, "y": 190 }
+  ],
+  "end": { "kind": "fixed_window", "ticks": 60 },
+  "incidents": []
+}

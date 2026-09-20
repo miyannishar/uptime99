@@ -1,5 +1,5 @@
 import { evaluateFormula, type FormulaScope } from './formula'
-import type { EngineCatalog } from './catalog'
+import type { EngineCatalog } from './catalogFrom'
 import type { GameState, LedgerEntry } from './types'
 
 export interface PriceContext {

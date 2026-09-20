@@ -1,67 +1,145 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { DepthMode, MinigameAnswer, MinigameSession, WrongOutcome } from '../types'
 import {
   BoardCanvas, CommandPalette, IncidentFeed, MetricsHeader, MinigameShell, NodeInspector,
   TaskDock,
 } from '../components/organisms'
 import { MinigameOverlay, RunLayout } from '../components/templates'
-import type { Speed } from '../components/molecules'
-import { economy, index, instancesForSlot, offPathLayers, requestPathLayers } from '../data/catalog'
-import {
-  incidentCountByInstance, ladderFor, portsFor, resolvedActionsFor, sampleBoard,
-  sampleIncidents, sampleLedger, sampleMetrics, samplePaletteEntries, sampleTick,
-} from '../fixtures/sampleRun'
+import { economy, engineCatalog, index, instancesForSlot, offPathLayers, requestPathLayers } from '../data/catalog'
+import { samplePaletteEntries } from '../fixtures/sampleRun'
+import { adaptActions, adaptIncidents, adaptLedger, adaptTierLadder, incidentCountByInstanceFrom } from '../adapt'
+import { actionsFor, tierLadder } from '@engine/actions'
+import { applyOutcome, gradeAnswer } from '@engine/grading'
+import type { UseGameStateReturn } from '../hooks/useGameState'
+
+/** An action that was correctly solved and is now executing (delayed resolve). */
+interface PendingAction {
+  instanceId: string
+  actionId: string
+  minigameInstanceId: string
+  incidentKey: string | null
+  resolvesAtTick: number
+  actionName: string
+  nodeName: string
+}
 
 export interface RunPreviewProps {
   depthMode: DepthMode
   onDepthChange: (mode: DepthMode) => void
+  game: UseGameStateReturn
+  onQuit?: () => void
 }
 
-/**
- * The run phase, wired end to end against fixture state.
- *
- * This is a presentation harness, not the game: there is no tick loop and no
- * engine, so the "failure" on each minigame attempt is simulated in order to
- * exercise the teaching loop (wrong outcome → wrong outcome → reveal). Every
- * component below receives exactly the props the engine will supply later.
- */
-export function RunPreview({ depthMode, onDepthChange }: RunPreviewProps) {
-  const [selectedId, setSelectedId] = useState<string | null>('pg-primary')
-  const [selectedIncident, setSelectedIncident] = useState<string | null>(
-    sampleIncidents[0]?.key ?? null,
+export function RunPreview({ depthMode, onDepthChange, game, onQuit }: RunPreviewProps) {
+  const { state, board, metrics, tick, speed, setSpeed, startGame, endGame } = game
+
+  // Pending actions: correctly solved, waiting for time_cost_s ticks to elapse
+  const [pendingActions, setPendingActions] = useState<PendingAction[]>([])
+  // Use a ref to access current setState — avoids stale closure in the tick effect
+  const gameRef = useRef(game)
+  gameRef.current = game
+
+  // Auto-start once on mount — idempotent if already running
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { startGame() }, [])
+
+  // Resolve pending actions when their tick arrives
+  useEffect(() => {
+    const ready = pendingActions.filter(p => tick >= p.resolvesAtTick)
+    if (ready.length === 0) return
+    for (const p of ready) {
+      gameRef.current.setState((s) =>
+        applyOutcome(s, {
+          instanceId: p.instanceId,
+          actionId: p.actionId,
+          minigameInstanceId: p.minigameInstanceId,
+          incidentKey: p.incidentKey,
+          correct: true,
+        }, engineCatalog)
+      )
+    }
+    setPendingActions(prev => prev.filter(p => tick < p.resolvesAtTick))
+  }, [tick, pendingActions])
+
+  const incidents = useMemo(
+    () => adaptIncidents(state.incidents, tick),
+    [state.incidents, tick],
   )
-  const [speed, setSpeed] = useState<Speed>(1)
+  const incidentCountByInstance = useMemo(
+    () => incidentCountByInstanceFrom(state.incidents),
+    [state.incidents],
+  )
+
+  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [selectedIncident, setSelectedIncident] = useState<string | null>(
+    incidents[0]?.key ?? null,
+  )
   const [paletteOpen, setPaletteOpen] = useState(false)
   const [session, setSession] = useState<MinigameSession | null>(null)
   const [history, setHistory] = useState<WrongOutcome[]>([])
 
   const selected = useMemo(
-    () => sampleBoard.find((n) => n.inst.instance_id === selectedId) ?? null,
-    [selectedId],
+    () => board.find((n) => n.inst.instance_id === selectedId) ?? null,
+    [selectedId, board],
   )
 
-  const actions = useMemo(() => (selected ? resolvedActionsFor(selected) : []), [selected])
+  const actions = useMemo(() => {
+    if (!selected) return []
+    return adaptActions(actionsFor(state, selected.inst.instance_id, engineCatalog))
+  }, [state, selected])
 
-  /* Dock contents: everything the player is waiting on, across the whole board. */
+  const ladder = useMemo(() => {
+    if (!selected) return []
+    return adaptTierLadder(
+      tierLadder(state, selected.inst.instance_id, engineCatalog),
+      selected.def.id,
+    )
+  }, [state, selected])
+
+  const ports = useMemo(() => {
+    if (!selected) return []
+    return selected.def.requires.map((port: any) => {
+      const filled = selected.inst.edges_out.filter((targetId: string) => {
+        const target = board.find(n => n.inst.instance_id === targetId)
+        return target ? target.def.provides.some((cap: string) => port.accepts.includes(cap)) : false
+      })
+      return { port, filled, satisfied: filled.length >= port.min && filled.length <= port.max }
+    })
+  }, [selected, board])
+
   const provisioning = useMemo(
-    () =>
-      sampleBoard
-        .filter((n) => (n.provisioningTicksLeft ?? 0) > 0)
-        .map((node) => ({ node, ticksLeft: node.provisioningTicksLeft ?? 0 })),
-    [],
+    () => board
+      .filter((n) => (n.provisioningTicksLeft ?? 0) > 0)
+      .map((node) => ({ node, ticksLeft: node.provisioningTicksLeft ?? 0 })),
+    [board],
   )
 
+  // Cooldowns from engine + in-progress pending actions (shown as their own section)
   const cooldowns = useMemo(
-    () =>
-      sampleBoard.flatMap((node) =>
-        resolvedActionsFor(node)
-          .filter((a) => a.availability === 'cooldown')
-          .map((a) => ({ node, action: a.def, remainingS: a.cooldownRemainingS })),
-      ),
-    [],
+    () => board.flatMap((node) =>
+      actionsFor(state, node.inst.instance_id, engineCatalog)
+        .filter((a) => a.availability === 'cooldown')
+        .map((a) => {
+          const def = engineCatalog.actionById.get(a.action_id)
+          if (!def) return null
+          return { node, action: def, remainingS: a.cooldownRemainingS }
+        })
+        .filter(Boolean) as any[]),
+    [state, board],
   )
 
-  /* ⌘K / Ctrl+K */
+  // In-progress actions — pending resolutions shown as provisioning entries
+  const executing = useMemo(
+    () => pendingActions.map(p => {
+      const node = board.find(n => n.inst.instance_id === p.instanceId)
+      if (!node) return null
+      const ticksLeft = Math.max(0, p.resolvesAtTick - tick)
+      const secondsLeft = ticksLeft * economy.tick_seconds
+      return { node, ticksLeft, secondsLeft, actionName: p.actionName }
+    }).filter(Boolean) as { node: typeof board[0]; ticksLeft: number; secondsLeft: number; actionName: string }[],
+    [pendingActions, board, tick],
+  )
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
@@ -73,71 +151,120 @@ export function RunPreview({ depthMode, onDepthChange }: RunPreviewProps) {
     return () => window.removeEventListener('keydown', onKey)
   }, [])
 
-  /** Build a session from the action's own minigame + difficulty slot. */
   const openMinigame = useCallback((instanceId: string, actionId: string) => {
-    const node = sampleBoard.find((n) => n.inst.instance_id === instanceId)
+    const node = board.find((n) => n.inst.instance_id === instanceId)
     const action = index.actionById.get(actionId)
     if (!node || !action) return
-    const minigame = index.minigameById.get(action.minigame)
+    const minigame = index.minigameById.get((action as any).minigame)
     const format = minigame ? index.formatById.get(minigame.format) : undefined
-    const pool = instancesForSlot(action.minigame, action.difficulty)
+    const pool = instancesForSlot((action as any).minigame, (action as any).difficulty)
     const instance = pool[0]
     if (!minigame || !format || !instance) return
 
     setSelectedId(instanceId)
     setHistory([])
     setSession({
-      instance,
-      minigame,
-      format,
-      action,
-      attempt: 1,
-      revealed: false,
+      instance, minigame, format, action,
+      attempt: 1, revealed: false,
       answer: blankAnswer(format.id, instance),
     })
-  }, [])
+  }, [board])
 
   const onAnswerChange = useCallback((answer: MinigameAnswer) => {
     setSession((prev) => (prev ? { ...prev, answer } : prev))
   }, [])
 
-  /**
-   * Simulated submit: fail the first three attempts so the wrong-outcome history
-   * and the reveal are both reachable from the UI. The engine will judge for real.
-   */
   const onSubmit = useCallback(() => {
     setSession((prev) => {
       if (!prev) return prev
-      if (prev.attempt > 3) return null
-      const outcome =
-        prev.instance.wrong_outcomes[
-          Math.min(prev.attempt - 1, prev.instance.wrong_outcomes.length - 1)
-        ]
+      const result = gradeAnswer(prev.instance, prev.answer)
+
+      if (result.correct) {
+        // selectedId is always set when a session is open (openMinigame sets it)
+        const instanceId = selectedId
+        const curState = gameRef.current.state
+        const curTick = gameRef.current.tick
+        const actionDef = engineCatalog.actionById.get(prev.action.id) as any
+        // Convert seconds to ticks (ceil so the resolve always takes at least 1 tick)
+        const timeCostTicks = Math.max(1, Math.ceil((actionDef?.time_cost_s ?? 5) / economy.tick_seconds))
+
+        // Find the first active incident on this instance that this action resolves
+        const incidentRecord = instanceId
+          ? (curState.incidents.find(r =>
+              r.instance_id === instanceId &&
+              (engineCatalog.incidentById.get(r.incident_id) as any)?.resolved_by?.includes(prev.action.id)
+            ) ?? null)
+          : null
+
+        const node = board.find(n => n.inst.instance_id === instanceId)
+
+        if (instanceId) {
+          setPendingActions(existing => [
+            ...existing,
+            {
+              instanceId,
+              actionId: prev.action.id,
+              minigameInstanceId: prev.instance.id,
+              incidentKey: incidentRecord?.key ?? null,
+              resolvesAtTick: curTick + timeCostTicks,
+              actionName: actionDef?.name ?? prev.action.id,
+              nodeName: node?.def.name ?? instanceId,
+            },
+          ])
+        }
+        return null  // close the minigame shell
+      }
+
+      // Wrong answer
+      const outcome = prev.instance.wrong_outcomes.find(
+        (o: any) => o.when === 'any' || o.when === result.when,
+      )
       if (outcome) setHistory((h) => [...h, outcome])
       const attempt = prev.attempt + 1
       return { ...prev, attempt, revealed: attempt > 3 }
     })
-  }, [])
+  }, [selectedId, board])
+
+  // TaskDock cooldowns merged with executing actions
+  const allCooldowns = useMemo(() => {
+    const executing_as_cooldowns = executing.map(e => ({
+      node: e.node,
+      action: { name: `⟳ ${e.actionName}`, id: '' } as any,
+      remainingS: e.secondsLeft,
+    }))
+    return [...executing_as_cooldowns, ...cooldowns]
+  }, [executing, cooldowns])
 
   return (
     <RunLayout
       header={
-        <MetricsHeader
-          readings={sampleMetrics}
-          tick={sampleTick}
-          tickSeconds={economy.tick_seconds}
-          speed={speed}
-          onSpeedChange={setSpeed}
-          budget={1_240}
-          startingBudget={economy.starting_budget}
-          depthMode={depthMode}
-          onDepthChange={onDepthChange}
-          onOpenPalette={() => setPaletteOpen(true)}
-        />
+        <>
+          <MetricsHeader
+            readings={metrics}
+            tick={tick}
+            tickSeconds={economy.tick_seconds}
+            speed={speed}
+            onSpeedChange={setSpeed}
+            budget={state.budget}
+            startingBudget={economy.starting_budget}
+            depthMode={depthMode}
+            onDepthChange={onDepthChange}
+            onOpenPalette={() => setPaletteOpen(true)}
+          />
+          {onQuit && (
+            <button
+              type="button"
+              onClick={() => { endGame(); onQuit() }}
+              style={{ position: 'absolute', top: 8, right: 12, fontSize: '11px', color: 'var(--txt-dim)', background: 'transparent', border: '1px solid var(--line)', borderRadius: 4, padding: '2px 8px', cursor: 'pointer' }}
+            >
+              ✕ quit
+            </button>
+          )}
+        </>
       }
       board={
         <BoardCanvas
-          nodes={sampleBoard}
+          nodes={board}
           requestPathLayers={requestPathLayers}
           offPathLayers={offPathLayers}
           selectedInstanceId={selectedId}
@@ -151,18 +278,14 @@ export function RunPreview({ depthMode, onDepthChange }: RunPreviewProps) {
           <NodeInspector
             node={selected}
             actions={actions}
-            ladder={ladderFor(selected)}
-            ports={portsFor(selected)}
-            incidents={sampleIncidents.filter((i) =>
+            ladder={ladder}
+            ports={ports as any}
+            incidents={incidents.filter((i) =>
               i.affectedInstanceIds.includes(selected.inst.instance_id),
             )}
-            nameOf={(id) =>
-              sampleBoard.find((n) => n.inst.instance_id === id)?.def.name ?? id
-            }
+            nameOf={(id) => board.find((n) => n.inst.instance_id === id)?.def.name ?? id}
             onPlayAction={(actionId) => openMinigame(selected.inst.instance_id, actionId)}
-            conditionNote={
-              selected.inst.down ? 'host fault · sled 2 failed · no replica' : undefined
-            }
+            conditionNote={selected.inst.down ? 'host fault · node unreachable' : undefined}
             sleds={selected.inst.down ? ['ok', 'bad', 'off', 'off', 'ok'] : ['ok', 'ok', 'off', 'off', 'ok']}
             saturationKnee={economy.saturation_knee}
           />
@@ -170,17 +293,18 @@ export function RunPreview({ depthMode, onDepthChange }: RunPreviewProps) {
       }
       feed={
         <IncidentFeed
-          incidents={sampleIncidents}
+          incidents={incidents}
           selectedKey={selectedIncident}
           onSelect={(key) => setSelectedIncident(key === selectedIncident ? null : key)}
           tickSeconds={economy.tick_seconds}
+          onPlayAction={openMinigame}
         />
       }
       dock={
         <TaskDock
           provisioning={provisioning}
-          cooldowns={cooldowns}
-          ledger={sampleLedger}
+          cooldowns={allCooldowns}
+          ledger={adaptLedger(state.ledger)}
           tickSeconds={economy.tick_seconds}
           onSelectNode={setSelectedId}
         />
@@ -198,7 +322,6 @@ export function RunPreview({ depthMode, onDepthChange }: RunPreviewProps) {
               />
             )}
           </MinigameOverlay>
-
           <CommandPalette
             open={paletteOpen}
             onClose={() => setPaletteOpen(false)}

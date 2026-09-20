@@ -10,6 +10,8 @@ export interface IncidentFeedProps {
   tickSeconds?: number
   /** Sum of `severity` across all active incidents — feeds the reputation formula. */
   incidentSeverity?: number
+  /** Called when the player clicks a resolving action button. */
+  onPlayAction?: (instanceId: string, actionId: string) => void
 }
 
 /**
@@ -29,6 +31,7 @@ export function IncidentFeed({
   onSelect,
   tickSeconds = 5,
   incidentSeverity,
+  onPlayAction,
 }: IncidentFeedProps) {
   const severity = incidentSeverity ?? incidents.reduce((n, i) => n + i.def.severity, 0)
 
@@ -73,10 +76,28 @@ export function IncidentFeed({
                   </div>
 
                   {incident.resolvingActions.length > 0 ? (
-                    <p className={s.resolvers}>
+                    <div className={s.resolvers}>
                       <span className={s.resolversLabel}>resolved by</span>
-                      {incident.resolvingActions.map((a) => a.name).join(' · ')}
-                    </p>
+                      <div className={s.actionButtons}>
+                        {incident.resolvingActions.map((a) => {
+                          // Use the first affected instance (instance scope → exactly one; group → any)
+                          const instanceId = incident.affectedInstanceIds[0]
+                          const canPlay = Boolean(onPlayAction && instanceId)
+                          return (
+                            <button
+                              key={a.id}
+                              type="button"
+                              className={s.actionBtn}
+                              disabled={!canPlay}
+                              onClick={canPlay ? () => onPlayAction!(instanceId, a.id) : undefined}
+                              title={canPlay ? `Play ${a.name} minigame` : 'No affected instance'}
+                            >
+                              {a.name}
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </div>
                   ) : (
                     <p className={s.survive}>
                       Nothing resolves this. It runs its course

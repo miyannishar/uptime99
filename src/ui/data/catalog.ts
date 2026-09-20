@@ -19,6 +19,9 @@ import type {
   ActionDef, Catalog, CatalogIndex, Economy, FormatDef, IncidentDef, LayerDef,
   LayerId, MetricDef, MinigameDef, MinigameInstanceDef, NodeDef, TagDef,
 } from '../types'
+import { catalogFrom } from '@engine/catalogFrom'
+import type { EngineCatalog } from '@engine/catalogFrom'
+import levelsRaw from '../../../data/levels.json'
 
 import layersRaw from '../../../data/layers.json'
 import tagsRaw from '../../../data/tags.json'
@@ -134,3 +137,33 @@ export function isOnRequestPath(node: NodeDef, tierTags: readonly string[]): boo
   if (!layer?.on_request_path) return false
   return !tierTags.includes('async') && !tierTags.includes('scheduled')
 }
+
+/* -- scenarios and levels -------------------------------------------------- */
+
+/** Each scenario JSON file is a single ScenarioDef object (not wrapped in an array).
+ *  Vite wraps eager JSON imports in `{ default: ... }`, so we unwrap here. */
+const scenarioMods = import.meta.glob('../../../data/scenarios/*.json', { eager: true })
+export const scenarios = Object.keys(scenarioMods).sort().map(
+  (path) => ((scenarioMods[path] as any).default ?? scenarioMods[path]) as any,
+)
+
+export const levels = (levelsRaw as unknown as { levels: any[] }).levels
+
+/* -- engine catalog -------------------------------------------------------- */
+
+/** The frozen EngineCatalog the engine functions (loadScenario, boardOf, …) require.
+ *  Built once from the same data arrays already exported above. */
+export const engineCatalog: EngineCatalog = catalogFrom({
+  nodes,
+  layers,
+  tags,
+  actions,
+  metrics,
+  economy,
+  incidents,
+  formats,
+  minigames,
+  minigameInstances,
+  scenarios,
+  levels,
+})

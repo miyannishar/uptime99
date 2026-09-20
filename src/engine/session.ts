@@ -2,7 +2,7 @@ import { unsatisfiedPorts } from './ports'
 import { scenarioById } from './scenario'
 import { seedFrom, rngFrom } from './rng'
 import { advance } from './tick'
-import type { EngineCatalog } from './catalog'
+import type { EngineCatalog } from './catalogFrom'
 import type { GameState } from './types'
 
 export function canStartRun(
@@ -41,6 +41,7 @@ export function isSessionOver(state: GameState, catalog: EngineCatalog): boolean
     case 'fixed_window':
       return state.tick >= end.ticks
     case 'endless':
+      return false  // never ends on its own; player quits via endSession
     case 'objectives':
       throw new Error(
         `session: end.kind '${end.kind}' is declared but not implemented — ` +
