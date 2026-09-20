@@ -43,21 +43,24 @@ export function RunPreview({ depthMode, onDepthChange, game, onQuit }: RunPrevie
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { startGame() }, [])
 
-  // Resolve pending actions when their tick arrives
+  // Resolve pending actions when their tick arrives — batched into one setState
   useEffect(() => {
     const ready = pendingActions.filter(p => tick >= p.resolvesAtTick)
     if (ready.length === 0) return
-    for (const p of ready) {
-      gameRef.current.setState((s) =>
-        applyOutcome(s, {
+    // Apply all ready outcomes in one setState to avoid re-render races
+    gameRef.current.setState((s) => {
+      let next = s
+      for (const p of ready) {
+        next = applyOutcome(next, {
           instanceId: p.instanceId,
           actionId: p.actionId,
           minigameInstanceId: p.minigameInstanceId,
           incidentKey: p.incidentKey,
           correct: true,
         }, engineCatalog)
-      )
-    }
+      }
+      return next
+    })
     setPendingActions(prev => prev.filter(p => tick < p.resolvesAtTick))
   }, [tick, pendingActions])
 
@@ -174,56 +177,70 @@ export function RunPreview({ depthMode, onDepthChange, game, onQuit }: RunPrevie
     setSession((prev) => (prev ? { ...prev, answer } : prev))
   }, [])
 
+  // Capture the last submit result in a ref so useEffect can act on it once
+  const submitResultRef = useRef<{
+    correct: boolean
+    outcome?: any
+    session: MinigameSession
+  } | null>(null)
+
   const onSubmit = useCallback(() => {
-    setSession((prev) => {
-      if (!prev) return prev
-      const result = gradeAnswer(prev.instance, prev.answer)
+    // All computation outside the state updater — updaters must be pure
+    // (React StrictMode double-invokes them; side effects inside would fire twice)
+    const cur = session
+    if (!cur) return
 
-      if (result.correct) {
-        // selectedId is always set when a session is open (openMinigame sets it)
-        const instanceId = selectedId
-        const curState = gameRef.current.state
-        const curTick = gameRef.current.tick
-        const actionDef = engineCatalog.actionById.get(prev.action.id) as any
-        // Convert seconds to ticks (ceil so the resolve always takes at least 1 tick)
-        const timeCostTicks = Math.max(1, Math.ceil((actionDef?.time_cost_s ?? 5) / economy.tick_seconds))
+    const result = gradeAnswer(cur.instance, cur.answer)
+    if (result.correct) {
+      submitResultRef.current = { correct: true, session: cur }
+      setSession(null)
+      return
+    }
 
-        // Find the first active incident on this instance that this action resolves
-        const incidentRecord = instanceId
-          ? (curState.incidents.find(r =>
-              r.instance_id === instanceId &&
-              (engineCatalog.incidentById.get(r.incident_id) as any)?.resolved_by?.includes(prev.action.id)
-            ) ?? null)
-          : null
+    // Wrong answer
+    const outcome = cur.instance.wrong_outcomes.find(
+      (o: any) => o.when === 'any' || o.when === result.when,
+    )
+    submitResultRef.current = { correct: false, outcome, session: cur }
+    const attempt = cur.attempt + 1
+    setHistory((h) => (outcome ? [...h, outcome] : h))
+    setSession({ ...cur, attempt, revealed: attempt > 3 })
+  }, [session])
 
-        const node = board.find(n => n.inst.instance_id === instanceId)
-
-        if (instanceId) {
-          setPendingActions(existing => [
-            ...existing,
-            {
-              instanceId,
-              actionId: prev.action.id,
-              minigameInstanceId: prev.instance.id,
-              incidentKey: incidentRecord?.key ?? null,
-              resolvesAtTick: curTick + timeCostTicks,
-              actionName: actionDef?.name ?? prev.action.id,
-              nodeName: node?.def.name ?? instanceId,
-            },
-          ])
-        }
-        return null  // close the minigame shell
-      }
-
-      // Wrong answer
-      const outcome = prev.instance.wrong_outcomes.find(
-        (o: any) => o.when === 'any' || o.when === result.when,
-      )
-      if (outcome) setHistory((h) => [...h, outcome])
-      const attempt = prev.attempt + 1
-      return { ...prev, attempt, revealed: attempt > 3 }
-    })
-  }, [selectedId, board])
+  // Schedule pending actions when session closes after a correct answer
+  const prevSessionRef = useRef<MinigameSession | null>(null)
+  useEffect(() => {
+    const prev = prevSessionRef.current
+    prevSessionRef.current = session
+    // session just became null and the last result was correct
+    if (prev !== null && session === null && submitResultRef.current?.correct) {
+      const captured = submitResultRef.current.session
+      submitResultRef.current = null
+      const instanceId = selectedId
+      if (!instanceId) return
+      const curState = gameRef.current.state
+      const curTick = gameRef.current.tick
+      const actionDef = engineCatalog.actionById.get(captured.action.id) as any
+      const timeCostTicks = Math.max(1, Math.ceil((actionDef?.time_cost_s ?? 5) / economy.tick_seconds))
+      const incidentRecord = curState.incidents.find(r =>
+        r.instance_id === instanceId &&
+        (engineCatalog.incidentById.get(r.incident_id) as any)?.resolved_by?.includes(captured.action.id)
+      ) ?? null
+      const node = board.find(n => n.inst.instance_id === instanceId)
+      setPendingActions(existing => [
+        ...existing,
+        {
+          instanceId,
+          actionId: captured.action.id,
+          minigameInstanceId: captured.instance.id,
+          incidentKey: incidentRecord?.key ?? null,
+          resolvesAtTick: curTick + timeCostTicks,
+          actionName: actionDef?.name ?? captured.action.id,
+          nodeName: node?.def.name ?? instanceId,
+        },
+      ])
+    }
+  }, [session, selectedId, board])
 
   // TaskDock cooldowns merged with executing actions
   const allCooldowns = useMemo(() => {
@@ -285,8 +302,20 @@ export function RunPreview({ depthMode, onDepthChange, game, onQuit }: RunPrevie
             )}
             nameOf={(id) => board.find((n) => n.inst.instance_id === id)?.def.name ?? id}
             onPlayAction={(actionId) => openMinigame(selected.inst.instance_id, actionId)}
-            conditionNote={selected.inst.down ? 'host fault · node unreachable' : undefined}
-            sleds={selected.inst.down ? ['ok', 'bad', 'off', 'off', 'ok'] : ['ok', 'ok', 'off', 'off', 'ok']}
+            onUpgradeTier={() => openMinigame(selected.inst.instance_id, 'upgrade_tier')}
+            conditionNote={
+              selected.inst.down ? 'host fault · node unreachable' :
+              selected.inst.health < 60 ? `health degraded · ${selected.inst.health}%` :
+              undefined
+            }
+            sleds={(() => {
+              // Map node health to sled states (decorative representation of rack health)
+              const h = selected.inst.health
+              if (selected.inst.down) return ['ok', 'bad', 'off', 'off', 'ok'] as any
+              if (h < 30) return ['bad', 'bad', 'off', 'off', 'ok'] as any
+              if (h < 60) return ['ok', 'warn', 'off', 'off', 'ok'] as any
+              return ['ok', 'ok', 'off', 'off', 'ok'] as any
+            })()}
             saturationKnee={economy.saturation_knee}
           />
         )

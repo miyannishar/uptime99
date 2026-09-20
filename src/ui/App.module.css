@@ -1,10 +1,11 @@
 .root {
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
+  height: 100vh;       /* fixed viewport — no document scroll */
+  overflow: hidden;
 }
 
-.full { height: 100vh; }
+/* .full is no longer needed — root is always 100vh */
 
 .nav {
   flex: 0 0 auto;
@@ -63,16 +64,17 @@
 
 .body {
   flex: 1 1 auto;
-  min-height: 0;
+  min-height: 0;       /* let it shrink below its content height */
+  overflow: hidden;    /* clip content; panels that need scroll opt in themselves */
   display: flex;
   flex-direction: column;
 }
-
-.full .body { overflow: hidden; }
 
 .padded {
   padding: var(--sp-7) var(--sp-6);
   max-width: 1200px;
   margin: 0 auto;
   width: 100%;
+  overflow-y: auto;    /* scenario select and debrief can scroll within the body */
+  height: 100%;
 }

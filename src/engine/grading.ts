@@ -103,10 +103,33 @@ export function applyOutcome(
   const cooldownS: number = action.cooldown_s ?? 0
   const newCooldowns = { ...inst.action_cooldowns, [actionId]: cooldownS }
 
+  // --- Apply tier_delta (upgrade_tier: advance to next tier on success) ---
+  const tierDelta: number = correct ? (outcome?.tier_delta ?? 0) : 0
+  const newTier = tierDelta > 0
+    ? Math.min(inst.tier + tierDelta, 4)  // tier cap matches state.schema.json
+    : inst.tier
+
+  // --- Apply on_fail.metrics as utilisation spikes ---
+  // metric keys like "error_rate_pct": "+1.0" represent how much the metric worsens.
+  // error_rate_pct is driven by utilisation > 100%, so we translate the penalty to a
+  // utilisation bump. uptime_pct deltas (negative) mean brief downtime — represented
+  // as a moderate utilisation spike. This is approximate but visible to the player.
+  let utilBump = 0
+  if (!correct && outcome?.metrics) {
+    const m = outcome.metrics as Record<string, string>
+    const errDelta = m.error_rate_pct ? parseFloat(m.error_rate_pct) : 0
+    const uptDelta = m.uptime_pct ? parseFloat(m.uptime_pct) : 0
+    // +1% error_rate needs util > 100%; each +1% error ≈ +2.5% util above the knee
+    utilBump = errDelta * 2.5 + Math.abs(uptDelta) * 5
+  }
+  const newUtil = Math.max(0, inst.utilization_pct + utilBump)
+
   // --- Build updated instance ---
   const newInst = {
     ...inst,
     health: newHealth,
+    tier: newTier,
+    utilization_pct: newUtil,
     tags_runtime: newTagsRuntime,
     action_cooldowns: newCooldowns,
   }

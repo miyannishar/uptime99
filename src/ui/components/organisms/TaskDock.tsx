@@ -122,8 +122,8 @@ export function TaskDock({
                   className={cx(s.task, s.taskRow)}
                   onClick={() => onSelectNode?.(node.inst.instance_id)}
                 >
-                  <CooldownRing remainingS={remainingS} totalS={action.cooldown_s} />
-                  <span className={s.taskName}>{action.id}</span>
+                  <CooldownRing remainingS={remainingS} totalS={action.cooldown_s ?? remainingS} />
+                  <span className={s.taskName}>{(action as any).name ?? action.id}</span>
                   <span className={s.taskOn}>on {node.inst.instance_id}</span>
                   <span className={s.taskTime}>{formatDuration(remainingS)}</span>
                 </button>

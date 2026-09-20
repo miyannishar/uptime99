@@ -11,8 +11,6 @@ import { engineCatalog } from './data/catalog'
 import { useGameState } from './hooks/useGameState'
 import s from './App.module.css'
 
-const scenarios = adaptScenarios()
-
 /**
  * The real game: scenario select → design → run → debrief.
  * The engine drives phase transitions; this component routes to the right screen.
@@ -20,6 +18,15 @@ const scenarios = adaptScenarios()
 export function App() {
   const [depthMode, setDepthMode] = useDepthMode()
   const [scenarioId, setScenarioId] = useState<string | null>(null)
+  // Completed scenarios for this session (no persistence yet — clears on refresh)
+  const [completedIds, setCompletedIds] = useState<Set<string>>(() => new Set())
+
+  const handleComplete = (id: string) => {
+    setCompletedIds(prev => { const next = new Set(prev); next.add(id); return next })
+    setScenarioId(null)
+  }
+
+  const scenarioList = adaptScenarios(undefined, {}, completedIds)
 
   if (!scenarioId) {
     return (
@@ -30,7 +37,7 @@ export function App() {
           <DepthToggle mode={depthMode} onChange={setDepthMode} includeAuto />
         </nav>
         <div className={cx(s.body, s.padded)}>
-          <ScenarioSelect scenarios={scenarios} onPick={setScenarioId} />
+          <ScenarioSelect scenarios={scenarioList} onPick={setScenarioId} />
         </div>
       </div>
     )
@@ -43,6 +50,7 @@ export function App() {
       depthMode={depthMode}
       setDepthMode={setDepthMode}
       onBack={() => setScenarioId(null)}
+      onComplete={handleComplete}
     />
   )
 }
@@ -52,15 +60,23 @@ interface GameAppProps {
   depthMode: ReturnType<typeof useDepthMode>[0]
   setDepthMode: ReturnType<typeof useDepthMode>[1]
   onBack: () => void
+  onComplete: (id: string) => void
 }
 
-function GameApp({ scenarioId, depthMode, setDepthMode, onBack }: GameAppProps) {
+function GameApp({ scenarioId, depthMode, setDepthMode, onBack, onComplete }: GameAppProps) {
   const game = useGameState(scenarioId)
-  const { state, phase } = game
+  const { state, phase, metrics } = game
 
   if (phase === 'debrief') {
     const summary = debriefSummary(state, engineCatalog)
-    const adapted = adaptDebriefSummary(summary)
+    // Pass final metric readings so the debrief shows real numbers
+    const adapted = adaptDebriefSummary(summary, metrics.map(m => ({
+      id: m.def.id,
+      value: m.value,
+      previous: m.previous,
+      series: m.series,
+      status: m.status,
+    } as any)))
     return (
       <div className={s.root}>
         <nav className={s.nav}>
@@ -72,7 +88,7 @@ function GameApp({ scenarioId, depthMode, setDepthMode, onBack }: GameAppProps) 
           <DebriefPanel
             summary={adapted as any}
             onRetry={game.reset}
-            onContinue={onBack}
+            onContinue={() => { onComplete(scenarioId); onBack() }}
           />
         </div>
       </div>

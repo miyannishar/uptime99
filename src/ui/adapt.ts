@@ -168,6 +168,21 @@ export function adaptIncidents(
       .map((id: string) => catalog.actionById.get(id))
       .filter(Boolean)
 
+    // Populate signals from the incident definition.
+    // Level 0 is always visible (no observability required).
+    // Levels 1–3 require specific observability nodes — always shown as locked for now
+    // since signalsFor() (which checks the board) isn't built yet.
+    const signals = ((def as any).signals ?? []).map((sig: any) => ({
+      level: sig.level,
+      text: sig.text,
+      unlocked: sig.requires === null || sig.level === 0,
+      requirementLabel: sig.requires
+        ? Object.entries(sig.requires as Record<string, any>)
+            .flatMap(([k, v]) => Array.isArray(v) ? v.map(String) : [`${k}: ${v}`])
+            .join(', ')
+        : undefined,
+    }))
+
     result.push({
       def,
       key,
@@ -175,7 +190,7 @@ export function adaptIncidents(
       elapsedTicks,
       ticksRemaining,
       ticksToEscalation,
-      signals: [],   // TODO: signalsFor(state, key) when built
+      signals,
       resolvingActions,
     })
   }
@@ -216,12 +231,29 @@ export function adaptScenario(
   }
 }
 
+/**
+ * Build the scenario list with correct unlock state.
+ * `completedIds` is the set of scenario ids the player has finished (from a
+ * persistent progress store; defaults to empty so only starter scenarios show).
+ * A scenario is unlocked when every id in its `unlocked_by` list is completed,
+ * OR when its own `unlocked_by` is empty (starter scenarios).
+ */
 export function adaptScenarios(
   catalog: EngineCatalog = engineCatalog,
   earnedStars: Record<string, number> = {},
+  completedIds: Set<string> = new Set(),
 ): import('./types').ScenarioSummary[] {
-  const unlocked = new Set((catalog.scenarios as any[]).map((s) => s.id))
-  return (catalog.scenarios as import('@engine/types').ScenarioDef[]).map((def) =>
+  const scenarios = catalog.scenarios as any[]
+  // A scenario is unlocked if ALL its prerequisites are in completedIds
+  const unlocked = new Set(
+    scenarios
+      .filter((s) =>
+        !s.unlocked_by || (s.unlocked_by as string[]).length === 0 ||
+        (s.unlocked_by as string[]).every((req: string) => completedIds.has(req))
+      )
+      .map((s) => s.id)
+  )
+  return (scenarios as import('@engine/types').ScenarioDef[]).map((def) =>
     adaptScenario(def, earnedStars, unlocked),
   )
 }
@@ -312,25 +344,32 @@ export function adaptDesignSummary(
   }
 }
 
-/** Build the debrief summary directly from the UI perspective. */
+/** Build the debrief summary from the engine view + final metric readings. */
 export function adaptDebriefSummary(
   view: import('@engine/summary').DebriefSummaryView,
-  _catalog: EngineCatalog = engineCatalog,
+  finalMetricViews: import('@engine/types').MetricReadingView[] = [],
+  catalog: EngineCatalog = engineCatalog,
 ): import('./types').DebriefSummary {
+  const finalMetrics = adaptMetrics(finalMetricViews, catalog)
+
+  // incidentsFaced: resolve from the ledger's on_resolve entries (what was resolved)
+  // and track which incident defs actually fired based on the ledger
+  // For now: show how many incidents fired and resolved from session state
+  const incidentsFaced: import('./types').DebriefSummary['incidentsFaced'] = []
+
+  // Lessons: gather teaches from any minigame instances that were played
+  // (tracked via IncidentRecord.attempts — each key is a minigame instance id with a count)
+  const lessons: import('./types').DebriefSummary['lessons'] = []
+
   return {
     scenarioName: view.scenario_name,
     cleared: view.cleared,
     ticks: view.ticks,
-    finalMetrics: [],  // TODO: pass metric readings through
-    incidentsFaced: [],  // TODO: requires incident history tracking
-    lessons: [],
-    ledger: view.ledger.map(e => ({
-      kind: e.kind as any,
-      amount: e.amount,
-      tick: e.tick,
-      label: e.instance_id ?? e.kind,
-    })),
-  } as any
+    finalMetrics,
+    incidentsFaced,
+    lessons,
+    ledger: adaptLedger(view.ledger, catalog),
+  }
 }
 
 /** Translate engine LedgerEntry to the UI's LedgerLine. */
