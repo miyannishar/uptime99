@@ -35,7 +35,7 @@ export interface RunPreviewProps {
 }
 
 export function RunPreview({ depthMode, onDepthChange, game, onQuit, showTutorial, onTutorialComplete }: RunPreviewProps) {
-  const { state, board, metrics, tick, speed, setSpeed, endGame } = game
+  const { state, board, metrics, tick, speed, setSpeed, endGame, slaPercent } = game
 
   // Pending actions: correctly solved, waiting for time_cost_s ticks to elapse
   const [pendingActions, setPendingActions] = useState<PendingAction[]>([])
@@ -513,6 +513,7 @@ export function RunPreview({ depthMode, onDepthChange, game, onQuit, showTutoria
             depthMode={depthMode}
             onDepthChange={onDepthChange}
             onOpenPalette={() => setPaletteOpen(true)}
+            slaPercent={slaPercent}
           />
           {onQuit && (
             <button
@@ -589,6 +590,26 @@ export function RunPreview({ depthMode, onDepthChange, game, onQuit, showTutoria
         )
       }
       feed={
+        <>
+        {/* Multi-incident triage banner */}
+        {incidents.length >= 2 && (
+          <div style={{
+            padding: '6px 12px',
+            background: 'color-mix(in srgb, var(--bad) 15%, var(--bg-1))',
+            borderBottom: '1px solid color-mix(in srgb, var(--bad) 40%, transparent)',
+            fontSize: '12px', fontWeight: 600,
+            display: 'flex', alignItems: 'center', gap: 8,
+            color: 'var(--bad)',
+          }}>
+            <span>⚡ {incidents.length} incidents</span>
+            <span style={{ color: 'var(--txt-dim)', fontWeight: 400 }}>·</span>
+            <span>–{(incidents.reduce((s, i) => s + (i.def as any).severity * 1.5, 0)).toFixed(1)} rep/tick</span>
+            <span style={{ color: 'var(--txt-dim)', fontWeight: 400 }}>·</span>
+            <span style={{ color: 'var(--txt-faint)', fontWeight: 400, fontSize: 11 }}>
+              fix severity {Math.max(...incidents.map(i => (i.def as any).severity))} first
+            </span>
+          </div>
+        )}
         <IncidentFeed
           incidents={incidents}
           selectedKey={selectedIncident}
@@ -604,6 +625,7 @@ export function RunPreview({ depthMode, onDepthChange, game, onQuit, showTutoria
             openMinigame(instanceId, actionId)
           }}
         />
+        </>
       }
       dock={
         <TaskDock
@@ -618,13 +640,45 @@ export function RunPreview({ depthMode, onDepthChange, game, onQuit, showTutoria
         <>
           <MinigameOverlay open={Boolean(session)} onDismiss={() => setSession(null)}>
             {session && (
-              <MinigameShell
-                session={session}
-                history={history}
-                onAnswerChange={onAnswerChange}
-                onSubmit={onSubmit}
-                onCancel={() => setSession(null)}
-              />
+              <>
+                {/* Live reputation ticker — shows the clock is running */}
+                {(() => {
+                  const rep = Math.round(state.carried.reputation)
+                  const lossPerTick = state.incidents.reduce(
+                    (s, r) => s + ((engineCatalog.incidentById.get(r.incident_id) as any)?.severity ?? 0) * 1.5, 0
+                  )
+                  const repColor = rep >= 70 ? '#22c55e' : rep >= 40 ? '#f59e0b' : '#ef4444'
+                  return (
+                    <div style={{
+                      position: 'absolute', top: 0, left: 0, right: 0,
+                      padding: '4px 16px',
+                      background: 'color-mix(in srgb, var(--bg-0) 90%, transparent)',
+                      borderBottom: '1px solid var(--line)',
+                      display: 'flex', gap: 16, alignItems: 'center',
+                      fontSize: 12, zIndex: 1,
+                    }}>
+                      <span style={{ color: repColor, fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>
+                        REP {rep}%
+                      </span>
+                      {lossPerTick > 0 && (
+                        <span style={{ color: '#ef4444', fontWeight: 400 }}>
+                          −{lossPerTick.toFixed(1)}/tick while you read
+                        </span>
+                      )}
+                      <span style={{ color: 'var(--txt-faint)', marginLeft: 'auto' }}>
+                        clock is running
+                      </span>
+                    </div>
+                  )
+                })()}
+                <MinigameShell
+                  session={session}
+                  history={history}
+                  onAnswerChange={onAnswerChange}
+                  onSubmit={onSubmit}
+                  onCancel={() => setSession(null)}
+                />
+              </>
             )}
           </MinigameOverlay>
           <CommandPalette

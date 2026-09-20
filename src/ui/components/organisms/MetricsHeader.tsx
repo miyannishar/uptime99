@@ -13,8 +13,9 @@ export interface MetricsHeaderProps {
   startingBudget: number
   depthMode: DepthMode
   onDepthChange: (mode: DepthMode) => void
-  /** Opens the ⌘K palette. */
   onOpenPalette?: () => void
+  /** Live SLA: % of ticks with rep >= 70. null before run starts. */
+  slaPercent?: number | null
 }
 
 /**
@@ -36,6 +37,7 @@ export function MetricsHeader({
   depthMode,
   onDepthChange,
   onOpenPalette,
+  slaPercent,
 }: MetricsHeaderProps) {
   const technical = readings.filter((r) => r.def.kind === 'technical')
   const business = readings.filter((r) => r.def.kind === 'business')
@@ -58,6 +60,26 @@ export function MetricsHeader({
       </div>
 
       <span className={s.spacer} />
+
+      {slaPercent !== null && slaPercent !== undefined && (
+        <span
+          title="SLA score: % of ticks with reputation ≥ 70"
+          style={{
+            fontSize: '11px',
+            fontVariantNumeric: 'tabular-nums',
+            letterSpacing: '0.04em',
+            padding: '2px 8px',
+            borderRadius: 4,
+            border: '1px solid',
+            borderColor: slaPercent >= 90 ? 'var(--ok,#22c55e)' : slaPercent >= 70 ? 'var(--warn,#f59e0b)' : 'var(--bad)',
+            color: slaPercent >= 90 ? 'var(--ok,#22c55e)' : slaPercent >= 70 ? 'var(--warn,#f59e0b)' : 'var(--bad)',
+            background: 'transparent',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          SLA {slaPercent}%
+        </span>
+      )}
 
       <BudgetMeter
         budget={budget}

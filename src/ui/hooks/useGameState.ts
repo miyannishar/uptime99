@@ -32,6 +32,8 @@ export interface UseGameStateReturn {
   catalog: EngineCatalog
   /** Escape hatch for applying outcomes and other engine transforms directly. */
   setState: React.Dispatch<React.SetStateAction<GameState>>
+  /** % of run ticks with reputation >= 70. null before run starts. */
+  slaPercent: number | null
 }
 
 export function useGameState(scenarioId: string): UseGameStateReturn {
@@ -41,6 +43,10 @@ export function useGameState(scenarioId: string): UseGameStateReturn {
   const [speed, setSpeed] = useState<Speed>(1)
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const repZeroTicksRef = useRef(0)
+
+  // SLA score: % of run ticks where reputation >= 70 (the 'good' threshold)
+  // Tracked as [ticksAboveThreshold, totalRunTicks]
+  const [slaScore, setSlaScore] = useState<[number, number]>([0, 0])
 
   // Derived views - recomputed when state changes
   const boardViews = boardOf(state, engineCatalog)
@@ -68,6 +74,7 @@ export function useGameState(scenarioId: string): UseGameStateReturn {
   const reset = useCallback(() => {
     setState(loadScenario(scenarioId, engineCatalog))
     setSpeed(1)
+    setSlaScore([0, 0])
   }, [scenarioId])
 
   // Clock: runs only in 'run' phase and when speed > 0
@@ -94,6 +101,11 @@ export function useGameState(scenarioId: string): UseGameStateReturn {
         } else {
           repZeroTicksRef.current = 0
         }
+        // Track SLA score: count ticks above 70 rep vs total ticks
+        setSlaScore(([above, total]) => [
+          above + (next.carried.reputation >= 70 ? 1 : 0),
+          total + 1,
+        ])
         return next
       })
     }, ms)
@@ -101,6 +113,11 @@ export function useGameState(scenarioId: string): UseGameStateReturn {
       if (intervalRef.current) clearInterval(intervalRef.current)
     }
   }, [state.phase, speed])
+
+  // SLA pct: what % of ticks had rep >= 70. null before run starts.
+  const slaPercent = slaScore[1] > 0
+    ? Math.round((slaScore[0] / slaScore[1]) * 100)
+    : null
 
   return {
     state,
@@ -115,5 +132,6 @@ export function useGameState(scenarioId: string): UseGameStateReturn {
     phase: state.phase,
     tick: state.tick,
     catalog: engineCatalog,
+    slaPercent,
   }
 }
