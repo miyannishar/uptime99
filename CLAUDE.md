@@ -29,7 +29,9 @@ If you need a field that varies per save, it belongs in instance state, not in `
 
 | Path | What lives there |
 |---|---|
-| `data/schema/` | Ten JSON schemas — one per data file type plus `state.schema.json`. All use `"additionalProperties": false` and JSON Schema 2020-12. A field not in the schema is an error, not a warning. |
+| `data/schema/` | Twelve JSON schemas — one per data file type plus `state.schema.json`. All use `"additionalProperties": false` and JSON Schema 2020-12. A field not in the schema is an error, not a warning. |
+| `data/levels.json` | 5 level difficulty entries. Each holds the per-level difficulty curve: `arrival_mean_ticks` (how often incidents arrive), `severity_max` (highest incident severity the level admits), `max_concurrent` (maximum active incidents at once). A scenario inherits its row through its `level` field; a scenario with `level: null` carries its own `difficulty` block instead. |
+| `data/scenarios/` | One file per scenario, each a single JSON **object** (not wrapped in an array). A scenario declares the board the player starts with, what they may build (`allowed_layers`), how incidents arrive (`incident_source`), and how the session ends (`end`). Validated by `checkScenarioRefs`, `checkScenarioProgression` and `checkScenarioBoards` in `src/validate/scenarioChecks.ts`. See §15 for the three modes (level, standalone, free play) and how to add one. |
 | `data/tags.json` | 47 tags in four kinds: 19 weakness, 16 capability, 9 property, 3 posture. Tags are the closed vocabulary for describing a node's current state and for gating actions. |
 | `data/incidents/` | 49 incidents across 7 family files. Each file is a JSON object with a top-level `incidents` array. The 7 families and their counts are hardcoded in `src/validate/incidentChecks.ts` and asserted in `tests/incidentIntegrity.test.ts`. |
 | `data/layers.json` | 7 architectural layers. Four (edge → ingress → compute → data) are on the request path with `layer_index` 1–4. Three (reliability, observability, delivery) are off-path with `layer_index: null`. |
@@ -74,7 +76,7 @@ Expected final output from `npm run validate`: `✓ all data files valid`
    - `overridable_edges` — boolean; whether the player may rewire its edges
    - `tiers` — the tier array (see below)
 
-3. **Update the node count in two places.** `src/validate/integrity.ts` hardcodes `if (c.nodes.length !== 26)` (check 3) and `tests/integrity.test.ts` asserts 26 twice (`loads 26 nodes`, `has unique node ids across every file`). A 27th node fails `npm run validate` and `npm test` until all three are updated. The same applies to tags: adding one to `data/tags.json` requires updating the count assertion in `tests/tags.test.ts` (currently 47).
+3. **Update the node count in three places.** `src/validate/integrity.ts` hardcodes `if (c.nodes.length !== 26)` (check 3), `tests/integrity.test.ts` asserts 26 twice (`loads 26 nodes`, `has unique node ids across every file`), and `tests/engine.catalog.test.ts` asserts all nine catalogue counts including `nodes`. A 27th node fails `npm run validate` and `npm test` until all four locations are updated. The same applies to tags: adding one to `data/tags.json` requires updating the count assertion in `tests/tags.test.ts` (currently 47) **and** in `tests/engine.catalog.test.ts` (`c.tags.toHaveLength(47)`).
 
 4. **Give the node 3–4 tiers.** Tiers must be numbered contiguously from 1. A node with fewer than 3 tiers gives the player no meaningful upgrade path; more than 4 tiers outpaces the budget curve.
 
@@ -108,6 +110,8 @@ Expected final output from `npm run validate`: `✓ all data files valid`
 ## 6. How to add a tag
 
 Always add the tag to `data/tags.json` **before** referencing it anywhere else. The node schema accepts any string in the `tags` array — it does NOT validate tag ids. The integrity script does (`src/validate/integrity.ts` lines 247-250), and it will produce a clear "unknown tag" error when you run `npm run validate`. Still, a tag that does not exist yet cannot be referenced correctly, and the integrity check is the only net beneath you.
+
+**Count assertions live in three test files.** `tests/tags.test.ts` asserts the tag count (currently 47). `tests/integrity.test.ts` asserts the node count. `tests/engine.catalog.test.ts` asserts all nine catalogue counts — nodes, layers, tags, actions, metrics, incidents, formats, minigames, minigameInstances — so a new tag requires updating both `tests/tags.test.ts` and `tests/engine.catalog.test.ts`. Run `npm test` to confirm both pass.
 
 A tag entry requires:
 - `id` — `snake_case`, unique across all tags
@@ -212,7 +216,7 @@ The `formula` strings in `data/metrics.json` are authored data, not code. They n
 
 ### What `path` means — the one and only rule
 
-The `p95_latency_ms` formula is `sum(path.base_latency_ms * saturation_curve(path.util))`. `path` is the set of nodes on the **synchronous request path**, defined as:
+The `p95_latency_ms` formula is `sum(path.base_latency_ms * saturation_curve(path.utilization_pct / 100))`. `path` is the set of nodes on the **synchronous request path**, defined as:
 
 > A node is on the synchronous request path **if and only if** its layer has `on_request_path: true` in `data/layers.json`, **and** the tier does not carry the `async` or `scheduled` property tag.
 
@@ -220,7 +224,7 @@ Four layers are on-path: `edge`, `ingress`, `compute`, `data`. The three off-pat
 
 **`data/layers.json` is the single source of truth for this. There is no per-node tag for it and there must not be one.** An `on_request_path` tag used to exist in `data/tags.json` and was applied to only 7 of the 38 on-path tiers. Anyone filtering on the tag computed latency from the app tier alone and under-reported p95 by well over half (at tier 1 across the full path, 165 ms of 398 ms — a 58% under-report), silently — while anyone filtering on the layer boolean got a different answer. The tag was deleted precisely because two sources of truth for one fact is the bug. Do not reintroduce it: layer membership plus the `async`/`scheduled` exclusion already answers the question completely.
 
-The same `path` set drives `error_rate_pct` (`clamp(max(path.util - 1) * 40, 0, 100)`).
+The same `path` set drives `error_rate_pct` (`clamp(max(path.utilization_pct / 100 - 1) * 40, 0, 100)`).
 
 ### `message_queue`'s latency is not dead data
 
@@ -473,3 +477,191 @@ The player gets unlimited retries. On each failure, the engine matches the wrong
 | Instances | 29 |
 | Difficulty-slots | 24 |
 | Difficulty levers across all formats | 14 |
+
+---
+
+## 15. Engine — `src/engine/`
+
+This section covers the runtime engine that loads, evaluates, and projects the data defined in `data/`. Read it before editing any file under `src/engine/`.
+
+### File map
+
+| File | Responsibility |
+|---|---|
+| `src/engine/types.ts` | Public contract the UI imports. No logic — only type and constant declarations (`PhaseId`, `MetricId`, `Status`, `GameState`, `NodeInstance`, `IncidentRecord`, `LedgerEntry`, `SessionState`, `BoardNodeView`, `MetricReadingView`, `PortFillView`, `ScenarioDef`, `EndCondition`). |
+| `src/engine/catalog.ts` | Loads all of `data/` and deep-freezes every object. Exports `loadEngineCatalog()` (Node-only I/O wrapper), `catalogFrom(rawData)` (pure constructor for browser use), and `deepFreeze`. |
+| `src/engine/formula.ts` | Hand-written recursive-descent evaluator for the formula strings in `data/metrics.json`. Exports `evaluateFormula`. |
+| `src/engine/ports.ts` | Capability and port matching. Exports `autoWire`, `portFills`, `unsatisfiedPorts`. |
+| `src/engine/scenario.ts` | Loads a scenario file and constructs the initial `GameState`. Exports `loadScenario`, `scenarioById(id, catalog)`, `instanceIdFor`, `scenarioFrom`. |
+| `src/engine/metrics.ts` | Builds the formula scope and evaluates all seven metrics in dependency order. Exports `buildScope`, `deriveMetrics`, `onRequestPath`. |
+| `src/engine/view.ts` | `boardOf` and `metricsOf` projections that translate `GameState` + `EngineCatalog` into the view models the UI renders. Also exports `statusOf`, `nodeStatusOf`. |
+| `src/engine/rng.ts` | Deterministic 32-bit xorshift PRNG expressed as pure functions. Exports `nextFloat`, `nextInt`, `seedFrom` (FNV-1a hash of a string), `rngFrom` (splitmix32-finalised seed constructor — prefer over `{ seed: n }` directly). |
+| `src/engine/difficulty.ts` | Resolves a scenario's difficulty: reads the level row from `data/levels.json` or the scenario's own `difficulty` block if `level: null`. Exports `difficultyFor`. |
+| `src/engine/arrival.ts` | Geometric arrival probability, weighted incident selection, and instance targeting. Exports `shouldArrive`, `selectIncident`, `targetsOf`, `weightOf`, `eligibleIncidents`. |
+| `src/engine/damage.ts` | Health delta and tag application for a given set of instance ids. Exports `affectedInstanceIds`, `applyDamage`. |
+| `src/engine/ledger.ts` | Prices ledger events using `economy` coefficients. Exports `ledgerEntriesFor`, `priceLedgerEvent`. |
+| `src/engine/tick.ts` | The clock. `advance(state, dtTicks, catalog): GameState` loops `dtTicks` times, applying arrivals → per-tick ledger → escalations → expiries → cooldowns → metrics → bookkeeping in that per-tick order. Refuses a non-`run` phase. |
+| `src/engine/session.ts` | Phase transitions and end-condition evaluation. Exports `canStartRun`, `startRun`, `isSessionOver`, `endSession`, `runSession`. |
+
+### The engine never imports from `src/ui/`
+
+The dependency runs one way: UI → engine. `tests/engine.types.test.ts` enforces this by scanning every engine file for the import pattern. Adding a `src/ui` import to any engine file makes the engine unshippable without the UI present and breaks the test suite's isolation guarantee. A parallel session owns `src/ui` — never edit it.
+
+### Browser bundleability
+
+Every engine module except `catalog.ts` is guaranteed browser-bundleable — they must never import `node:*` modules. `loadEngineCatalog` in `catalog.ts` **does** use Node I/O and is intentionally excluded; the browser uses `catalogFrom` instead. The `check:browser` script in `package.json` enforces this by bundling `$(ls src/engine/*.ts | grep -v catalog.ts)` with esbuild — a glob rather than a hand-listed set, so new modules are covered automatically without editing the script. `catalog.ts` is the one deliberate exclusion.
+
+### Purity
+
+The engine has no side effects: no `Date.now()`, no `setInterval`, no DOM reads. The caller owns real time and calls `advance` when a tick should fire. This is why every engine test is a plain synchronous assertion with no fake timers needed.
+
+### The frozen catalogue
+
+`loadEngineCatalog()` is a thin Node-only wrapper that reads the data files and calls `catalogFrom(rawData)`. `catalogFrom` is a pure constructor that takes already-parsed arrays — the browser calls it after fetching the data files over HTTP. Both paths call `deepFreeze` on the entire return value, including `scenarios` and the `scenarioById` index. A write to a definition object in strict mode throws immediately, at the call site, rather than silently mutating shared state. This makes the two-layer rule (§2) mechanical: it was documented-but-unenforced since cycle 1, and the freeze is what closed that gap.
+
+The `EngineCatalog` property holding minigame instances is `minigameInstances` (not `instances`). The rename avoids a collision with `GameState.instances`, which are per-save node instances — a different concept entirely.
+
+**Three caveats that cost real debugging time:**
+
+- **Freezing always protects the value; it only *throws* in strict mode.** ESM modules are strict by spec, so every real consumer gets the loud behaviour — but a write from a non-strict context fails silently with the value unchanged. If you are debugging an ignored write and the freeze appears broken, check whether the calling module is strict.
+
+- **Index maps must share object references with their source arrays.** A shipped defect had `layerById`, `tagById`, and `actionById` built from a second `loadJson` call. Even though those arrays were frozen separately, the Map entries held distinct object references from a separate parse — so `catalog.layerById.get('edge').on_request_path = false` succeeded silently while `Object.isFrozen(catalog.layers[0])` returned `true`. A frozenness assertion passed on the broken code. The defect was found because `deepFreeze` at the time traversed only via `Object.values`, which returns `[]` for a `Map`, leaving Map entries unfrozen — surfacing the gap only when a test on a Map entry was added. `deepFreeze` now traverses Map and Set values explicitly, but the underlying rule stands: **a Map built from a second parse holds different objects than the frozen array, regardless of whether those objects are also frozen**. If you add an index, build it from the same array reference and test **reference identity**, not just frozenness.
+
+- **`Object.freeze` cannot make a `Map` immutable.** `map.set(...)` still succeeds; the `ReadonlyMap` types in `catalog.ts` are compile-time only. This is an accepted limitation, not an oversight — a Proxy or bespoke collection type was judged disproportionate.
+
+### The formula evaluator
+
+`eval` and `new Function` are prohibited. These strings are authored data, and an evaluator that can reach the runtime is an injection surface. The evaluator is a hand-written recursive-descent parser limited to an allowlist of six functions: `sum`, `min`, `max`, `clamp`, `saturation_curve`, `decay`. **An unknown identifier throws** — a formula that silently reads zero produces a plausible wrong number, which is worse than a crash.
+
+Identifier lookup uses `Object.prototype.hasOwnProperty`, not `=== undefined`. A shipped defect let `constructor` resolve through the prototype chain, handing a formula a *function*. `toString`, `valueOf`, and `__proto__` were equally reachable. The `hasOwnProperty` guard closes this.
+
+Dotted identifiers (e.g. `path.base_latency_ms`) are vectors — one element per matching node. Bare identifiers are scalars. Operators broadcast elementwise across mixed scalar/vector pairs. **The top-level result must reduce to a single number** — a formula that evaluates to a vector throws.
+
+### `saturation_curve` — polynomial, not reciprocal
+
+`saturation_curve(u)` is `1 + (max(0, u - knee) / (1 - knee)) ** exponent`. With the shipped `saturation_knee: 0.8, saturation_exponent: 3.0` that is ×1.00 up to 80% utilisation, ×1.12 at 90%, ×2.00 at 100%, ×16.6 at 130%.
+
+**If latency ever explodes absurdly, check this first.** A reciprocal of `(1 - u)` gives ×296 at 97% utilisation and ×8,000,000 at 100%. The comment in `src/engine/formula.ts` records why the reciprocal form was rejected.
+
+### The monthly-rate time base
+
+`reputation_growth_rate`, `latency_churn_rate`, and `outage_churn_rate` are monthly rates. Formulas evaluate per tick and `tick_seconds` is 5, so `metrics.ts` divides all three by `ticks_per_month = 2_592_000 / tick_seconds` before applying them.
+
+**The known consequence:** over a 40-tick session users move about 0.00023% (per-tick growth = 0.03 / 518,400 = 5.787e-8; × 40 ticks = 2.31e-6), so the business metrics appear frozen. This is a balance problem, not an engine bug — a test in `tests/engine.metrics.test.ts` pins the magnitude deliberately so removing the division is immediately visible. The fix is a balance decision: raise `tick_seconds`, lengthen the session window, or reinterpret the rates as per-tick rather than monthly.
+
+### `Status` is engine-owned — the UI must never re-derive it
+
+`statusOf` (for metrics) and `nodeStatusOf` (for nodes) are the only places status is computed.
+
+**Metric status** comes from `healthy_range`: `ok` if the value is inside `[lo, hi]`; `warn` if the overshoot past the breached bound is within half the range width; `bad` beyond that. `statusOf` deliberately does not read `direction` — the overshoot formula is symmetric, and which bound fires already encodes the direction. Do not "fix" it by adding a direction branch. If a threshold feels wrong, change `data/metrics.json` so both sides move together.
+
+**Node status**: `bad` if `down` or health ≤ 0; `warn` if health < 60 or utilisation at or above the 80% saturation knee; `ok` otherwise.
+
+### Port disjointness invariant
+
+A node's `requires` ports must accept disjoint capability sets. `ports.ts` counts a port's fill by re-testing `accepts` against the consumer's edges; overlapping ports would share edges and one could report more fills than its own `max`. `checkPortAcceptsDisjoint` in `src/validate/integrity.ts` enforces this under `npm run validate`. If a future data cycle genuinely needs overlapping ports, the engine must change first.
+
+### `instanceIdFor` — the canonical instance-id rule
+
+`instanceIdFor(defId, n)` in `scenario.ts` produces `<def_id with underscores replaced by hyphens>-<n>`, numbered from 1 in board order. `view.ts` calls it to key authored `x`/`y` positions. If the two implementations ever disagree, every position lookup misses, nodes silently fall back to `{0, 0}`, and the board renders as a pile at the origin with nothing failing. A drift-guard test in `tests/engine.view.test.ts` asserts each view's position equals its authored board entry.
+
+### Starting users
+
+50,000 users is hardcoded in `scenario.ts` as `carried: { reputation: 100, users: 50000 }`. The `users` formula reads its own previous value each tick, so it must start somewhere. This is the single place it lives. The fix, if scenarios ever need to vary it, is a `starting_users` scenario field — there is no such field today, and nothing else should read or set this value.
+
+### How to add a scenario
+
+Scenario files go in `data/scenarios/`, validated by `data/schema/scenario.schema.json`. Three modes share one file shape:
+
+| Mode | Markers |
+|---|---|
+| **Level** | `level` is a non-null integer; `incident_source: "scripted"`; `end.kind: "fixed_window"` |
+| **Standalone scenario** | `level: null`; otherwise same as a level |
+| **Free play** | `incident_source: "weighted"`; `end.kind: "endless"`; `incidents: []` |
+
+`end.kind` is a closed enum — `fixed_window`, `endless`, `objectives` — but only `fixed_window` is implemented. `allowed_layers` bounds what the player may build; nodes outside it are rejected by `checkScenarioBoards`.
+
+`npm run validate` enforces:
+- **`checkScenarioProgression`** — `unlocked_by` may not name a missing scenario or itself; a `scripted` scenario must have at least one incident; a `weighted` scenario must have none.
+- **`checkScenarioBoards`** — every board entry names a real node in an allowed layer, within `max_instances`; and as a runway check, the board's total monthly `cost_month` must not exceed the scenario's `starting_budget` credits, or the scenario is unsustainable from the first month.
+
+### Engine functions: what exists today
+
+These functions are implemented and tested. The UI session can call any of them:
+
+```
+loadEngineCatalog    catalogFrom        evaluateFormula    autoWire
+portFills            unsatisfiedPorts   loadScenario       scenarioById
+instanceIdFor        buildScope         deriveMetrics      onRequestPath
+boardOf              metricsOf          statusOf           nodeStatusOf
+difficultyFor        advance            canStartRun        startRun
+isSessionOver        endSession         runSession
+```
+
+`advance(state, dtTicks, catalog)` takes the catalogue as a third parameter (the older handoff doc wrote `advance(state, dtTicks)` — this corrects that).
+
+The following functions appear in the engine spec and handoff but belong to Plan B and do not exist yet:
+
+```
+actionsFor         gradeAnswer        applyOutcome
+provision          decommission       signalsFor
+designSummary      debriefSummary     tierLadder
+```
+
+### Level and scenario validation
+
+`src/validate/levelChecks.ts` enforces three cross-file rules for `data/levels.json`:
+- **`checkLevelShape`** — levels must be contiguous from 1, unique, and monotonically harder: `arrival_mean_ticks` must not increase (equal adjacent values pass — the check is non-strict), `severity_max` must be non-decreasing, `max_concurrent` must be non-decreasing across levels.
+- **`checkLevelIncidentCoverage`** — every level must admit at least one incident (severity ≤ `severity_max`). A severity cap that matches nothing produces a level where nothing can ever happen — the analogue of the minigame difficulty-slot check.
+- **`checkScenarioLevelRefs`** — every scenario that names a `level` must name one that exists; a scenario with `level: null` must carry its own `difficulty` block.
+
+`src/validate/scenarioChecks.ts` enforces three more rules:
+- **`checkScenarioRefs`** — every `board` entry names a real node, every `incidents` entry names a real incident, no duplicate scenario ids, and no scripted incident fires at or after the session window ends.
+- **`checkScenarioProgression`** — `unlocked_by` may not name a missing scenario or itself; a `scripted` scenario must have at least one incident; a `weighted` scenario must have none.
+- **`checkScenarioBoards`** — every board entry names a real node in an allowed layer, within `max_instances`; and the board's total monthly `cost_month` must not exceed the scenario's `starting_budget`.
+
+### Cycle decisions — what breaks if you undo these
+
+These were measured defects during this cycle. Each is recorded here because the symptom is non-obvious.
+
+1. **Seed scrambling in `startRun`.** A raw small integer seed is pathological for xorshift32: its first output is ~`seed * 6.3e-5`, so `nextInt` returns 0 and every weighted arrival fires on tick 1 for seeds 1–399 at level 1, up to 1–1343 at level 5. `startRun` calls `rngFrom(seed)` before entering the session — a splitmix32 finaliser that distributes the seed. `advance` treats `rng_seed` as an **already-scrambled** stream position and does **not** call `rngFrom` again, because re-scrambling on every `dtTicks=12` call would produce a different result than twelve `dtTicks=1` calls, breaking the looping-equivalence test. `startRun` is the one boundary; never construct `{ seed: n }` from a caller-supplied integer by hand.
+
+2. **`per_tick` ledger events carry `cadence: 'once'`, not `'monthly'`.** A `per_tick` event is a fresh one-off charge created each tick. Marking it `monthly` made `cost_month` sum the same charge once per elapsed tick: −499,885 over 40 ticks. `'monthly'` is reserved for a standing charge appended once; nothing emits one yet.
+
+3. **`cost_month` adds the ledger's magnitude, not its signed amount.** `LedgerEntry.amount` is negative by convention (it is a charge). `metrics.ts` negates it when building the `ledger.recurring` vector. Without that negation, a charge reduced `cost_month` and raised `profit_month`.
+
+4. **`check:browser` is a glob**, not a hand-listed set. The hand-listed set silently stopped covering five modules when new engine files were added. The current script is `$(ls src/engine/*.ts | grep -v catalog.ts)`. New modules in `src/engine/` are covered automatically. Do not add `session.ts` or any other new module by name.
+
+### Tick loop — things that are not rearrangeable
+
+The per-tick order in `advance` is: arrivals → per-tick ledger → escalations → expiries → cooldowns → metrics → bookkeeping. This order is not arbitrary:
+
+- Metrics derive **last** because steps 1–5 change what they read: health, incidents, and ledger all land before the formula scope is built.
+- `reputation` needs this tick's incident set because `incident_severity` is summed from active incidents rather than stored separately.
+- **`dtTicks` loops; it never multiplies.** Scaling a single tick's effects by `dtTicks` would skip escalation thresholds, land expiries on the wrong tick, and fire per-tick ledger events once instead of `dtTicks` times.
+- **Arrival damage applies once, not every tick.** `health_delta` is a one-off shock applied at the tick the incident arrives. Only `ledger_events` with `when: per_tick` recur. Re-applying `health_delta` each tick destroys a board within a few ticks.
+- **Architecture-scope incidents damage nothing.** Their `health_delta: -5` exists only because the schema requires a non-empty `damage` block; it is applied to no instance.
+- **Utilisation has no upper clamp.** Values above 100 are what drive `error_rate_pct` through the saturation curve. Capping at 100 would silently remove saturation.
+
+### Known gaps (deliberate, not bugs)
+
+1. **`fires_when` posture predicates are not evaluated.** Architecture-scope incidents are admitted on severity and gates alone. An architecture incident may fire even when the posture gap it describes does not exist in the current board.
+2. **Nothing resolves an incident.** 44 of 49 incidents have no `duration_ticks` and persist once they arrive. A run degrades and scores; the player has no agency yet. `max_concurrent` and the session window are what bound a run. Actions and minigames belong to a later plan.
+3. **`endless` and `objectives` throw.** They are declared in the `EndCondition` enum and unimplemented. A session that cannot end looks like a hang rather than a missing feature, so they throw a clear error rather than silently looping.
+
+### Wave A behaviour changes — traps for the next cycle
+
+Four behaviours differ from the original plan spec. Each is recorded here because the symptom is non-obvious and the cause is an easy revert target.
+
+1. **`metricsOf` reads recorded history rather than re-deriving.** `view.ts` returns the last entries from `state.history` instead of calling `deriveMetrics` again. Re-deriving would double-apply one tick of `reputation` decay: the `carried.reputation` going into the formula scope is already this tick's output, so evaluating the formula a second time would produce `reputation * decay^2` rather than `reputation * decay^1`. Reading history avoids this without special-casing `reputation`.
+
+2. **A group incident is N records sharing one key.** Group-scope arrivals create one `IncidentRecord` per affected instance, all carrying the same `key`. The per-tick ledger, escalation, and expiry steps group records by `key` and process each key-group as a unit — so a group incident charges once (with the full affected-instance list), escalates once, and expires once, regardless of how many instances it covers.
+
+3. **Scripted arrivals ignore `max_concurrent`; weighted arrivals respect it.** In `tick.ts`, the `if (incidents.length < difficulty.max_concurrent)` guard wraps only the weighted arrival branch. Scripted arrivals (authored at explicit ticks) fire unconditionally — the authored schedule is authoritative, and silencing a scheduled incident because of an active one would make scripted scenarios non-deterministic.
+
+4. **Escalating into architecture scope clears `instance_id`.** When an incident escalates to an architecture-scope target, the escalated record carries `instance_id: null` even when the source incident was bound to a specific node. Architecture-scope incidents describe a system-wide posture gap, not a per-node failure, so retaining an `instance_id` from the source incident would be misleading and could confuse the UI.
+
+### Specs and handoff
+
+Full design spec: `docs/superpowers/specs/2026-09-19-engine-core-design.md`
+Engine-to-UI contract: `docs/handoffs/2026-09-19-engine-to-ui-contract.md`

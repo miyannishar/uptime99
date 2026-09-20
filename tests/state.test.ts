@@ -48,3 +48,60 @@ describe('state.schema.json', () => {
     expect(validate(unreachable).valid).toBe(true)
   })
 })
+
+describe('state.schema.json — game-level fields', () => {
+  it('requires the new top-level fields', () => {
+    for (const key of ['save_version', 'scenario_id', 'phase', 'tick', 'budget',
+                       'rng_seed', 'carried', 'history',
+                       'instances', 'incidents', 'ledger', 'session']) {
+      const bad = clone()
+      delete bad[key]
+      expect(validate(bad).valid, `missing ${key} should fail`).toBe(false)
+    }
+  })
+
+  it('rejects active_incidents on an instance now that incidents are game-level', () => {
+    const bad = clone()
+    bad.instances[0].active_incidents = ['oom_kill']
+    expect(validate(bad).valid).toBe(false)
+  })
+
+  it('accepts an architecture-scope incident with a null instance_id', () => {
+    const s = clone()
+    s.incidents.push({
+      key: 'unencrypted_at_rest#1', incident_id: 'unencrypted_at_rest',
+      instance_id: null, started_tick: 3,
+      escalate_at_tick: null, expires_at_tick: null, attempts: {},
+    })
+    expect(validate(s).errors.join('\n')).toBe('')
+  })
+
+  it('rejects an unknown phase', () => {
+    const bad = clone()
+    bad.phase = 'paused'
+    expect(validate(bad).valid).toBe(false)
+  })
+
+  it('rejects a ledger cadence outside the enum', () => {
+    const bad = clone()
+    bad.ledger.push({ kind: 'sla_credit', basis: 1, cadence: 'weekly',
+                      amount: -10, tick: 1, instance_id: null })
+    expect(validate(bad).valid).toBe(false)
+  })
+
+  it('rejects a derived metric leaking into carried', () => {
+    const bad = clone()
+    bad.carried.p95_latency_ms = 412
+    expect(validate(bad).valid).toBe(false)
+  })
+
+  it('accepts a null rng_seed and an integer one, but not a float', () => {
+    const s = clone()
+    s.rng_seed = null
+    expect(validate(s).errors.join('\n')).toBe('')
+    s.rng_seed = 12345
+    expect(validate(s).errors.join('\n')).toBe('')
+    s.rng_seed = 1.5
+    expect(validate(s).valid).toBe(false)
+  })
+})

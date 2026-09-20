@@ -13,7 +13,8 @@
     "build": "vite build --config src/ui/vite.config.ts",
     "typecheck": "tsc -p tsconfig.json && tsc -p src/ui/tsconfig.json",
     "test:ui": "vitest run --config src/ui/vitest.config.ts",
-    "check": "npm run validate && npm test && npm run test:ui && npm run typecheck"
+    "check:browser": "npx esbuild $(ls src/engine/*.ts | grep -v 'src/engine/catalog.ts') --bundle --platform=browser --format=esm --outdir=/tmp/uptime99-browser-check && rm -rf /tmp/uptime99-browser-check",
+    "check": "npm run validate && npm test && npm run test:ui && npm run typecheck && npm run check:browser"
   },
   "keywords": [],
   "author": "",

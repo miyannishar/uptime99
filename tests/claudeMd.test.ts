@@ -63,4 +63,35 @@ describe('CLAUDE.md', () => {
   it('links the minigame spec', () => {
     expect(doc).toContain('docs/superpowers/specs/2026-09-18-minigame-data-model-design.md')
   })
+
+  it('documents the engine layer', () => {
+    expect(doc).toContain('src/engine/')
+    expect(doc).toMatch(/two-layer rule/i)
+    expect(doc).toMatch(/deepFreeze|frozen/)
+  })
+
+  it('states the formula evaluator rules', () => {
+    expect(doc).toMatch(/saturation_curve/)
+    expect(doc).toMatch(/eval/)
+    expect(doc).toMatch(/allowlist/i)
+  })
+
+  it('links the engine spec', () => {
+    expect(doc).toContain('docs/superpowers/specs/2026-09-19-engine-core-design.md')
+  })
+
+  it('documents the level difficulty curve', () => {
+    expect(doc).toContain('data/levels.json')
+    expect(doc).toMatch(/severity_max/)
+    expect(doc).toMatch(/arrival_mean_ticks/)
+  })
+
+  it('documents the tick loop order', () => {
+    expect(doc).toMatch(/per-tick order|tick order/i)
+    expect(doc).toMatch(/dtTicks/)
+  })
+
+  it('documents that arrival damage applies once', () => {
+    expect(doc).toMatch(/once, not every tick|one-off shock/i)
+  })
 })

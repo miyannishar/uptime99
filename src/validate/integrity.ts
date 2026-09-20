@@ -22,6 +22,18 @@ import {
   checkInstanceShapes,
   checkWhenLegality,
 } from './minigameChecks'
+import {
+  loadScenarios,
+  checkScenarioRefs,
+  checkScenarioBoards,
+  checkScenarioProgression,
+} from './scenarioChecks'
+import {
+  loadLevels,
+  checkLevelShape,
+  checkLevelIncidentCoverage,
+  checkScenarioLevelRefs,
+} from './levelChecks'
 
 const NODE_DIR = 'data/nodes'
 
@@ -170,6 +182,33 @@ export function checkActionStatsDelta(
   return problems
 }
 
+/**
+ * No node's `requires` ports may accept the same capability as another of its
+ * own ports. src/engine/ports.ts counts a port's fill by re-testing `accepts`
+ * against the consumer's edges, so overlapping ports would share edges and a
+ * port could report more fills than its own `max` allows.
+ */
+export function checkPortAcceptsDisjoint(nodes: any[]): string[] {
+  const problems: string[] = []
+  for (const node of nodes) {
+    const ports: any[] = node.requires ?? []
+    for (let i = 0; i < ports.length; i += 1) {
+      for (let j = i + 1; j < ports.length; j += 1) {
+        const shared = (ports[i].accepts ?? []).filter((c: string) =>
+          (ports[j].accepts ?? []).includes(c))
+        if (shared.length > 0) {
+          problems.push(
+            `node '${node.id}': ports '${ports[i].port}' and '${ports[j].port}' both accept ` +
+            `${shared.map((s: string) => `'${s}'`).join(', ')} — engine port-fill counting requires ` +
+            `a node's ports to accept disjoint capability sets`,
+          )
+        }
+      }
+    }
+  }
+  return problems
+}
+
 /** 11. Every action must match at least one tier, or it is dead content. */
 export function checkActionReachability(
   actions: Action[],
@@ -278,6 +317,9 @@ export function runIntegrityChecks(): string[] {
     })
   }
 
+  // 5b. Port accepts must be disjoint within a node
+  problems.push(...checkPortAcceptsDisjoint(c.nodes))
+
   // 6. Tag resolved_by references must exist in actions
   for (const t of c.tags) {
     for (const a of t.resolved_by) {
@@ -344,6 +386,27 @@ export function runIntegrityChecks(): string[] {
     problems.push(...checkInstanceShapes(mgData.instances, mgData.minigames))
     problems.push(...checkWhenLegality(mgData.instances, mgData.minigames))
   }
+
+  // 25–28. Scenario integrity checks
+  const scenarioSchema = compileSchema('data/schema/scenario.schema.json')
+  const scenarios = loadScenarios()
+  for (const s of scenarios) {
+    const r = scenarioSchema(s)
+    if (!r.valid) problems.push(`data/scenarios/${s.id}.json: ${r.errors.join('; ')}`)
+  }
+  problems.push(...checkScenarioRefs(scenarios, c))
+  problems.push(...checkScenarioBoards(scenarios, c))
+  problems.push(...checkScenarioProgression(scenarios))
+
+  // 29–32. Level integrity checks
+  const levelSchema = compileSchema('data/schema/level.schema.json')
+  const levelsRaw = loadJson('data/levels.json')
+  const lr = levelSchema(levelsRaw)
+  if (!lr.valid) problems.push(`data/levels.json: ${lr.errors.join('; ')}`)
+  const levels = loadLevels()
+  problems.push(...checkLevelShape(levels))
+  problems.push(...checkLevelIncidentCoverage(levels, loadIncidents()))
+  problems.push(...checkScenarioLevelRefs(loadScenarios(), levels))
 
   return problems
 }

@@ -7,6 +7,7 @@ import {
   checkActionStatsDelta,
   checkActionReachability,
   checkActionMetricKeys,
+  checkPortAcceptsDisjoint,
   matchableTiers,
 } from '../src/validate/integrity'
 import { loadJson } from '../src/validate/loadJson'
@@ -159,6 +160,26 @@ describe('action registry reference checks', () => {
     ])
     // Every shipped action is reachable.
     expect(checkActionReachability(catalog.actions, catalog.nodes, runtimeOnlyTags)).toEqual([])
+  })
+
+  it('checkPortAcceptsDisjoint returns empty for the real 26-node catalogue', () => {
+    expect(checkPortAcceptsDisjoint(catalog.nodes)).toEqual([])
+  })
+
+  it('checkPortAcceptsDisjoint fires on a synthetic node with overlapping port accepts', () => {
+    const synthetic = [{
+      id: 'test_overlap',
+      requires: [
+        { port: 'alpha', accepts: ['cap_x', 'cap_y'], min: 1, max: 2 },
+        { port: 'beta',  accepts: ['cap_x', 'cap_z'], min: 0, max: 1 },
+      ],
+    }]
+    const problems = checkPortAcceptsDisjoint(synthetic)
+    expect(problems).toHaveLength(1)
+    expect(problems[0]).toContain(`node 'test_overlap'`)
+    expect(problems[0]).toContain(`'alpha'`)
+    expect(problems[0]).toContain(`'beta'`)
+    expect(problems[0]).toContain(`'cap_x'`)
   })
 
   it('counts runtime-gated actions as reachable without special-casing their ids', () => {

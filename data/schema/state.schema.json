@@ -1,32 +1,105 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "uptime99 save state",
   "type": "object",
   "additionalProperties": false,
-  "required": ["instances"],
+  "required": ["save_version", "scenario_id", "phase", "tick", "budget", "rng_seed",
+               "carried", "history", "instances", "incidents", "ledger", "session",
+               "last_fired"],
   "properties": {
-    "instances": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": ["instance_id", "def_id", "tier", "region", "health", "utilization_pct",
-                     "down", "tags_runtime", "action_cooldowns", "active_incidents", "edges_out",
-                     "provisioning_until_tick", "created_tick"],
-        "properties": {
-          "instance_id": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
-          "def_id": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
-          "tier": { "type": "integer", "minimum": 1, "maximum": 4 },
-          "region": { "type": "string", "minLength": 1 },
-          "health": { "type": "number", "minimum": 0, "maximum": 100 },
-          "utilization_pct": { "type": "number", "minimum": 0 },
-          "down": { "type": "boolean" },
-          "tags_runtime": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
-          "action_cooldowns": { "type": "object", "additionalProperties": { "type": "number", "minimum": 0 } },
-          "active_incidents": { "type": "array", "items": { "type": "string" } },
-          "edges_out": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
-          "provisioning_until_tick": { "type": ["integer", "null"], "minimum": 0 },
-          "created_tick": { "type": "integer", "minimum": 0 }
+    "save_version": { "const": 1 },
+    "scenario_id": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+    "phase": { "enum": ["design", "run", "debrief"] },
+    "tick": { "type": "integer", "minimum": 0 },
+    "budget": { "type": "number" },
+    "rng_seed": { "type": ["integer", "null"] },
+    "carried": {
+      "type": "object", "additionalProperties": false,
+      "required": ["reputation", "users"],
+      "properties": {
+        "reputation": { "type": "number", "minimum": 0, "maximum": 100 },
+        "users": { "type": "number", "minimum": 0 }
+      }
+    },
+    "history": {
+      "type": "object", "additionalProperties": false,
+      "properties": {
+        "uptime_pct":     { "type": "array", "items": { "type": "number" } },
+        "p95_latency_ms": { "type": "array", "items": { "type": "number" } },
+        "error_rate_pct": { "type": "array", "items": { "type": "number" } },
+        "reputation":     { "type": "array", "items": { "type": "number" } },
+        "users":          { "type": "array", "items": { "type": "number" } },
+        "cost_month":     { "type": "array", "items": { "type": "number" } },
+        "profit_month":   { "type": "array", "items": { "type": "number" } }
+      }
+    },
+    "instances": { "type": "array", "items": { "$ref": "#/$defs/instance" } },
+    "incidents": { "type": "array", "items": { "$ref": "#/$defs/incidentRecord" } },
+    "ledger":    { "type": "array", "items": { "$ref": "#/$defs/ledgerEntry" } },
+    "last_fired": {
+      "type": "object",
+      "additionalProperties": { "type": "integer", "minimum": 0 }
+    },
+    "session": {
+      "type": "object", "additionalProperties": false,
+      "required": ["peak_p95_ms", "incidents_fired", "incidents_resolved", "status"],
+      "properties": {
+        "peak_p95_ms": { "type": "number", "minimum": 0 },
+        "incidents_fired": { "type": "integer", "minimum": 0 },
+        "incidents_resolved": { "type": "integer", "minimum": 0 },
+        "status": { "enum": ["running", "complete"] }
+      }
+    }
+  },
+  "$defs": {
+    "instance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["instance_id", "def_id", "tier", "region", "health", "utilization_pct",
+                   "down", "tags_runtime", "action_cooldowns", "edges_out",
+                   "provisioning_until_tick", "created_tick"],
+      "properties": {
+        "instance_id": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+        "def_id": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
+        "tier": { "type": "integer", "minimum": 1, "maximum": 4 },
+        "region": { "type": "string", "minLength": 1 },
+        "health": { "type": "number", "minimum": 0, "maximum": 100 },
+        "utilization_pct": { "type": "number", "minimum": 0 },
+        "down": { "type": "boolean" },
+        "tags_runtime": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+        "action_cooldowns": { "type": "object", "additionalProperties": { "type": "number", "minimum": 0 } },
+        "edges_out": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+        "provisioning_until_tick": { "type": ["integer", "null"], "minimum": 0 },
+        "created_tick": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "incidentRecord": {
+      "type": "object", "additionalProperties": false,
+      "required": ["key", "incident_id", "instance_id", "started_tick",
+                   "escalate_at_tick", "expires_at_tick", "attempts"],
+      "properties": {
+        "key": { "type": "string", "minLength": 1 },
+        "incident_id": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
+        "instance_id": { "type": ["string", "null"] },
+        "started_tick": { "type": "integer", "minimum": 0 },
+        "escalate_at_tick": { "type": ["integer", "null"], "minimum": 0 },
+        "expires_at_tick": { "type": ["integer", "null"], "minimum": 0 },
+        "attempts": {
+          "type": "object",
+          "additionalProperties": { "type": "integer", "minimum": 0 }
         }
+      }
+    },
+    "ledgerEntry": {
+      "type": "object", "additionalProperties": false,
+      "required": ["kind", "basis", "cadence", "amount", "tick", "instance_id"],
+      "properties": {
+        "kind": { "type": "string" },
+        "basis": { "type": "number" },
+        "cadence": { "enum": ["once", "monthly"] },
+        "amount": { "type": "number" },
+        "tick": { "type": "integer", "minimum": 0 },
+        "instance_id": { "type": ["string", "null"] }
       }
     }
   }

@@ -1,0 +1,19 @@
+{
+  "id": "slice-oom-kill",
+  "name": "First Incident",
+  "blurb": "One app tier, one database, and a memory limit nobody checked.",
+  "level": 1,
+  "unlocked_by": [],
+  "incident_source": "scripted",
+  "stars": 0,
+  "starting_budget": 800,
+  "allowed_layers": ["edge", "ingress", "compute", "data", "observability"],
+  "board": [
+    { "def_id": "cdn",           "tier": 1, "region": "us-east-1a", "x": 40,  "y": 120 },
+    { "def_id": "load_balancer", "tier": 1, "region": "us-east-1a", "x": 190, "y": 120 },
+    { "def_id": "app_cluster",   "tier": 1, "region": "us-east-1a", "x": 340, "y": 90 },
+    { "def_id": "postgres",      "tier": 1, "region": "us-east-1a", "x": 340, "y": 200 }
+  ],
+  "end": { "kind": "fixed_window", "ticks": 40 },
+  "incidents": [ { "incident_id": "oom_kill", "at_tick": 12 } ]
+}

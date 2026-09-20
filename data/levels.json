@@ -1,0 +1,14 @@
+{
+  "levels": [
+    { "level": 1, "name": "One thing at a time",
+      "arrival_mean_ticks": 40, "severity_max": 2, "max_concurrent": 1 },
+    { "level": 2, "name": "Overlapping pages",
+      "arrival_mean_ticks": 32, "severity_max": 3, "max_concurrent": 1 },
+    { "level": 3, "name": "Two at once",
+      "arrival_mean_ticks": 25, "severity_max": 4, "max_concurrent": 2 },
+    { "level": 4, "name": "No quiet periods",
+      "arrival_mean_ticks": 18, "severity_max": 5, "max_concurrent": 2 },
+    { "level": 5, "name": "Everything, all the time",
+      "arrival_mean_ticks": 12, "severity_max": 5, "max_concurrent": 3 }
+  ]
+}

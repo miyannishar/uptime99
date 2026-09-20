@@ -1,4 +1,12 @@
 {
+  "save_version": 1,
+  "scenario_id": "slice-oom-kill",
+  "phase": "run",
+  "tick": 0,
+  "budget": 800,
+  "rng_seed": null,
+  "carried": { "reputation": 100, "users": 50000 },
+  "history": {},
   "instances": [
     {
       "instance_id": "pg-primary",
@@ -10,10 +18,14 @@
       "down": false,
       "tags_runtime": ["stateful", "durable", "has_replica", "manual_failover", "single_az"],
       "action_cooldowns": { "failover": 40 },
-      "active_incidents": ["inc_0142"],
       "edges_out": ["redis-01"],
       "provisioning_until_tick": null,
       "created_tick": 120
     }
-  ]
+  ],
+  "incidents": [],
+  "ledger": [],
+  "last_fired": {},
+  "session": { "peak_p95_ms": 0, "incidents_fired": 0,
+               "incidents_resolved": 0, "status": "running" }
 }
