@@ -37,7 +37,7 @@ export function gradeAnswer(instanceDef: any, answer: MinigameAnswer): GradeResu
     }
 
     case 'dial': {
-      const expected: number = instanceDef.solution.value
+      const expected: number = Number(instanceDef.solution.value)
       if (answer.value === expected) return { correct: true }
       return { correct: false, when: answer.value < expected ? 'below' : 'above' }
     }

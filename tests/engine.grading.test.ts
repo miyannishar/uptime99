@@ -80,6 +80,12 @@ describe('gradeAnswer — dial', () => {
     expect(result.correct).toBe(false)
     expect(result.when).toBe('above')
   })
+
+  it('accepts string solution.value after template resolution ("3" → 3)', () => {
+    const inst = { solution: { value: '3' }, wrong_outcomes: [] }
+    expect(gradeAnswer(inst as any, { kind: 'dial', value: 3 }).correct).toBe(true)
+    expect(gradeAnswer(inst as any, { kind: 'dial', value: 2 }).when).toBe('below')
+  })
 })
 
 describe('gradeAnswer — wiring', () => {
