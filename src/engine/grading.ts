@@ -114,15 +114,38 @@ export function applyOutcome(
   // error_rate_pct is driven by utilisation > 100%, so we translate the penalty to a
   // utilisation bump. uptime_pct deltas (negative) mean brief downtime — represented
   // as a moderate utilisation spike. This is approximate but visible to the player.
+  // Apply on_fail.metrics as utilisation spikes
   let utilBump = 0
   if (!correct && outcome?.metrics) {
     const m = outcome.metrics as Record<string, string>
     const errDelta = m.error_rate_pct ? parseFloat(m.error_rate_pct) : 0
     const uptDelta = m.uptime_pct ? parseFloat(m.uptime_pct) : 0
-    // +1% error_rate needs util > 100%; each +1% error ≈ +2.5% util above the knee
     utilBump = errDelta * 2.5 + Math.abs(uptDelta) * 5
   }
-  const newUtil = Math.max(0, inst.utilization_pct + utilBump)
+  let newUtil = Math.max(0, inst.utilization_pct + utilBump)
+
+  // Bug fix 1: when tier increases, scale utilization by old_capacity / new_capacity.
+  // More capacity means the same absolute load is a smaller fraction of total.
+  if (correct && tierDelta > 0 && newTier > inst.tier) {
+    const def = catalog.nodeById.get(inst.def_id) as any
+    const oldCap: number = def?.tiers?.find((t: any) => t.tier === inst.tier)?.stats?.capacity ?? 0
+    const newCap: number = def?.tiers?.find((t: any) => t.tier === newTier)?.stats?.capacity ?? 0
+    if (oldCap > 0 && newCap > oldCap) {
+      newUtil = Math.max(0, newUtil * (oldCap / newCap))
+    }
+  }
+
+  // Bug fix 2: stats_delta.capacity "+N%" reduces utilization proportionally.
+  // Translates a capacity increase into the equivalent utilization reduction.
+  if (correct) {
+    const capDelta = (outcome?.stats_delta as Record<string, string> | undefined)?.capacity
+    if (capDelta) {
+      const m = capDelta.match(/^\+(\d+(?:\.\d+)?)%$/)
+      if (m) {
+        newUtil = Math.max(0, newUtil / (1 + parseFloat(m[1]) / 100))
+      }
+    }
+  }
 
   // --- Reset `down` flag on successful resolution ---
   // An incident can set down:true (e.g. hardware_failure). A successful action

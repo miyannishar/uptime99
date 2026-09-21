@@ -380,3 +380,78 @@ describe('applyOutcome', () => {
     ).toThrow(/unknown instance id/)
   })
 })
+
+describe('applyOutcome — tier upgrade scales utilization_pct', () => {
+  it('scales utilization by old/new capacity ratio when tier increases', () => {
+    // postgres tier 1: capacity=500 qps, tier 2: capacity=900 qps → ratio 500/900 ≈ 0.556
+    const base = loadScenario('slice-oom-kill', c)
+    const pgId = 'postgres-1'
+    const highUtilState: GameState = {
+      ...base, phase: 'run' as const, rng_seed: 1,
+      instances: base.instances.map(i =>
+        i.instance_id === pgId ? { ...i, utilization_pct: 120 } : i
+      ),
+    }
+    const next = applyOutcome(highUtilState, {
+      instanceId: pgId, actionId: 'upgrade_tier',
+      minigameInstanceId: 'capacity_tier_for_growth',
+      incidentKey: null, correct: true,
+    }, c)
+    const pg = next.instances.find(i => i.instance_id === pgId)!
+    expect(pg.tier).toBe(2)
+    // 120 × (500/900) ≈ 66.67
+    expect(pg.utilization_pct).toBeCloseTo(66.7, 0)
+  })
+
+  it('does not change utilization when tier is already at max (4)', () => {
+    const base = loadScenario('slice-oom-kill', c)
+    const pgId = 'postgres-1'
+    const maxTierState: GameState = {
+      ...base, phase: 'run' as const, rng_seed: 1,
+      instances: base.instances.map(i =>
+        i.instance_id === pgId ? { ...i, tier: 4, utilization_pct: 80 } : i
+      ),
+    }
+    const next = applyOutcome(maxTierState, {
+      instanceId: pgId, actionId: 'upgrade_tier',
+      minigameInstanceId: 'capacity_tier_for_growth',
+      incidentKey: null, correct: true,
+    }, c)
+    const pg = next.instances.find(i => i.instance_id === pgId)!
+    expect(pg.tier).toBe(4)      // capped, no change
+    expect(pg.utilization_pct).toBe(80)
+  })
+})
+
+describe('applyOutcome — stats_delta capacity reduces utilization_pct', () => {
+  it('divides utilization by (1 + pct) for "+60%" capacity delta', () => {
+    // scale_out on_success.stats_delta.capacity = "+60%" → 100 / 1.6 = 62.5
+    const s = runWithOom()
+    const highUtilState: GameState = {
+      ...s,
+      instances: s.instances.map(i =>
+        i.instance_id === appClusterId ? { ...i, utilization_pct: 100 } : i
+      ),
+    }
+    const next = applyOutcome(highUtilState, {
+      instanceId: appClusterId, actionId: 'scale_out',
+      minigameInstanceId: 'yaml_replicas_for_load',
+      incidentKey: null, correct: true,
+    }, c)
+    const app = next.instances.find(i => i.instance_id === appClusterId)!
+    expect(app.utilization_pct).toBeCloseTo(62.5, 0)
+  })
+
+  it('does not affect utilization for non-capacity stats_delta keys', () => {
+    // restart has no stats_delta — utilization unchanged
+    const s = runWithOom()
+    const before = s.instances.find(i => i.instance_id === appClusterId)!.utilization_pct
+    const next = applyOutcome(s, {
+      instanceId: appClusterId, actionId: 'restart',
+      minigameInstanceId: 'log_oom_killer',
+      incidentKey: null, correct: true,
+    }, c)
+    expect(next.instances.find(i => i.instance_id === appClusterId)!.utilization_pct)
+      .toBe(before)
+  })
+})
