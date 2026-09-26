@@ -2,15 +2,22 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { DepthMode, MinigameAnswer, MinigameSession, WrongOutcome } from '../types'
 import {
   BoardCanvas, CommandPalette, IncidentFeed, MetricsHeader, MinigameShell, NodeInspector,
-  TaskDock, TicketFeed,
+  TaskDock, TicketFeed, PagerOverlay, StakeholderCard,
 } from '../components/organisms'
+import type { PagerPage } from '../components/organisms/PagerOverlay'
 import { MinigameOverlay, RunLayout } from '../components/templates'
 import { economy, engineCatalog, index, instancesForSlot, offPathLayers, requestPathLayers } from '../data/catalog'
 import { samplePaletteEntries } from '../fixtures/sampleRun'
 import { adaptActions, adaptIncidents, adaptLedger, adaptTierLadder, adaptTickets, incidentCountByInstanceFrom } from '../adapt'
 import { actionsFor, tierLadder } from '@engine/actions'
 import { applyOutcome, gradeAnswer } from '@engine/grading'
-import { buildNodeContext, buildIncidentContext, resolveObject } from '@engine/template'
+import { buildNodeContext, buildIncidentContext, buildSeedContext, resolveObject } from '@engine/template'
+import { eligibleInstances, pickInstance, pickSlot } from '@engine/minigamePick'
+import { seedFrom } from '@engine/rng'
+import { applyAiPatch } from '@engine/aiMerge'
+import { createAiClient } from '../ai/aiClient'
+import { applyStakeholderResponse, dueStakeholderMessages, ignoredResponse, type StakeholderDef } from '@engine/stakeholders'
+import { actionBlockedReason, resolveHintTarget } from '../hintTarget'
 import type { UseGameStateReturn } from '../hooks/useGameState'
 import { sfx } from '../hooks/useAudio'
 
@@ -44,6 +51,9 @@ export function RunPreview({ depthMode, onDepthChange, game, onQuit, showTutoria
   const gameRef = useRef(game)
   gameRef.current = game
 
+  // Speed saved before a minigame opens — restored when the minigame closes
+  const preMinigameSpeedRef = useRef<typeof speed>(1)
+
   // startGame is called by GameApp in App.tsx before RunPreview mounts.
   // No need to call it again here - the phase is already 'run' when we render.
 
@@ -76,17 +86,19 @@ export function RunPreview({ depthMode, onDepthChange, game, onQuit, showTutoria
     setPendingActions(prev => prev.filter(p => tick < p.resolvesAtTick))
   }, [tick, pendingActions])
 
-  // Audio: play alarm when a new incident arrives
+  // Audio + tab switch when a new incident arrives
   const prevIncidentCountRef = useRef(0)
   useEffect(() => {
     const cur = state.incidents.length
-    if (cur > prevIncidentCountRef.current) sfx.incidentArrived()
+    if (cur > prevIncidentCountRef.current) {
+      sfx.incidentArrived()
+    }
     prevIncidentCountRef.current = cur
   }, [state.incidents.length])
 
   const incidents = useMemo(
-    () => adaptIncidents(state.incidents, tick),
-    [state.incidents, tick],
+    () => adaptIncidents(state.incidents, tick, state),
+    [state.incidents, state, tick],
   )
   const incidentCountByInstance = useMemo(
     () => incidentCountByInstanceFrom(state.incidents),
@@ -97,6 +109,34 @@ export function RunPreview({ depthMode, onDepthChange, game, onQuit, showTutoria
   // Orientation slides (steps 0–5), shown before play begins.
   // -1 = tutorial finished or not shown
   const [tutorialStep, setTutorialStep] = useState(showTutorial ? 0 : -1)
+
+  // ---- Pager: full-screen page for SEV4+ arrivals ---------------------------
+  // Queue of unacknowledged pages and how each incident's page was handled.
+  const [pages, setPages] = useState<PagerPage[]>([])
+  const [ackByKey, setAckByKey] = useState<ReadonlyMap<string, number | 'unacked'>>(new Map())
+  const pagedKeysRef = useRef(new Set<string>())
+  useEffect(() => {
+    if (tutorialStep >= 0) return
+    const fresh: PagerPage[] = []
+    for (const r of state.incidents) {
+      if (pagedKeysRef.current.has(r.key)) continue
+      pagedKeysRef.current.add(r.key)
+      const def = engineCatalog.incidentById.get(r.incident_id) as any
+      if (!def || def.severity < 4) continue
+      const l0 = (def.signals ?? []).find((sg: any) => sg.level === 0)
+      fresh.push({ key: r.key, name: def.name, severity: def.severity, text: l0?.text ?? 'Something is wrong.' })
+    }
+    if (fresh.length) setPages((q) => [...q, ...fresh])
+  }, [state.incidents, tutorialStep])
+  const settlePage = (key: string, result: number | 'unacked') => {
+    setAckByKey((m) => new Map(m).set(key, result))
+    setPages((q) => q.filter((p) => p.key !== key))
+  }
+
+  // ---- Stakeholder messages -------------------------------------------------
+  // At most one on screen; never during the tutorial, a page, or a minigame.
+  const [stakeholderMsg, setStakeholderMsg] = useState<StakeholderDef | null>(null)
+  const lastShownRef = useRef<Record<string, number>>({})
 
   // PAUSE the clock while orientation slides are showing
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -117,13 +157,12 @@ export function RunPreview({ depthMode, onDepthChange, game, onQuit, showTutoria
   const [toastMessage, setToastMessage] = useState<string | null>(null)
 
   // Tab switcher state for the left feed panel
-  const [activeTab, setActiveTab] = useState<'incidents' | 'tickets'>('incidents')
   const [selectedTicket, setSelectedTicket] = useState<string | null>(null)
 
   // Ticket data
   const tickets = useMemo(
-    () => adaptTickets(state.active_tickets, engineCatalog, tick),
-    [state.active_tickets, tick],
+    () => adaptTickets(state.active_tickets, engineCatalog, tick, state),
+    [state.active_tickets, state, tick],
   )
   const pendingTicketCount = tickets.filter(t => t.status !== 'completed').length
 
@@ -131,9 +170,7 @@ export function RunPreview({ depthMode, onDepthChange, game, onQuit, showTutoria
   // incidents are active so we don't hijack the player mid-response.
   const prevTicketCountRef = useRef(0)
   useEffect(() => {
-    if (pendingTicketCount > prevTicketCountRef.current && incidents.length === 0) {
-      setActiveTab('tickets')
-    }
+    // (split-screen layout — both sections always visible, no tab switch needed)
     prevTicketCountRef.current = pendingTicketCount
   }, [pendingTicketCount, incidents.length])
 
@@ -143,6 +180,14 @@ export function RunPreview({ depthMode, onDepthChange, game, onQuit, showTutoria
   )
   const [paletteOpen, setPaletteOpen] = useState(false)
   const [session, setSession] = useState<MinigameSession | null>(null)
+
+  useEffect(() => {
+    if (tutorialStep >= 0 || stakeholderMsg || session || pages.length > 0 || state.phase !== 'run') return
+    const due = dueStakeholderMessages(state, engineCatalog, lastShownRef.current)
+    if (due.length === 0) return
+    lastShownRef.current = { ...lastShownRef.current, [due[0].id]: state.tick }
+    setStakeholderMsg(due[0])
+  }, [tick, tutorialStep, stakeholderMsg, session, pages.length])
   const [history, setHistory] = useState<WrongOutcome[]>([])
 
   const selected = useMemo(
@@ -218,21 +263,21 @@ export function RunPreview({ depthMode, onDepthChange, game, onQuit, showTutoria
     return () => window.removeEventListener('keydown', onKey)
   }, [])
 
-  const openMinigame = useCallback((instanceId: string, actionId: string) => {
-    const node = board.find((n) => n.inst.instance_id === instanceId)
+  // One AI client per mounted run: prefetches rewritten puzzle text in the
+  // background; openMinigame only ever reads what has already arrived.
+  const aiClientRef = useRef<ReturnType<typeof createAiClient> | null>(null)
+  if (aiClientRef.current === null) aiClientRef.current = createAiClient()
+
+  /**
+   * The puzzle a given action would open on a node for a context key, resolved
+   * against live state. Shared by openMinigame and the AI prefetch so both agree
+   * on exactly which instance — and cache key — a context produces.
+   */
+  const chooseInstance = useCallback((curState: typeof state, instanceId: string, actionId: string, contextKey?: string) => {
     const action = index.actionById.get(actionId)
-    if (!node || !action) return
-    const minigame = index.minigameById.get((action as any).minigame)
-    const format = minigame ? index.formatById.get(minigame.format) : undefined
-    const pool = instancesForSlot((action as any).minigame, (action as any).difficulty)
-    if (!minigame || !format || pool.length === 0) return
-    // Pick from the pool using the current tick + action id as a seed so
-    // replaying the same action gives a different puzzle each time.
-    const pickSeed = tick * 31 + actionId.split('').reduce((h, c) => h * 17 + c.charCodeAt(0), 0)
-    const rawInstance = pool[Math.abs(pickSeed) % pool.length]
+    if (!action || !curState.instances.some((i) => i.instance_id === instanceId)) return null
 
     // Build context: node state first, then layer in incident context if applicable
-    const curState = gameRef.current.state
     let ctx = buildNodeContext(curState, instanceId, engineCatalog)
     const incidentRecord = curState.incidents.find(r =>
       r.instance_id === instanceId &&
@@ -241,19 +286,77 @@ export function RunPreview({ depthMode, onDepthChange, game, onQuit, showTutoria
     if (incidentRecord) {
       ctx = { ...ctx, ...buildIncidentContext(curState, incidentRecord.key, engineCatalog) }
     }
+
+    // Deterministic choice of minigame slot and instance: the same incident or
+    // ticket in the same run always opens the same puzzle; different ones vary.
+    // rng_seed advances every tick, so it cannot anchor the choice; the scenario
+    // id is fixed for the whole run.
+    const key = contextKey ?? incidentRecord?.key ?? `${instanceId}:${curState.tick}`
+    const seed = seedFrom(curState.scenario_id)
+    const slot = pickSlot(action as any, key, seed)
+    const minigame = index.minigameById.get(slot.minigame)
+    const format = minigame ? index.formatById.get(minigame.format) : undefined
+    const rawInstance = pickInstance(eligibleInstances(instancesForSlot(slot.minigame, slot.difficulty), actionId), key, seed)
+    if (!minigame || !format || !rawInstance) return null
+    // Generated facts (ids, revisions, tenants…) seeded by the same key, so each
+    // incident's puzzle has its own details and answer; live state wins on overlap.
+    ctx = { ...buildSeedContext(key), ...ctx }
     const instance = resolveObject(rawInstance, ctx)
+    return { action, minigame, format, instance, ctx, cacheKey: `${rawInstance.id}|${key}` }
+  }, [])
+
+  // Prefetch AI text for what a new incident or ticket would open, so the
+  // rewrite is ready by the time the player clicks.
+  const prefetchedRef = useRef(new Set<string>())
+  useEffect(() => {
+    const ai = aiClientRef.current!
+    const want = (instanceId: string, actionId: string, contextKey: string) => {
+      const tag = `${instanceId}|${actionId}|${contextKey}`
+      if (prefetchedRef.current.has(tag)) return
+      prefetchedRef.current.add(tag)
+      const c = chooseInstance(state, instanceId, actionId, contextKey)
+      if (!c) return
+      ai.prefetch(c.cacheKey, c.instance, (c.format as any).ai_fields ?? [], c.ctx as any)
+    }
+    for (const r of state.incidents) {
+      if (!r.instance_id) continue
+      const def = engineCatalog.incidentById.get(r.incident_id) as any
+      const offered = new Set(actionsFor(state, r.instance_id, engineCatalog).map((v) => v.action_id))
+      for (const a of def?.resolved_by ?? []) if (offered.has(a)) want(r.instance_id, a, r.key)
+    }
+    for (const rec of state.active_tickets) {
+      if (rec.completed) continue
+      const def = engineCatalog.ticketById.get(rec.ticket_id) as any
+      const hint = def?.hint_actions?.[0]
+      if (!hint) continue
+      const t = resolveHintTarget(state, engineCatalog, def, hint)
+      if (t.instanceId) want(t.instanceId, hint, `ticket:${rec.ticket_id}`)
+    }
+  }, [state.incidents, state.active_tickets, chooseInstance])
+
+  const openMinigame = useCallback((instanceId: string, actionId: string, contextKey?: string) => {
+    const node = board.find((n) => n.inst.instance_id === instanceId)
+    if (!node) return
+    const chosen = chooseInstance(gameRef.current.state, instanceId, actionId, contextKey)
+    if (!chosen) return
+    const { action, minigame, format } = chosen
+    const aiFields: readonly string[] = (format as any).ai_fields ?? []
+    const patch = aiClientRef.current!.get(chosen.cacheKey)
+    const instance = patch ? applyAiPatch(chosen.instance, aiFields, patch) : chosen.instance
 
     sfx.open()
-    // Guided step: minigame is now open - step transitions to 12 via the
-    // onPlayAction wrapper in the feed; nothing to do here.
+    // Pause clock while the minigame is open — restore on dismiss or correct submit
+    preMinigameSpeedRef.current = gameRef.current.speed
+    setSpeed(0)
     setSelectedId(instanceId)
     setHistory([])
     setSession({
       instance, minigame, format, action,
       attempt: 1, revealed: false,
       answer: blankAnswer(format.id, instance),
+      aiText: patch !== null,
     })
-  }, [board])
+  }, [board, chooseInstance])
 
   const onAnswerChange = useCallback((answer: MinigameAnswer) => {
     setSession((prev) => (prev ? { ...prev, answer } : prev))
@@ -282,6 +385,7 @@ export function RunPreview({ depthMode, onDepthChange, game, onQuit, showTutoria
       sfx.correct()
       submitResultRef.current = { correct: true, session: cur }
       setSession(null)
+      setSpeed(preMinigameSpeedRef.current)
       return
     }
 
@@ -341,21 +445,33 @@ export function RunPreview({ depthMode, onDepthChange, game, onQuit, showTutoria
     return [...executing_as_cooldowns, ...cooldowns]
   }, [executing, cooldowns])
 
-  // Orientation step definitions (steps 0–5)
-  const ORIENTATION_STEPS = [
-    { title: 'Welcome to uptime99',
+  // Orientation step definitions (steps 0–5). Each step spotlights the region it
+  // describes and parks the card over a region that is dimmed, so it never covers
+  // what the player is being shown.
+  type Placement = 'center' | 'top-right' | 'top-center' | 'bottom-center'
+  const ORIENTATION_STEPS: { title: string; body: string; region: 'header' | 'left' | 'main' | 'right' | 'dock' | null; placement: Placement }[] = [
+    { title: 'Welcome to uptime99', region: null, placement: 'center',
       body: 'You\'re the on-call engineer. Incidents will hit your infrastructure and reputation will fall. Respond before it bottoms out. This short tour shows you where everything is.' },
-    { title: 'The board',
+    { title: 'The board', region: 'main', placement: 'bottom-center',
       body: 'Your nodes are arranged left to right along the request path: CDN → Load Balancer → App Cluster → PostgreSQL. When an incident hits a node, a red badge appears on it. Click any node to inspect it.' },
-    { title: 'Metrics header',
+    { title: 'Metrics header', region: 'header', placement: 'top-center',
       body: 'The top bar tracks live metrics. Watch Reputation — it falls while an incident is active and recovers after you fix it. Budget is what you have to spend on actions and upgrades.' },
-    { title: 'Incident & ticket feeds',
-      body: 'The left panel has two tabs. Incidents shows live alerts — expand one to see what nodes are affected and which actions can resolve it. Tickets shows proactive work items with deadlines.' },
-    { title: 'Node inspector',
-      body: 'Click any board node to open its inspector on the right. It shows health, available actions, and the tier upgrade path. Click an action to open the task and solve it.' },
-    { title: 'Task dock',
+    { title: 'Incident & ticket feeds', region: 'left', placement: 'top-right',
+      body: 'The left panel has two columns. Incidents (left) shows live alerts — expand one to see what nodes are affected and which actions can resolve it. Tickets (right) shows proactive work items with deadlines.' },
+    // The inspector panel only renders once a node is selected, so spotlight the
+    // board the player clicks rather than an empty region.
+    { title: 'Node inspector', region: 'main', placement: 'bottom-center',
+      body: 'Click any node on the board to open its inspector on the right. It shows health, available actions, and the tier upgrade path. Click an action to open the task and solve it.' },
+    { title: 'Task dock', region: 'dock', placement: 'top-center',
       body: 'After you solve a task, the action takes real time to execute. The dock at the bottom shows countdowns, cooldowns, and recent charges. Nothing is instant — watch this during incidents.' },
   ]
+
+  const PLACEMENT_STYLE: Record<Placement, React.CSSProperties> = {
+    'center':     { top: '50%', left: '50%', transform: 'translate(-50%, -50%)' },
+    'top-right':  { top: 90, right: 24 },
+    'top-center': { top: 140, left: '50%', transform: 'translateX(-50%)' },
+    'bottom-center': { bottom: 24, left: '50%', transform: 'translateX(-50%)' },
+  }
 
   // Current orientation slide (null when tutorial is done or not shown)
   const orientStep = tutorialStep >= 0 ? ORIENTATION_STEPS[tutorialStep] ?? null : null
@@ -380,14 +496,35 @@ export function RunPreview({ depthMode, onDepthChange, game, onQuit, showTutoria
 
   return (
     <>
-    {/* ---- Orientation slides: full-screen modal so nothing is covered ---- */}
+    {stakeholderMsg && (
+      <StakeholderCard
+        key={stakeholderMsg.id + ':' + (lastShownRef.current[stakeholderMsg.id] ?? 0)}
+        message={stakeholderMsg}
+        onResolve={(r) => {
+          const choice = r ?? ignoredResponse(stakeholderMsg)
+          gameRef.current.setState((st) => applyStakeholderResponse(st, choice))
+        }}
+        onDone={() => setStakeholderMsg(null)}
+      />
+    )}
+    {pages[0] && (
+      <PagerOverlay
+        page={pages[0]}
+        onTone={() => sfx.incidentArrived()}
+        onAck={(key, secs) => settlePage(key, secs)}
+        onTimeout={(key) => settlePage(key, 'unacked')}
+      />
+    )}
+    {/* ---- Orientation slides: spotlight one region, card parked over a dimmed one ---- */}
     {orientStep && (
       <div style={{
         position: 'fixed', inset: 0, zIndex: 1100,
-        background: 'rgba(0,0,0,0.72)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        // Only the welcome slide gets a backdrop; later slides rely on the
+        // region spotlight so the highlighted panel stays fully visible.
+        background: orientStep.region === null ? 'rgba(0,0,0,0.45)' : 'transparent',
+        pointerEvents: orientStep.region === null ? 'auto' : 'none',
       }}>
-        <div style={PANEL_STYLE}>
+        <div style={{ ...PANEL_STYLE, position: 'absolute', pointerEvents: 'auto', ...PLACEMENT_STYLE[orientStep.placement] }}>
           {/* Progress bar */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <span style={{ fontSize: 11, color: 'var(--acc)', letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 600, whiteSpace: 'nowrap' }}>
@@ -421,7 +558,7 @@ export function RunPreview({ depthMode, onDepthChange, game, onQuit, showTutoria
     )}
 
     <RunLayout
-      spotlightRegion={null}
+      spotlightRegion={orientStep?.region ?? null}
       header={
         <>
           <MetricsHeader
@@ -446,8 +583,8 @@ export function RunPreview({ depthMode, onDepthChange, game, onQuit, showTutoria
               ✕ quit
             </button>
           )}
-          {/* Fix B: urgency countdown when reputation is 0 */}
-          {repZeroRemaining !== null && (
+          {/* Urgency banner: only in non-free-play scenarios where rep=0 ends the game */}
+          {repZeroRemaining !== null && state.scenario_id !== 'free-play' && (
             <div style={{
               position: 'absolute', top: 0, left: 0, right: 0, zIndex: 800,
               background: 'rgba(220,38,38,0.92)', color: '#fff',
@@ -455,7 +592,7 @@ export function RunPreview({ depthMode, onDepthChange, game, onQuit, showTutoria
               padding: '5px 0',
               animation: 'pulse 1s ease-in-out infinite',
             }}>
-              REPUTATION AT ZERO — {repZeroRemaining} ticks until failure
+              REPUTATION AT ZERO — {repZeroRemaining} ticks until game over
             </div>
           )}
           {/* Fix E: budget critical warning */}
@@ -512,94 +649,80 @@ export function RunPreview({ depthMode, onDepthChange, game, onQuit, showTutoria
         )
       }
       feed={
-        <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-          {/* Tab strip */}
-          <div style={{ display: 'flex', borderBottom: '1px solid var(--line)', flexShrink: 0 }}>
-            {(['incidents', 'tickets'] as const).map(tab => (
-              <button
-                key={tab}
-                type="button"
-                onClick={() => setActiveTab(tab)}
-                style={{
-                  flex: 1,
-                  padding: '6px 8px',
-                  fontSize: '11px',
-                  letterSpacing: '0.08em',
-                  textTransform: 'uppercase',
-                  fontWeight: activeTab === tab ? 600 : 400,
-                  color: activeTab === tab ? 'var(--acc)' : 'var(--txt-faint)',
-                  background: activeTab === tab ? 'var(--acc-bg)' : 'transparent',
-                  border: 'none',
-                  borderBottom: activeTab === tab ? '2px solid var(--acc)' : '2px solid transparent',
-                  cursor: 'pointer',
-                }}
-              >
-                {tab === 'incidents' ? 'Incidents' : 'Tickets'}
-                {tab === 'incidents' && incidents.length > 0 && (
-                  <span style={{ marginLeft: 4, color: 'var(--bad)' }}>{incidents.length}</span>
-                )}
-                {tab === 'tickets' && pendingTicketCount > 0 && (
-                  <span style={{
-                    marginLeft: 4,
-                    color: tickets.some(t => t.overdue) ? 'var(--bad)' : 'var(--warn)',
-                  }}>{pendingTicketCount}</span>
-                )}
-              </button>
-            ))}
+        <div style={{ display: 'flex', flexDirection: 'row', height: '100%', minHeight: 0 }}>
+          {/* ── Incidents column (left) ── */}
+          <div style={{ flex: '0 0 50%', minWidth: 0, overflow: 'hidden', borderRight: '1px solid var(--line)', display: 'flex', flexDirection: 'column' }}>
+            <div style={{
+              padding: '5px 10px',
+              fontSize: '10px', letterSpacing: '0.08em', textTransform: 'uppercase',
+              fontWeight: 600, color: incidents.length > 0 ? 'var(--bad)' : 'var(--txt-faint)',
+              flexShrink: 0, display: 'flex', alignItems: 'center', gap: 6,
+              borderBottom: '1px solid var(--line)',
+            }}>
+              <span>Incidents</span>
+              {incidents.length > 0 && (
+                <>
+                  <span style={{ background: 'var(--bad)', color: '#fff', borderRadius: 3, padding: '0 4px', fontSize: 10 }}>
+                    {incidents.length}
+                  </span>
+                  <span style={{ color: 'var(--bad)', fontWeight: 400, fontSize: 10 }}>
+                    −{(incidents.reduce((s, i) => s + (i.def as any).severity * economy.reputation_decay_per_tick, 0)).toFixed(1)}/t
+                  </span>
+                </>
+              )}
+            </div>
+            <div style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
+              <IncidentFeed
+                incidents={incidents}
+                selectedKey={selectedIncident}
+                onSelect={(key) => setSelectedIncident(key === selectedIncident ? null : key)}
+                tickSeconds={economy.tick_seconds}
+                onPlayAction={(instanceId, actionId, incidentKey) => openMinigame(instanceId, actionId, incidentKey)}
+                ackOf={(key) => ackByKey.get(key)}
+                blockedReason={(instanceId, actionId) => actionBlockedReason(state, engineCatalog, instanceId, actionId)}
+              />
+            </div>
           </div>
-          {/* Content */}
-          <div style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
-            {activeTab === 'incidents' ? (
-              <>
-                {/* Multi-incident triage banner */}
-                {incidents.length >= 2 && (
-                  <div style={{
-                    padding: '6px 12px',
-                    background: 'color-mix(in srgb, var(--bad) 15%, var(--bg-1))',
-                    borderBottom: '1px solid color-mix(in srgb, var(--bad) 40%, transparent)',
-                    fontSize: '12px', fontWeight: 600,
-                    display: 'flex', alignItems: 'center', gap: 8,
-                    color: 'var(--bad)',
-                  }}>
-                    <span>⚡ {incidents.length} incidents</span>
-                    <span style={{ color: 'var(--txt-dim)', fontWeight: 400 }}>·</span>
-                    <span>–{(incidents.reduce((s, i) => s + (i.def as any).severity * 1.5, 0)).toFixed(1)} rep/tick</span>
-                    <span style={{ color: 'var(--txt-dim)', fontWeight: 400 }}>·</span>
-                    <span style={{ color: 'var(--txt-faint)', fontWeight: 400, fontSize: 11 }}>
-                      fix severity {Math.max(...incidents.map(i => (i.def as any).severity))} first
-                    </span>
-                  </div>
-                )}
-                <IncidentFeed
-                  incidents={incidents}
-                  selectedKey={selectedIncident}
-                  onSelect={(key) => {
-                    setSelectedIncident(key === selectedIncident ? null : key)
-                  }}
-                  tickSeconds={economy.tick_seconds}
-                  onPlayAction={(instanceId, actionId) => {
-                    openMinigame(instanceId, actionId)
-                  }}
-                />
-              </>
-            ) : (
+
+          {/* ── Tickets column (right) ── */}
+          <div style={{ flex: 1, minWidth: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+            <div style={{
+              padding: '5px 10px',
+              fontSize: '10px', letterSpacing: '0.08em', textTransform: 'uppercase',
+              fontWeight: 600, color: pendingTicketCount > 0 ? 'var(--acc)' : 'var(--txt-faint)',
+              flexShrink: 0, display: 'flex', alignItems: 'center', gap: 6,
+              borderBottom: '1px solid var(--line)',
+            }}>
+              <span>Tickets</span>
+              {pendingTicketCount > 0 && (
+                <span style={{
+                  background: tickets.some(t => t.overdue) ? 'var(--bad)' : 'var(--acc)',
+                  color: '#fff', borderRadius: 3, padding: '0 4px', fontSize: 10,
+                }}>
+                  {pendingTicketCount}
+                </span>
+              )}
+            </div>
+            <div style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
               <TicketFeed
                 tickets={tickets}
                 selectedKey={selectedTicket}
                 onSelect={(id) => setSelectedTicket(id === selectedTicket ? null : id)}
                 tickSeconds={economy.tick_seconds}
-                board={board}
-                onHintAction={(ticketId, _actionId) => {
-                  const ticket = tickets.find(t => t.def.id === ticketId)
-                  if (!ticket) return
-                  const req = ticket.def.requirement
-                  if (req?.node_id) {
-                    const inst = board.find(n => n.def.id === req.node_id)
-                    if (inst) setSelectedId(inst.inst.instance_id)
+                hintTarget={(ticketId, actionId) => {
+                  const def = engineCatalog.ticketById.get(ticketId) as any
+                  return resolveHintTarget(state, engineCatalog, def, actionId)
+                }}
+                onHintAction={(ticketId, actionId) => {
+                  const def = engineCatalog.ticketById.get(ticketId) as any
+                  if (!def) return
+                  const t = resolveHintTarget(gameRef.current.state, engineCatalog, def, actionId)
+                  if (t.instanceId && t.disabledReason === null) {
+                    openMinigame(t.instanceId, actionId, `ticket:${ticketId}`)
                   }
                 }}
               />
-            )}
+            </div>
           </div>
         </div>
       }
@@ -614,14 +737,14 @@ export function RunPreview({ depthMode, onDepthChange, game, onQuit, showTutoria
       }
       overlay={
         <>
-          <MinigameOverlay open={Boolean(session)} onDismiss={() => setSession(null)}>
+          <MinigameOverlay open={Boolean(session)} onDismiss={() => { setSession(null); setSpeed(preMinigameSpeedRef.current) }}>
             {session && (
               <>
                 {/* Live reputation ticker — shows the clock is running */}
                 {(() => {
                   const rep = Math.round(state.carried.reputation)
                   const lossPerTick = state.incidents.reduce(
-                    (s, r) => s + ((engineCatalog.incidentById.get(r.incident_id) as any)?.severity ?? 0) * 1.5, 0
+                    (s, r) => s + ((engineCatalog.incidentById.get(r.incident_id) as any)?.severity ?? 0) * economy.reputation_decay_per_tick, 0
                   )
                   const repColor = rep >= 70 ? '#22c55e' : rep >= 40 ? '#f59e0b' : '#ef4444'
                   return (
@@ -637,12 +760,12 @@ export function RunPreview({ depthMode, onDepthChange, game, onQuit, showTutoria
                         REP {rep}%
                       </span>
                       {lossPerTick > 0 && (
-                        <span style={{ color: '#ef4444', fontWeight: 400 }}>
-                          −{lossPerTick.toFixed(1)}/tick while you read
+                        <span style={{ color: 'var(--warn)', fontWeight: 400 }}>
+                          {incidents.length} incident{incidents.length !== 1 ? 's' : ''} active — clock paused
                         </span>
                       )}
-                      <span style={{ color: 'var(--txt-faint)', marginLeft: 'auto' }}>
-                        clock is running
+                      <span style={{ color: 'var(--ok, #22c55e)', marginLeft: 'auto' }}>
+                        ⏸ clock paused
                       </span>
                     </div>
                   )
@@ -652,7 +775,7 @@ export function RunPreview({ depthMode, onDepthChange, game, onQuit, showTutoria
                   history={history}
                   onAnswerChange={onAnswerChange}
                   onSubmit={onSubmit}
-                  onCancel={() => setSession(null)}
+                  onCancel={() => { setSession(null); setSpeed(preMinigameSpeedRef.current) }}
                 />
               </>
             )}
@@ -697,6 +820,18 @@ function blankAnswer(formatId: string, instance: MinigameSession['instance']): M
     }
     case 'wiring':
       return { kind: 'wiring', zone: null, connectTo: [] }
+    case 'terminal':
+      return { kind: 'terminal', text: '' }
+    case 'log_hunt':
+      return { kind: 'log_hunt', line: null }
+    case 'patch': {
+      const given = instance.given as { content: string }
+      return { kind: 'patch', content: given.content }
+    }
+    case 'monitor':
+      return { kind: 'monitor', metric: null, t: 0 }
+    case 'classify':
+      return { kind: 'classify', placements: {} }
     default:
       return { kind: 'evidence', choice: null }
   }

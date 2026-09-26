@@ -40,6 +40,7 @@ export function loadEngineCatalog(): EngineCatalog {
 
   const levels = loadJson<any>('data/levels.json').levels
   const tickets = loadJson<any>('data/tickets.json').tickets
+  const stakeholders = loadJson<any>('data/stakeholders.json').stakeholders
 
   return catalogFrom({
     nodes,
@@ -55,5 +56,6 @@ export function loadEngineCatalog(): EngineCatalog {
     scenarios,
     levels,
     tickets,
+    stakeholders,
   })
 }

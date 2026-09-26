@@ -3,3 +3,7 @@ dist/
 .DS_Store
 .superpowers/
 docs/
+.env
+.env.*
+!.env.example
+.playwright-mcp/

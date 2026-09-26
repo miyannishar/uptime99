@@ -111,7 +111,7 @@ describe('reputation and the severity sum', () => {
     })
     const sev = c.incidentById.get('oom_kill')!.severity
     const m = deriveMetrics(withIncident, c)
-    expect(m.reputation).toBeCloseTo(100 - 1.5 * sev, 1)
+    expect(m.reputation).toBeCloseTo(100 - 1.0 * sev, 1)
   })
 
   it('recovers reputation when nothing is active', () => {

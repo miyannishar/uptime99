@@ -9,9 +9,9 @@ describe('data/minigames/instances/d-wiring.json', () => {
     expectValidInstanceFile('data/minigames/instances/d-wiring.json')
   })
 
-  it('holds two instances covering both topology slots', () => {
-    expect(instances).toHaveLength(2)
-    expect(instances.map((i: any) => i.difficulty).sort()).toEqual([3, 5])
+  it('holds four instances covering both topology slots', () => {
+    expect(instances).toHaveLength(4)
+    expect(instances.map((i: any) => i.difficulty).sort()).toEqual([3, 3, 5, 5])
     for (const i of instances) expect(i.minigame).toBe('topology_puzzle')
   })
 

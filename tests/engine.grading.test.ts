@@ -461,3 +461,37 @@ describe('applyOutcome — stats_delta capacity reduces utilization_pct', () => 
       .toBe(before)
   })
 })
+
+// ──────────────────────────────── one fix clears everything it fixes ──
+
+describe('applyOutcome — shared fixes', () => {
+  const rec = (key: string, incident_id: string, instance_id: string | null) =>
+    ({ key, incident_id, instance_id, started_tick: 1, escalate_at_tick: null, expires_at_tick: null, attempts: {} })
+  const restartIncidents = [...c.incidentById.values()].filter((i: any) => (i.resolved_by ?? []).includes('restart')) as any[]
+  const [incA, incB] = restartIncidents
+  const other = [...c.incidentById.values()].find((i: any) => !(i.resolved_by ?? []).includes('restart')) as any
+  const ok = (s: GameState, incidentKey: string | null) => applyOutcome(s,
+    { instanceId: appClusterId, actionId: 'restart', minigameInstanceId: 'x', incidentKey, correct: true }, c)
+
+  it('resolves every incident on the node that the same action fixes', () => {
+    const s = { ...runWithOom(), incidents: [rec('a', incA.id, appClusterId), rec('b', incB.id, appClusterId), rec('c', other.id, appClusterId)] }
+    const next = ok(s, 'a')
+    expect(next.incidents.map((r) => r.key)).toEqual(['c'])
+    expect(next.session.incidents_resolved).toBe(s.session.incidents_resolved + 2)
+  })
+
+  it('a fix launched from a ticket (no incident key) still clears incidents it fixes', () => {
+    const s = { ...runWithOom(), incidents: [rec('a', incA.id, appClusterId)] }
+    expect(ok(s, null).incidents).toEqual([])
+  })
+
+  it('clears every record of a group incident, not just the first', () => {
+    const s = { ...runWithOom(), incidents: [rec('g', incA.id, appClusterId), rec('g', incA.id, 'postgres-1')] }
+    expect(ok(s, 'g').incidents).toEqual([])
+  })
+
+  it('leaves incidents on other nodes alone unless they are the one clicked', () => {
+    const s = { ...runWithOom(), incidents: [rec('a', incA.id, appClusterId), rec('d', incA.id, 'postgres-1')] }
+    expect(ok(s, 'a').incidents.map((r) => r.key)).toEqual(['d'])
+  })
+})

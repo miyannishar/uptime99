@@ -4,7 +4,7 @@
       "id": "log_oom_killer",
       "minigame": "log_triage",
       "difficulty": 1,
-      "brief": "An application worker crashed at 02:14 UTC. Support is reporting 503 errors.",
+      "brief": "{{node_name}} (health: {{health}}%) crashed at 02:14 UTC. Support is reporting 503 errors.",
       "teaches": "The line that explains a crash is rarely the last line in the log. The OOM kill precedes the downstream connection errors and restart noise that engineers read first.",
       "levers": {
         "distractor_count": 2,
@@ -42,7 +42,7 @@
       "id": "query_seq_scan_range",
       "minigame": "query_plan_puzzle",
       "difficulty": 3,
-      "brief": "Checkout p95 is 4.2s. The orders table is at 4.1M rows and growing.",
+      "brief": "{{node_name}} is causing checkout slowness — p95 is 4.2s. The orders table is at 4.1M rows and growing.",
       "teaches": "A range filter on an unindexed column forces the planner to read every row and discard most of them. An index on that column turns the scan into a seek.",
       "levers": {
         "distractor_count": 3,
@@ -84,7 +84,7 @@
       "id": "query_wrong_index_order",
       "minigame": "query_plan_puzzle",
       "difficulty": 3,
-      "brief": "The invoices page times out under load. The order_items table has grown to 2.8M rows.",
+      "brief": "{{node_name}} is causing invoice page timeouts under load. The order_items table has grown to 2.8M rows.",
       "teaches": "A composite index only serves a range query if its leading column matches the filter. An index on (user_id, created_at) cannot accelerate a filter on created_at alone \u2014 the planner must scan the table regardless.",
       "levers": {
         "distractor_count": 3,
@@ -126,7 +126,7 @@
       "id": "diff_find_bad_deploy",
       "minigame": "diff_review",
       "difficulty": 3,
-      "brief": "Error rate has been elevated for several hours. Nine deploys went out today.",
+      "brief": "{{node_name}} has had an elevated error rate for several hours. Nine deploys went out today.",
       "teaches": "Correlate the error-rate inflection point with deploy timestamps, not with the most recent deploy. The most recent change is often innocent \u2014 it deployed into an already-broken environment.",
       "levers": {
         "distractor_count": 3,
@@ -168,7 +168,7 @@
       "id": "log_connection_leak",
       "minigame": "log_triage",
       "difficulty": 1,
-      "brief": "Database connections are exhausted. The connection pool is at max and new requests are queuing. On-call paged 3 minutes ago.",
+      "brief": "{{node_name}} (Tier {{current_tier}}) has exhausted its database connection pool. The connection pool is at max and new requests are queuing. On-call paged 3 minutes ago.",
       "teaches": "Connection leaks show up as 'too many connections' errors on the client, but the root cause is always a code path that acquires a connection and exits without releasing it \u2014 often inside an error handler that was never tested.",
       "levers": {
         "distractor_count": 2,
@@ -201,6 +201,127 @@
         }
       ],
       "reveal": "The key line is 'Connection 0x7f44 returned to pool after 287s (expected: <2s)' followed by 'possible leak in order-processing handler'. A connection held for 4.7 minutes while the expected lease time is under 2 seconds means a code path acquired the connection and exited without releasing it \u2014 typically a missing finally block or an unhandled error path. The 503 errors are caused by the pool being full, not by a database problem."
+    },
+    {
+      "id": "cache_stampede_log",
+      "minigame": "log_triage",
+      "difficulty": 1,
+      "for_actions": ["flush_cache"],
+      "brief": "{{node_name}} database load has spiked to 100% and p95 is 4.8s. On-call paged 90 seconds ago.",
+      "teaches": "A full cache flush under load triggers a stampede: every thread simultaneously misses the cache and hits the database at once. The root cause is the flush event, not the high database load that follows.",
+      "levers": {
+        "distractor_count": 2,
+        "distractor_plausibility": "low",
+        "output_lines": 7
+      },
+      "given": {
+        "kind": "log",
+        "context": "Application log from the API server, 30 seconds before the on-call alert fired.",
+        "output": "2026-09-19T10:14:40.001Z INFO  [cache] Cache flush requested for {{key_prefix}}:* (all keys)\n2026-09-19T10:14:40.112Z INFO  [cache] Flushed 94,211 keys from {{node_name}}\n2026-09-19T10:14:40.200Z WARN  [cache] Cache MISS: {{key_prefix}}:{{entity_id}}:preferences\n2026-09-19T10:14:40.201Z WARN  [cache] Cache MISS: {{key_prefix}}:{{entity_id + 1}}:preferences\n2026-09-19T10:14:40.202Z ERROR [cache] 18,400 concurrent cache misses \u2014 thundering herd on {{node_name}}\n2026-09-19T10:14:40.410Z ERROR [db] connection pool exhausted \u2014 50/50 connections active\n2026-09-19T10:14:40.800Z ERROR [app] p95 latency: 4,820ms \u2014 database under load from cache miss storm"
+      },
+      "solution": {
+        "choice": "Cache stampede \u2014 a full flush of {{key_prefix}}:* evicted 94,211 keys simultaneously and 18,400 threads are now querying the database in parallel to rebuild them"
+      },
+      "distractors": [
+        {
+          "choice": "Database connection pool misconfigured \u2014 50 connections is insufficient for normal traffic",
+          "why_wrong": "The pool was adequate before the flush event. The exhaustion is a consequence of 18,400 simultaneous cache misses hammering the database at once, not a static pool ceiling misconfiguration."
+        },
+        {
+          "choice": "Cache server ran out of memory and evicted keys via LRU",
+          "why_wrong": "The log shows an explicit flush request triggered by the operator, not an LRU eviction event. An LRU eviction removes keys gradually as memory fills; it would not produce 18,400 simultaneous misses in the same millisecond."
+        }
+      ],
+      "wrong_outcomes": [
+        {
+          "when": "wrong_choice",
+          "shows": "Connection pool doubled to 100. Load drops briefly then climbs again \u2014 every new cache miss still reaches the database. p95 stays at 4.3s for 14 minutes until the cache rewarms organically.",
+          "why_wrong": "The pool exhaustion is a symptom of the stampede, not the cause. More connections give the database more simultaneous work to do, not less. The flush event is the root cause."
+        }
+      ],
+      "reveal": "The line 'Cache flush requested for {{key_prefix}}:* (all keys)' followed immediately by '18,400 concurrent cache misses \u2014 thundering herd' is the root cause. Every thread in the application simultaneously encountered a cold cache and fell through to the database, exhausting the connection pool within 200ms of the flush. The correct fix is to use scoped invalidation \u2014 {{key_prefix}}:{{entity_id}}:* instead of {{key_prefix}}:* \u2014 to evict only the updated entity rather than the entire key namespace."
+    },
+    {
+      "id": "slow_query_dynamic_plan",
+      "minigame": "query_plan_puzzle",
+      "difficulty": 3,
+      "for_actions": ["add_index"],
+      "brief": "{{node_name}} is causing checkout slowness \u2014 p95 is 8.1s. The query runs on every checkout page load for tenant {{tenant}}.",
+      "teaches": "Rows Removed by Filter shows exactly how wasteful a sequential scan is. An index on both filter columns turns the scan into a seek \u2014 only rows matching both tenant and date range are touched.",
+      "levers": {
+        "distractor_count": 3,
+        "distractor_plausibility": "high",
+        "output_lines": 5
+      },
+      "given": {
+        "kind": "explain",
+        "context": "EXPLAIN ANALYZE output from the slow checkout query. The tenant_orders table has grown to 8.4M rows across all tenants.",
+        "output": "Seq Scan on tenant_orders  (cost=0.00..187432.11 rows=8401622 width=84)\n  Filter: ((tenant_id = '{{tenant}}'::text) AND (created_at > '2026-09-01 00:00:00+00'))\n  Rows Removed by Filter: 8219744\n  Planning Time: 0.198 ms\n  Execution Time: 8142.773 ms"
+      },
+      "solution": {
+        "choice": "CREATE INDEX ON tenant_orders(tenant_id, created_at)"
+      },
+      "distractors": [
+        {
+          "choice": "CREATE INDEX ON tenant_orders(tenant_id)",
+          "why_wrong": "An index on tenant_id alone narrows to one tenant's rows but then performs a sequential scan across all their orders to find the date range. A composite index (tenant_id, created_at) lets the planner seek directly to the date boundary within the tenant's rows, skipping both the other tenants and the out-of-range dates."
+        },
+        {
+          "choice": "Add a read replica and route this query there",
+          "why_wrong": "A replica runs the same unindexed sequential scan. Routing the query elsewhere gives you a separate slow copy, not a fast one. The fix requires an index, not a different host."
+        },
+        {
+          "choice": "Increase work_mem from 4MB to 256MB so the scan can hash into memory",
+          "why_wrong": "The cost is reading 8.4M rows, not sorting or hashing them. More memory does not reduce the rows the planner must examine before applying the filter \u2014 only an index on the filter columns does that."
+        }
+      ],
+      "wrong_outcomes": [
+        {
+          "when": "wrong_choice",
+          "shows": "p95 still returns in 8.1s for tenant {{tenant}}. EXPLAIN ANALYZE shows the same Seq Scan on tenant_orders \u2014 8.4M rows examined, 8.2M discarded by the filter.",
+          "why_wrong": "Nothing you changed affects the planner's inability to skip rows that fail both the tenant_id and created_at predicates simultaneously."
+        }
+      ],
+      "reveal": "The tell is 'Rows Removed by Filter: 8219744' \u2014 the planner read 8.4M rows to return roughly 180k. A composite index on (tenant_id, created_at) lets the planner seek to the first row matching '{{tenant}}' and scan forward only to the date boundary, never touching other tenants or out-of-range dates. A single-column index on tenant_id helps but leaves a sequential pass across all of that tenant's orders for the date filter. An index on created_at alone does not help because the tenant_id equality predicate cannot use it \u2014 the planner needs the leading column to be the equality condition."
+    },
+    {
+      "id": "cpu_thrash_log_rca",
+      "minigame": "log_triage",
+      "difficulty": 1,
+      "for_actions": ["restart"],
+      "brief": "{{node_name}} CPU has been at 97% for 2 minutes. On-call paged 80 seconds ago.",
+      "teaches": "CPU thrash is caused by a specific runaway process, not by request load. The process id, command, and stack depth appear in the log before the downstream queue buildup that engineers tend to read first.",
+      "levers": {
+        "distractor_count": 2,
+        "distractor_plausibility": "low",
+        "output_lines": 8
+      },
+      "given": {
+        "kind": "log",
+        "context": "Last 8 lines of the application log before the on-call alert fired.",
+        "output": "2026-09-18T09:12:01.003Z INFO  [app] Health check OK (15ms)\n2026-09-18T09:12:03.441Z INFO  [app] Cron job started: analytics_aggregation (pid={{pid}})\n2026-09-18T09:12:04.220Z WARN  [app] CPU usage 71%\n2026-09-18T09:12:05.881Z ERROR [app] CPU thrashing \u2014 recursive aggregation loop detected in pid {{pid}}, stack depth 847\n2026-09-18T09:12:06.110Z WARN  [app] CPU usage 97%\n2026-09-18T09:12:07.003Z INFO  [app] GC paused for 820ms\n2026-09-18T09:12:08.551Z WARN  [app] 42 requests queued behind CPU lock\n2026-09-18T09:12:09.000Z INFO  [app] Thread pool exhausted"
+      },
+      "solution": {
+        "choice": "Kill pid {{pid}} \u2014 the analytics_aggregation cron job entered an infinite recursive loop"
+      },
+      "distractors": [
+        {
+          "choice": "Tune GC settings \u2014 820ms GC pauses are degrading throughput",
+          "why_wrong": "The GC pause is a consequence of CPU saturation, not its cause. Tuning GC parameters will not stop the recursive loop that is consuming all available CPU cycles."
+        },
+        {
+          "choice": "Scale up the thread pool \u2014 42 queued requests indicate the pool is undersized",
+          "why_wrong": "The requests are queued because the CPU is saturated by a single process, not because thread count is low. Adding threads gives them more workers competing for the same saturated CPU."
+        }
+      ],
+      "wrong_outcomes": [
+        {
+          "when": "wrong_choice",
+          "shows": "GC tuning applied. CPU stays at 97%. The recursive loop in pid {{pid}} continues consuming all available cycles. 4 minutes later the process runs out of stack space and crashes, taking the node down entirely.",
+          "why_wrong": "The line 'recursive aggregation loop detected in pid {{pid}}, stack depth 847' names both the cause and the process. GC tuning and thread scaling address downstream symptoms, not the runaway process itself."
+        }
+      ],
+      "reveal": "The line 'CPU thrashing \u2014 recursive aggregation loop detected in pid {{pid}}, stack depth 847' identifies both the cause (a recursive loop with no base case) and the process (analytics_aggregation at pid {{pid}}). The GC pause at 820ms, the 42 queued requests, and the thread pool exhaustion all appear after the CPU is already saturated \u2014 they are consequences, not causes. Engineers who read logs bottom-up see congestion; engineers who read from the cron-job start event see a loop that can be killed immediately with `kill -9 {{pid}}`."
     }
   ]
 }

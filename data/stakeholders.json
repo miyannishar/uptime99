@@ -1,0 +1,86 @@
+{
+  "stakeholders": [
+    {
+      "id": "cto_latency",
+      "persona": "cto",
+      "name": "Priya (CTO)",
+      "trigger": { "metric": "p95_latency_ms", "op": "gt", "value": 300 },
+      "text": "p95 is over 300 ms and I have the board demo in an hour. What's the plan?",
+      "expires_s": 30,
+      "cooldown_ticks": 80,
+      "responses": [
+        { "label": "Own it and give an ETA", "reputation_delta": 2, "budget_delta": 0, "reply": "Thanks. Update me every 15 minutes until it's green." },
+        { "label": "Blame the cloud provider", "reputation_delta": -4, "budget_delta": 0, "reply": "Customers don't care whose fault it is. Fix it." },
+        { "label": "Buy capacity right now", "reputation_delta": 1, "budget_delta": -150, "reply": "Approved. Don't make emergency spend a habit." }
+      ]
+    },
+    {
+      "id": "support_errors",
+      "persona": "support_lead",
+      "name": "Marcus (Support lead)",
+      "trigger": { "metric": "error_rate_pct", "op": "gt", "value": 1 },
+      "text": "Ticket volume just tripled — people are getting errors at checkout. What do I tell them?",
+      "expires_s": 25,
+      "cooldown_ticks": 70,
+      "responses": [
+        { "label": "Post an honest status update", "reputation_delta": 3, "budget_delta": 0, "reply": "Linking it in every reply. That buys us patience." },
+        { "label": "Say it's a user-side issue", "reputation_delta": -6, "budget_delta": 0, "reply": "Three customers just posted screenshots proving otherwise." },
+        { "label": "Say nothing for now", "reputation_delta": -2, "budget_delta": 0, "reply": "OK, but silence reads as not knowing." }
+      ]
+    },
+    {
+      "id": "investor_reputation",
+      "persona": "investor",
+      "name": "Dana (Lead investor)",
+      "trigger": { "metric": "reputation", "op": "lt", "value": 60 },
+      "text": "I'm seeing chatter about outages on social. Is the platform stable enough for the next round?",
+      "expires_s": 35,
+      "cooldown_ticks": 120,
+      "responses": [
+        { "label": "Share the remediation plan", "reputation_delta": 2, "budget_delta": 0, "reply": "A plan with dates. That's what I needed to hear." },
+        { "label": "Promise it won't happen again", "reputation_delta": -3, "budget_delta": 0, "reply": "Nobody can promise that. I'd rather hear how you'll detect it sooner." }
+      ]
+    },
+    {
+      "id": "customer_major_incident",
+      "persona": "customer",
+      "name": "Northwind (Enterprise customer)",
+      "trigger": { "incident_severity_gte": 3 },
+      "text": "Our team can't work. Our contract has an SLA — are we getting credits for this?",
+      "expires_s": 30,
+      "cooldown_ticks": 90,
+      "responses": [
+        { "label": "Acknowledge and offer SLA credit", "reputation_delta": 3, "budget_delta": -200, "reply": "Appreciated. We'll keep our renewal on the table." },
+        { "label": "Acknowledge, credits after review", "reputation_delta": 1, "budget_delta": 0, "reply": "Fine, but we'll be watching the post-incident review." },
+        { "label": "Deny the SLA was breached", "reputation_delta": -8, "budget_delta": 0, "reply": "Our monitoring says otherwise. Escalating to our account manager." }
+      ]
+    },
+    {
+      "id": "finance_cost",
+      "persona": "finance",
+      "name": "Omar (Finance)",
+      "trigger": { "metric": "cost_month", "op": "gt", "value": 1000 },
+      "text": "Infrastructure spend is over $1,000 a month now. Is every one of those tiers earning its keep?",
+      "expires_s": 30,
+      "cooldown_ticks": 150,
+      "responses": [
+        { "label": "Walk through the cost per nine", "reputation_delta": 1, "budget_delta": 0, "reply": "OK — I can defend that to the board." },
+        { "label": "Promise to cut 20% next month", "reputation_delta": 0, "budget_delta": 0, "reply": "I'll hold you to it." },
+        { "label": "Tell finance it's an engineering call", "reputation_delta": -3, "budget_delta": 0, "reply": "It's a company call. I'm adding this to the exec agenda." }
+      ]
+    },
+    {
+      "id": "finance_losing_money",
+      "persona": "finance",
+      "name": "Omar (Finance)",
+      "trigger": { "metric": "profit_month", "op": "lt", "value": 0 },
+      "text": "We're running at a loss this month. Where can infrastructure spend come down without hurting uptime?",
+      "expires_s": 35,
+      "cooldown_ticks": 150,
+      "responses": [
+        { "label": "Name the over-provisioned tier", "reputation_delta": 2, "budget_delta": 0, "reply": "Concrete. Let's do it after this week's launch." },
+        { "label": "Freeze all upgrades", "reputation_delta": -2, "budget_delta": 0, "reply": "Careful — a freeze during an incident is how outages get longer." }
+      ]
+    }
+  ]
+}

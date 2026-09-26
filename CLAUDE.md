@@ -30,6 +30,7 @@ If you need a field that varies per save, it belongs in instance state, not in `
 | Path | What lives there |
 |---|---|
 | `data/schema/` | Twelve JSON schemas — one per data file type plus `state.schema.json`. All use `"additionalProperties": false` and JSON Schema 2020-12. A field not in the schema is an error, not a warning. |
+| `data/stakeholders.json` | 6 timed stakeholder messages (CTO, support lead, investor, customer, finance). Each has a `trigger` (a metric crossing a value, or an active incident at or above a severity), 2–3 responses with `reputation_delta`/`budget_delta`, `expires_s` (real seconds) and `cooldown_ticks`. Schema `data/schema/stakeholder.schema.json`; `checkStakeholders` in `src/validate/stakeholderChecks.ts`. See §17. |
 | `data/levels.json` | 5 level difficulty entries. Each holds the per-level difficulty curve: `arrival_mean_ticks` (how often incidents arrive), `severity_max` (highest incident severity the level admits), `max_concurrent` (maximum active incidents at once). A scenario inherits its row through its `level` field; a scenario with `level: null` carries its own `difficulty` block instead. |
 | `data/scenarios/` | One file per scenario, each a single JSON **object** (not wrapped in an array). A scenario declares the board the player starts with, what they may build (`allowed_layers`), how incidents arrive (`incident_source`), and how the session ends (`end`). Validated by `checkScenarioRefs`, `checkScenarioProgression` and `checkScenarioBoards` in `src/validate/scenarioChecks.ts`. See §15 for the three modes (level, standalone, free play) and how to add one. |
 | `data/tags.json` | 48 tags in four kinds: 20 weakness, 16 capability, 9 property, 3 posture. Tags are the closed vocabulary for describing a node's current state and for gating actions. |
@@ -38,9 +39,9 @@ If you need a field that varies per save, it belongs in instance state, not in `
 | `data/nodes/` | 7 files, one per layer, holding 26 nodes and 80 tiers total. Each file is a JSON **object** with a single top-level `nodes` array — `{ "nodes": [ ... ] }`. Nothing is keyed by layer name; a node states its own layer in its `layer` field, and the filename is a convention only. |
 | `data/actions.json` | 33 actions. Each action carries a `constraint` predicate that determines which nodes and tiers it appears on. Actions are NOT stored per-node. |
 | `data/metrics.json` | 7 metrics (4 technical, 3 business) plus an `economy` block holding the global pricing and balance coefficients. Technical: `uptime_pct`, `p95_latency_ms`, `error_rate_pct`, `reputation`. Business: `users`, `cost_month`, `profit_month`. |
-| `data/minigames/formats.json` | 5 interaction format definitions. Each format declares the levers it supports, with a type and `min`/`max`/`values` for each — though only lever **names** are enforced anywhere, not their values. It does **not** declare `wrong_outcomes[].when` legality; that map lives in `tests/helpers/dataFiles.ts`. |
-| `data/minigames/registry.json` | 15 minigame entries, each carrying exactly four fields: `id`, `name`, `format`, `description`. A minigame does **not** declare its own difficulty — difficulty comes from the action that invokes it, which is why the difficulty-slot rule in §14 is enforced across files rather than inside this one. |
-| `data/minigames/instances/` | 5 instance files (`a-sequence.json` through `e-evidence.json`), one per format. 29 instances total across 24 difficulty-slots. Each instance carries both format-agnostic fields (`brief`, `teaches`, `wrong_outcomes`, `reveal`) and format-specific fields (`given`, `solution`, optional `distractors`, `levers`). |
+| `data/minigames/formats.json` | 7 interaction format definitions. Each format declares the levers it supports, with a type and `min`/`max`/`values` for each — though only lever **names** are enforced anywhere, not their values. It does **not** declare `wrong_outcomes[].when` legality; that map lives in `tests/helpers/dataFiles.ts`. |
+| `data/minigames/registry.json` | 20 minigame entries, each carrying exactly four fields: `id`, `name`, `format`, `description`. A minigame does **not** declare its own difficulty — difficulty comes from the action that invokes it, which is why the difficulty-slot rule in §14 is enforced across files rather than inside this one. |
+| `data/minigames/instances/` | 7 instance files (`a-sequence.json` through `g-log-hunt.json`), one per format. 52 instances total across 29 difficulty-slots. Each instance carries both format-agnostic fields (`brief`, `teaches`, `wrong_outcomes`, `reveal`) and format-specific fields (`given`, `solution`, optional `distractors`, `levers`). |
 
 ---
 
@@ -177,6 +178,8 @@ The `constraint` is the right place to control availability. Prefer broad predic
 Checks 10 and 11 both resolve matches through `matchableTiers`, which drops `min_health`/`max_health` and treats runtime-only tags as satisfiable. That is why `restart` (`max_health: 60`) and `warm_cache` (requires the runtime-only `cold_cache`) count as reachable: they are playable mid-incident, just not at health 100 with definition tags alone. Nothing is special-cased by action id.
 
 **Every action requires a `minigame` and a `difficulty`** (both are required by `data/schema/action.schema.json`). That couples this file to the minigame layer: a new `minigame:difficulty` pair that no existing instance covers creates a 25th difficulty-slot, and `checkSlotCoverage` will fail `npm run validate` until you author an instance for it. Prefer an existing pair unless the action genuinely needs a new one — and if it does, author the instance in the same change. See §14.
+
+**`minigame_pool`** (optional) lists extra `{ minigame, difficulty }` slots for the same action. The action's own `minigame`/`difficulty` is slot 0. `src/engine/minigamePick.ts` picks one slot and one instance from `(rng_seed, action id, context key)` — the incident record key, the ticket id, or `<instanceId>:<tick>` from the inspector — so a run replays exactly while different incidents see different puzzles. Every pool slot is a difficulty-slot: `checkSlotCoverage` and `checkRegistryMatchesActions` iterate `slotsFor(action)`.
 
 One trap the schema now closes for you: `tags_all`, `tags_any` and `tags_none` each carry `"minItems": 1`. An empty array is truthy in JavaScript, so `"tags_any": []` reads to the matcher as a real constraint that no tier can satisfy — the action would be silently unreachable forever. Authoring it is an error, not a no-op.
 
@@ -386,9 +389,9 @@ The full minigame design spec is at `docs/superpowers/specs/2026-09-18-minigame-
 
 ### What the minigame layer is
 
-15 minigame ids are referenced by `data/actions.json`. They are skins over **5 shared interaction formats**, not 15 distinct mechanics. Research on comparable games found that mechanical variety saturates at 3–5 primitives — a single mechanic with only a difficulty dial (faster, more steps) hits fatigue quickly, while games that vary puzzle *structure* over a fixed primitive sustain much longer play. Fifteen distinct mechanics would impose a new learning curve every few encounters and buy no depth. The five formats cover the operations that matter: ordering, quantitative judgement, configuration, topology, and evidence interpretation.
+20 minigame ids are referenced by `data/actions.json`. They are skins over **7 shared interaction formats**, not 20 distinct mechanics. Research on comparable games found that mechanical variety saturates at 3–5 primitives — a single mechanic with only a difficulty dial (faster, more steps) hits fatigue quickly, while games that vary puzzle *structure* over a fixed primitive sustain much longer play. Twenty distinct mechanics would impose a new learning curve every few encounters and buy no depth. The seven formats cover the operations that matter: ordering, quantitative judgement, configuration, topology, evidence interpretation, shell command recall, and log root-cause identification.
 
-### The five interaction formats
+### The six interaction formats
 
 | Format id | What the player does | Why this format |
 |---|---|---|
@@ -397,12 +400,17 @@ The full minigame design spec is at `docs/superpowers/specs/2026-09-18-minigame-
 | `dial` | Move a slider to the correct quantitative threshold | Thresholds, replica counts, and instance sizes are continuous judgement calls with cost consequences in both directions. |
 | `wiring` | Connect nodes to form a valid topology | Dependency and network topology errors are a class of problem that a form cannot represent; spatial arrangement is the right primitive. |
 | `evidence` | Choose the correct root cause from a set of signals | Slow queries, bad deploys, and crash logs require reading evidence and ruling out distractors — interpretation, not configuration. |
+| `terminal` | Type the rest of a shell command to fix the incident | CLI commands are the actual remediation interface engineers use; reading prior output and recalling the right argument tests real operational recall. |
+| `log_hunt` | Click the single root-cause line in a scrollable log | Cause vs. blast-radius is the core skill of first-response incident work; the format trains the player to ignore downstream cascade errors and find the first failure. |
+| `patch` | Edit exactly one line of a real config file | Config files are the actual artefacts engineers change during incident response; the one-line constraint forces the player to make a precise targeted edit rather than rewriting the file. |
+| `monitor` | Click the right metric inside the threshold-crossing window | Real-time reaction to a crossing event — tests whether the player watches the correct signal and acts within the window, distinguishing the meaningful metric from decoys. |
+| `classify` | Drag items from a tray into labelled bins by the stated rules | Categorisation is the core operational skill behind alert routing and observability pillar selection; HTML5 drag-and-drop with click-to-place fallback. |
 
 ### The difficulty-slot rule
 
 Every instance carries a `difficulty` field. That difficulty must be a level at which some action in `data/actions.json` actually invokes the instance's minigame — otherwise the instance is content the engine can never select. `query_plan_puzzle`, for example, is only ever called at difficulty 3; an instance at difficulty 1 or 5 sits in an unreachable pool.
 
-24 difficulty-slots exist across the 15 minigames. `checkSlotCoverage` (run under `npm run validate`) enforces that each slot has at least one instance. An action reaching an empty pool fails at runtime, not at authoring time — so validation is the only net.
+32 difficulty-slots exist across the 23 minigames. `checkSlotCoverage` (run under `npm run validate`) enforces that each slot has at least one instance. An action reaching an empty pool fails at runtime, not at authoring time — so validation is the only net.
 
 Five slots carry two instances: `iam_policy_puzzle` 3, `query_plan_puzzle` 3, `queue_triage` 2, `restore_drill` 3, `threshold_tuning` 3.
 
@@ -431,6 +439,11 @@ The compensating control is **`checkInstanceShapes`** in `src/validate/minigameC
 | `dial` | `table`, `unit`, `range` (numeric `min`/`max`) | `value` (number) |
 | `wiring` | `nodes`, `zones`, `place` | `zone`, `connect_to` |
 | `evidence` | `kind` (`log`/`explain`/`deploy_history`), `output` | `choice` |
+| `terminal` | `prefix` (non-empty string), `history` (non-empty array) | `accepts` (non-empty array of non-empty strings) |
+| `log_hunt` | `source` (non-empty string), `lines` (non-empty array of `{ts, level, text}` objects) | `line` (positive integer, 1-based index of the root-cause line); optional `accept` (more 1-based lines graded correct — use when the cause repeats, e.g. every copy of one slow query) |
+| `patch` | `filename` (non-empty string), `language` (non-empty string), `content` (non-empty string — the full file text) | `line` (positive integer, 1-based; only this line may change); `must_contain` (non-empty array of non-empty strings — normalised target line must contain each); optional `must_not_contain` (string array — normalised target line must contain none) |
+| `monitor` | `metrics` (non-empty array of `MonitorMetric` objects with `id`, `label`, `unit`, `start`, `slope`, `amplitude`, `period_s`), `duration_s` (positive number), `rule` (non-empty string) | `metric` (non-empty string — the id of the solution metric), `threshold` (number), `direction` (`above`\|`below`), `window_s` (positive number) |
+| `classify` | `items` (non-empty array of `{id, label}`), `bins` (non-empty array of `{id, label}`) | `bins` (object: item id → bin id; all strings) |
 
 **It requires presence and type; it does not reject extra keys.** Instances legitimately carry optional extras — `facts`, `options`, `language`, `context`, `edges` — and rejecting unknowns would fail valid data. Requiring the known keys is what catches a typo: `{"vlaue": 5}` leaves `value` missing, and the check names the instance and the field.
 
@@ -446,13 +459,14 @@ The player gets unlimited retries. On each failure, the engine matches the wrong
 
 ### How to add an instance
 
-1. **Pick the format file** (`data/minigames/instances/a-sequence.json` through `e-evidence.json`). The file name encodes the format.
+1. **Pick the format file** (`data/minigames/instances/a-sequence.json` through `j-classify.json`). The file name encodes the format.
 2. **Use only levers that format declares** in `data/minigames/formats.json`. An undeclared lever key is a **hard failure in two places** — `checkInstanceRefs` under `npm run validate` and `expectValidInstanceFile` under `npm test`. Only the JSON schema ignores it. Note the converse is *not* enforced: nothing checks lever **values** against the `min`/`max`/`values` the format declares, so `"tolerance_pct": 95` passes both commands today. Stay inside the declared bounds by hand.
 3. **Cover a slot that exists.** A minigame does **not** declare its own difficulty — there is no `difficulty_range` field anywhere. The legal difficulties for a minigame are exactly those at which some action in `data/actions.json` names it; §14's slot table is derived from that file and nothing else. `expectValidInstanceFile` rejects a difficulty no action demands, and `checkSlotCoverage` reports a demanded slot with no instance.
+3a. **Restrict with `for_actions` when a minigame is pooled into dissimilar actions.** `for_actions` (optional) limits an instance to the listed actions — a Redis-flush terminal puzzle must not open for a rollback. `checkSlotCoverage` requires every (action, slot) pair to have at least one eligible instance, and `checkForActionsRefs` rejects an id that is not an action or whose action never selects the instance's slot. Instances without `for_actions` serve every action that selects their slot.
 4. **Write a `teaches` that is transferable.** The `teaches` field should state a principle the player can apply elsewhere — "CPU requests are specified in 25m steps, rounded up from measured steady-state" — not a restatement of the answer — "the answer is 250m". The latter turns a judgement problem into transcription.
 5. **Give every dial instance both a `below` and an `above` outcome.** A dial has two failure directions; both carry real lessons (under-provisioned fails, over-provisioned wastes money). An instance with only one is incomplete.
-6. **Check `wrong_outcomes[].when` values against the format.** Legal values are: `any` (all formats) · `below`/`above` (`dial` only) · `wrong_order` (`ordered_sequence` only) · `wrong_value` (`fill_blank` only) · `wrong_target` (`wiring` only) · `wrong_choice` (`evidence` only). A `when` value from the wrong format will not fail schema validation — it will produce an outcome the engine never matches.
-7. **Never mix `any` with a format-specific value** in the same instance's `wrong_outcomes`. An instance may use `any` alone, or one or more specific entries, but `any` mixed with a specific entry leaves the engine unable to determine which to show. Four of the five formats have only one legal specific value, so a single specific entry is the normal shape there; `dial` is the exception and needs both `below` and `above`.
+6. **Check `wrong_outcomes[].when` values against the format.** Legal values are: `any` (all formats) · `below`/`above` (`dial` only) · `wrong_order` (`ordered_sequence` only) · `wrong_value` (`fill_blank` only) · `wrong_target` (`wiring` only) · `wrong_choice` (`evidence` only) · `wrong_command` (`terminal` only) · `wrong_line` (`log_hunt` only) · `wrong_edit`/`collateral_edit` (`patch` only) · `too_early`/`too_late`/`wrong_metric` (`monitor` only) · `wrong_bin` (`classify` only). A `when` value from the wrong format will not fail schema validation — it will produce an outcome the engine never matches.
+7. **Never mix `any` with a format-specific value** in the same instance's `wrong_outcomes`. An instance may use `any` alone, or one or more specific entries, but `any` mixed with a specific entry leaves the engine unable to determine which to show. Most formats have only one legal specific value, so a single specific entry is the normal shape; `dial` is the exception and needs both `below` and `above`.
 
    The legality of `when` per format is **not** declared in `formats.json` — it lives in `WHEN_BY_FORMAT`, exported from `src/validate/minigameChecks.ts` and imported by the test helper, and the schema's `when` enum is the flat union of all seven values across all formats. Editing `formats.json` will not change `when` legality. `checkWhenLegality` enforces it under `npm run validate`.
 
@@ -468,15 +482,30 @@ The player gets unlimited retries. On each failure, the engine matches the wrong
 
 **Supply the missing rule, not the missing answer.** When fixing an instance where the player cannot derive the answer, the fix is to add the rule to `given` ("CPU requests are specified in 25m steps, rounded up from measured steady-state") — not to embed the answer in the table. Adding the answer turns a judgement problem into transcription.
 
+### AI-rewritable fields
+
+Each format in `data/minigames/formats.json` carries an optional `ai_fields` array declaring the paths the AI may rewrite. The first five formats (`ordered_sequence`, `fill_blank`, `dial`, `wiring`, `evidence`) expose `["brief", "wrong_outcomes[].shows"]`. Later formats may expose additional paths such as `given.history` or `given.rule`.
+
+**`solution` is never rewritable.** It is not a valid `ai_fields` path and `applyAiPatch` (`src/engine/aiMerge.ts`) explicitly skips it even if it were passed, ensuring the authored answer is always preserved and the instance remains gradeable.
+
+A patch is accepted only if it passes `validateAiPatch`. The four rules:
+
+1. **Unknown keys** (paths not in `ai_fields`) are reported but do not cause failure — they are silently dropped by `applyAiPatch`.
+2. **Type and length match** — a string field requires a string; a string-array field requires a string array of the same length.
+3. **Numbers preserved** — every number that appears in the original text must appear in the rewrite (regex `/\d+(?:[.,]\d+)?/g`, commas stripped). This ensures facts the answer depends on survive.
+4. **Clean strings** — no `{{`/`}}` template braces may remain; each string must be ≥ 20 and ≤ 700 characters.
+
+If any known-key check fails, the whole patch is rejected and the authored instance is used unchanged.
+
 ### Counts at a glance
 
 | What | Count |
 |---|---|
-| Interaction formats | 5 |
-| Minigames | 15 |
-| Instances | 29 |
-| Difficulty-slots | 24 |
-| Difficulty levers across all formats | 14 |
+| Interaction formats | 10 |
+| Minigames | 23 |
+| Instances | 61 |
+| Difficulty-slots | 32 |
+| Difficulty levers across all formats | 23 |
 
 ---
 
@@ -643,6 +672,14 @@ The per-tick order in `advance` is: arrivals → per-tick ledger → escalations
 - **Architecture-scope incidents damage nothing.** Their `health_delta: -5` exists only because the schema requires a non-empty `damage` block; it is applied to no instance.
 - **Utilisation has no upper clamp.** Values above 100 are what drive `error_rate_pct` through the saturation curve. Capping at 100 would silently remove saturation.
 
+### One fix clears everything it fixes
+
+`applyOutcome` (in `src/engine/grading.ts`) resolves, on a correct answer, the incident the minigame was opened from — **every record of that key**, since a group incident has one record per instance — **plus every other active incident on the same instance whose `resolved_by` lists the action**. That holds when the fix was launched from a ticket or the inspector (`incidentKey: null`). Each resolved key emits its own `on_resolve` ledger entries and counts once in `incidents_resolved`. Tickets need no equivalent: `isTicketComplete` re-checks every open ticket each tick, so one action that satisfies two tickets completes both.
+
+### Generated puzzle facts — `buildSeedContext`
+
+`buildSeedContext(seedKey)` in `src/engine/template.ts` derives per-incident facts from the context key (the incident record key, `ticket:<id>`, or `<instanceId>:<tick>`): `entity_id`, `tenant`, `key_prefix`, `revision`, `pid`, `deploy_version`, `region`, `ip_octet`, `db_index`. The UI merges them under the live node/incident context before resolving an instance, so authored instances can put `{{key_prefix}}:{{entity_id}}:*` or `{{revision - 1}}` in their `given` **and** `solution`: each incident shows different details and a different answer, and the same incident always shows the same ones. Grading reads the resolved instance, so templated answers grade as their substituted values.
+
 ### Known gaps (deliberate, not bugs)
 
 1. **`fires_when` posture predicates are not evaluated.** Architecture-scope incidents are admitted on severity and gates alone. An architecture incident may fire even when the posture gap it describes does not exist in the current board.
@@ -665,3 +702,42 @@ Four behaviours differ from the original plan spec. Each is recorded here becaus
 
 Full design spec: `docs/superpowers/specs/2026-09-19-engine-core-design.md`
 Engine-to-UI contract: `docs/handoffs/2026-09-19-engine-to-ui-contract.md`
+
+---
+
+## 16. Tickets
+
+Tickets are global definitions in `data/tickets.json` — identical for every player and every save, loaded once, never mutated at runtime. Instance state (active_tickets) tracks per-save progress on top of these definitions.
+
+### Requirement shapes
+
+Every ticket has exactly one requirement shape:
+
+- **Shape A** — `node_id + min_tier`: completed when the named node is at or above `min_tier`. Primary hint must be `upgrade_tier` (enforced by `checkTicketHints` rule 3).
+- **Shape B** — `node_id + min_count`: completed when at least `min_count` instances of `def_id` exist on the board. Since nodes cannot be added during the run phase, every scenario listing a min_count ticket must already have enough board entries.
+- **Shape C** — `layers + tags_any` or `layers + tags_all`: completed when any node in the named layers has all the required tags (via tier definition tags or instance `tags_runtime`).
+
+### Rules enforced by `checkTicketHints` (src/validate/ticketChecks.ts)
+
+1. `hint_actions` is non-empty and every id exists in `data/actions.json`.
+2. The primary hint (`hint_actions[0]`) is offered on at least one node/tier that satisfies `node_id` (if set) and `layers` (if set).
+3. The primary hint can satisfy the requirement: `upgrade_tier` for `min_tier`; the action must grant a required `tags_any` tag; for `tags_all`, each required tag must be granted or already exist on a candidate tier; for `min_count`, every scenario listing the ticket must already have enough instances on the board.
+4. Per scenario listing a ticket: at least one board node is among the candidate nodes for the primary hint.
+5. Every `ticket_ids` entry in every scenario must exist in `tickets.json`.
+6. `upgrade_tier` is the primary hint for at most 6 scenario-listed tickets; any other action is primary for at most 3.
+
+**A ticket the run phase cannot complete is dead content.** Tickets that require nodes absent from every scenario board (`min_count` on a node not on the board) or hint actions that cannot match any board node are caught and reported as errors by `checkTicketHints`.
+
+### Orphaned tickets
+
+A ticket in `tickets.json` that is not listed in any scenario's `ticket_ids` is still validated by rules 1–3 but is exempt from rules 4 and 6 (which are per-scenario or count scenario-listed tickets only). Orphaned tickets exist for completeness but the player never sees them.
+
+---
+
+## 17. Stakeholder messages and the pager
+
+**Stakeholder messages** (`data/stakeholders.json`) are the social pressure of an incident. `src/engine/stakeholders.ts` is pure: `dueStakeholderMessages(state, catalog, lastShownTick)` returns messages whose trigger holds (read from the latest `state.history` value, or from active incident severities) and whose `cooldown_ticks` has passed; `applyStakeholderResponse` clamps reputation to 0–100 and moves budget exactly as action costs do (it may go negative); `ignoredResponse` is the response with the lowest `reputation_delta`, applied when a message expires unanswered. The UI owns the real-time `expires_s` timer and shows one message at a time, never during the tutorial, a page, or an open minigame.
+
+`npm run validate` rejects a trigger naming an unknown metric and a message whose every response costs reputation — a message the player cannot answer well is a trap, not a decision.
+
+**The pager** (`src/ui/components/organisms/PagerOverlay.tsx`) is UI-only: an incident of severity ≥ 4 arriving outside the tutorial raises a full-screen page with the **level-0** signal text only (§13 — a page never carries diagnostics), a 15 s ACK window, and the arrival tone. The clock keeps running. The incident card then shows `acked in Ns` or `page unacknowledged`.

@@ -29,17 +29,17 @@
         {
           "level": 1,
           "requires": { "node_ids": ["metrics_pipeline"], "min_tier": 1 },
-          "text": "Error rate on the async processing layer spiked to 28% at 11:14 UTC and has not recovered. Job completion throughput has dropped to zero in the same window."
+          "text": "Error rate on the {{layer_name}} layer spiked to 28% at 11:14 UTC and has not recovered. Job completion throughput has dropped to zero in the same window."
         },
         {
           "level": 2,
           "requires": { "node_ids": ["alerting"], "min_tier": 2 },
-          "text": "worker-us-01 is down. The node failed its health check at 11:14 UTC and is no longer pulling messages from the queue. Pending job count is climbing steadily."
+          "text": "{{node_name}} is down. The node failed its health check at 11:14 UTC and is no longer pulling messages from the queue. Pending job count is climbing steadily."
         },
         {
           "level": 3,
           "requires": { "node_ids": ["tracing"], "min_tier": 2 },
-          "text": "worker-us-01's consumer process crashed with an unhandled NullPointerException in the job deserializer at 11:14 UTC. The queue has no active consumer and is now growing without bound — every new job enqueued adds to a backlog that will not drain until the consumer is restored or an additional worker absorbs it."
+          "text": "{{node_name}}'s consumer process crashed with an unhandled NullPointerException in the job deserializer at 11:14 UTC. The queue has no active consumer and is now growing without bound — every new job enqueued adds to a backlog that will not drain until the consumer is restored or an additional worker absorbs it."
         }
       ]
     },
@@ -72,17 +72,17 @@
         {
           "level": 1,
           "requires": { "node_ids": ["metrics_pipeline"], "min_tier": 1 },
-          "text": "Consumer lag on the async processing layer has climbed from under 50 messages to 14,200 messages over the past 30 minutes. Processing throughput has not kept pace with the inbound job rate."
+          "text": "Consumer lag on the {{layer_name}} layer has climbed from under 50 messages to 14,200 messages over the past 30 minutes. Processing throughput has not kept pace with the inbound job rate."
         },
         {
           "level": 2,
           "requires": { "node_ids": ["alerting"], "min_tier": 2 },
-          "text": "worker-us-01's consumer lag is at 14,200 messages and growing at approximately 180 messages per minute. The worker is processing jobs but cannot close the gap with the current arrival rate."
+          "text": "{{node_name}}'s consumer lag is at 14,200 messages and growing at approximately 180 messages per minute. The worker is processing jobs but cannot close the gap with the current arrival rate."
         },
         {
           "level": 3,
           "requires": { "node_ids": ["tracing"], "min_tier": 2 },
-          "text": "worker-us-01 is consuming at 40 messages/sec while inbound rate is 43 messages/sec. The gap compounded after the earlier consumer crash was not addressed — the surviving instance is undersized for the current load, and the backlog grows by roughly 180 messages every minute it goes unresolved."
+          "text": "{{node_name}} is consuming at 40 messages/sec while inbound rate is 43 messages/sec. The gap compounded after the earlier consumer crash was not addressed — the surviving instance is undersized for the current load, and the backlog grows by roughly 180 messages every minute it goes unresolved."
         }
       ]
     },
@@ -116,17 +116,17 @@
         {
           "level": 1,
           "requires": { "node_ids": ["metrics_pipeline"], "min_tier": 1 },
-          "text": "Queue depth on the async processing layer hit its configured ceiling 18 minutes ago. New message submissions are being rejected at 100% and no writes are completing."
+          "text": "Queue depth on the {{layer_name}} layer hit its configured ceiling 18 minutes ago. New message submissions are being rejected at 100% and no writes are completing."
         },
         {
           "level": 2,
           "requires": { "node_ids": ["alerting"], "min_tier": 2 },
-          "text": "mq-us-01 is at capacity — queue depth is 10,000 of 10,000 and rejecting all new enqueue attempts. The broker has been returning QUEUE_FULL on every producer write since 14:22 UTC."
+          "text": "{{node_name}} is at capacity — queue depth is 10,000 of 10,000 and rejecting all new enqueue attempts. The broker has been returning QUEUE_FULL on every producer write since 14:22 UTC."
         },
         {
           "level": 3,
           "requires": { "node_ids": ["tracing"], "min_tier": 2 },
-          "text": "mq-us-01 reached its hard depth ceiling because the consumer backlog was never drained after the earlier crash. The queue grew unbounded for 40 minutes with no intervention applied. At this point no new work can enter the system; the backlog must be drained before producers can write again."
+          "text": "{{node_name}} reached its hard depth ceiling because the consumer backlog was never drained after the earlier crash. The queue grew unbounded for 40 minutes with no intervention applied. At this point no new work can enter the system; the backlog must be drained before producers can write again."
         }
       ]
     },
@@ -159,17 +159,17 @@
         {
           "level": 1,
           "requires": { "node_ids": ["metrics_pipeline"], "min_tier": 1 },
-          "text": "Dead-letter queue depth on the async processing layer is at 98% of its limit and has been filling at an abnormal rate for the past 40 minutes."
+          "text": "Dead-letter queue depth on the {{layer_name}} layer is at 98% of its limit and has been filling at an abnormal rate for the past 40 minutes."
         },
         {
           "level": 2,
           "requires": { "node_ids": ["alerting"], "min_tier": 2 },
-          "text": "mq-us-01's DLQ is at 19,600 messages out of a 20,000-message limit, growing by approximately 200 messages per minute. The DLQ itself will be full within five minutes."
+          "text": "{{node_name}}'s DLQ is at 19,600 messages out of a 20,000-message limit, growing by approximately 200 messages per minute. The DLQ itself will be full within five minutes."
         },
         {
           "level": 3,
           "requires": { "node_ids": ["tracing"], "min_tier": 2 },
-          "text": "mq-us-01's DLQ filled because the earlier queue overflow routed every rejected producer message there rather than dropping it. With consumers still running below throughput, the DLQ is absorbing overflow faster than it can be inspected or replayed. Once it hits its 20,000-message ceiling, the broker will begin silently dropping messages with no recovery path."
+          "text": "{{node_name}}'s DLQ filled because the earlier queue overflow routed every rejected producer message there rather than dropping it. With consumers still running below throughput, the DLQ is absorbing overflow faster than it can be inspected or replayed. Once it hits its 20,000-message ceiling, the broker will begin silently dropping messages with no recovery path."
         }
       ]
     },
@@ -202,17 +202,17 @@
         {
           "level": 1,
           "requires": { "node_ids": ["metrics_pipeline"], "min_tier": 1 },
-          "text": "The async processing layer is showing a persistent 9% error rate on job completions since 15:40 UTC. The rate is not recovering and appears correlated with a specific job type."
+          "text": "The {{layer_name}} layer is showing a persistent 9% error rate on job completions since 15:40 UTC. The rate is not recovering and appears correlated with a specific job type."
         },
         {
           "level": 2,
           "requires": { "node_ids": ["alerting"], "min_tier": 2 },
-          "text": "worker-us-01 has attempted to process job ID 8f4a1c 47 times since 15:40 UTC and failed each time. The worker repeatedly retries the same message, blocking other jobs queued behind it."
+          "text": "{{node_name}} has attempted to process job ID 8f4a1c 47 times since 15:40 UTC and failed each time. The worker repeatedly retries the same message, blocking other jobs queued behind it."
         },
         {
           "level": 3,
           "requires": { "node_ids": ["tracing"], "min_tier": 2 },
-          "text": "Job 8f4a1c contains a malformed attachment reference with a null byte in the filename field — the handler throws a deserialization panic on every attempt. Because no dead-letter queue is configured, the message cannot be quarantined and retries indefinitely, holding up all subsequent messages in that partition."
+          "text": "Job 8f4a1c contains a malformed attachment reference with a null byte in the filename field — the handler throws a deserialization panic on every attempt. Because no dead-letter queue is configured on {{node_name}}, the message cannot be quarantined and retries indefinitely, holding up all subsequent messages in that partition."
         }
       ]
     },
@@ -245,17 +245,17 @@
         {
           "level": 1,
           "requires": { "node_ids": ["metrics_pipeline"], "min_tier": 1 },
-          "text": "Scheduled job completion rate on the compute layer dropped 55% starting at 06:00 UTC. Jobs that do execute are running up to 90 seconds outside their configured trigger windows."
+          "text": "Scheduled job completion rate on the {{layer_name}} layer dropped 55% starting at 06:00 UTC. Jobs that do execute are running up to 90 seconds outside their configured trigger windows."
         },
         {
           "level": 2,
           "requires": { "node_ids": ["alerting"], "min_tier": 2 },
-          "text": "cron-us-01 has missed 9 scheduled jobs since 06:00 UTC. The scheduler process is running and firing triggers, but execution is delayed and some schedule slots are skipped entirely."
+          "text": "{{node_name}} has missed 9 scheduled jobs since 06:00 UTC. The scheduler process is running and firing triggers, but execution is delayed and some schedule slots are skipped entirely."
         },
         {
           "level": 3,
           "requires": { "node_ids": ["tracing"], "min_tier": 2 },
-          "text": "cron-us-01's system clock drifted 38 seconds behind NTP after a host migration at 05:58 UTC. The scheduler compares wall-clock time to job windows, so every trigger whose slot fell in that 38-second gap was silently skipped. Additionally, skipped trigger events are accumulating in the internal dispatch queue without any catch-up or discard mechanism — the queue is now growing without bound and will continue to do so until the clock is corrected and the scheduler is restarted."
+          "text": "{{node_name}}'s system clock drifted 38 seconds behind NTP after a host migration at 05:58 UTC. The scheduler compares wall-clock time to job windows, so every trigger whose slot fell in that 38-second gap was silently skipped. Additionally, skipped trigger events are accumulating in the internal dispatch queue without any catch-up or discard mechanism — the queue is now growing without bound and will continue to do so until the clock is corrected and the scheduler is restarted."
         }
       ]
     }

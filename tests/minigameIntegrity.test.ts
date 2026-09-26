@@ -6,6 +6,7 @@ import {
   checkInstanceShapes, checkWhenLegality,
 } from '../src/validate/minigameChecks'
 import { loadJson } from '../src/validate/loadJson'
+import { slotsFor } from '../src/engine/minigamePick'
 
 const d = loadMinigameData()
 const actions = loadJson<any>('data/actions.json').actions
@@ -15,10 +16,10 @@ describe('the shipped minigame data', () => {
     expect(runIntegrityChecks()).toEqual([])
   })
 
-  it('loads 5 formats, 15 minigames and 32 instances', () => {
-    expect(d.formats).toHaveLength(5)
-    expect(d.minigames).toHaveLength(15)
-    expect(d.instances).toHaveLength(32)
+  it('loads 10 formats, 23 minigames and 71 instances', () => {
+    expect(d.formats).toHaveLength(10)
+    expect(d.minigames).toHaveLength(23)
+    expect(d.instances).toHaveLength(71)
   })
 })
 
@@ -50,16 +51,16 @@ describe('checkFormatsResolve', () => {
 })
 
 describe('checkSlotCoverage', () => {
-  it('passes — all 24 difficulty-slots have an instance', () => {
+  it('passes — all 32 difficulty-slots have an instance', () => {
     expect(checkSlotCoverage(d.instances, actions)).toEqual([])
   })
   it('fires when a demanded slot has no instance', () => {
     const bad = d.instances.filter((i: any) => i.minigame !== 'log_triage')
     expect(checkSlotCoverage(bad, actions).join()).toMatch(/log_triage/)
   })
-  it('reports 24 slots as the required total', () => {
-    const slots = new Set(actions.map((a: any) => `${a.minigame}:${a.difficulty}`))
-    expect(slots.size).toBe(24)
+  it('reports 32 slots as the required total', () => {
+    const slots = new Set(actions.flatMap((a: any) => slotsFor(a).map((s: any) => `${s.minigame}:${s.difficulty}`)))
+    expect(slots.size).toBe(32)
   })
 })
 

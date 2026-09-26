@@ -106,14 +106,20 @@ export function processTickets(state: GameState, catalog: EngineCatalog): GameSt
     return rec
   })
 
-  // 3. Penalise: subtract penalty for overdue incomplete tickets
+  // 3. Penalise: subtract penalty for overdue incomplete tickets.
+  // Total penalty is capped at 0.5/tick so multiple overdue tickets don't spiral
+  // into an unrecoverable state — the game should always feel fixable.
+  let totalPenalty = 0
   for (const rec of active) {
     if (rec.completed) continue
     const ticket = catalog.ticketById.get(rec.ticket_id) as TicketDef | undefined
     if (!ticket) continue
     if (state.tick > rec.deadline_tick) {
-      reputation = Math.max(0, reputation - ticket.reputation_penalty_per_tick)
+      totalPenalty += ticket.reputation_penalty_per_tick
     }
+  }
+  if (totalPenalty > 0) {
+    reputation = Math.max(0, reputation - Math.min(totalPenalty, 0.5))
   }
 
   return {

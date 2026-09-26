@@ -89,6 +89,54 @@
       "name": "Diff Review",
       "format": "evidence",
       "description": "Read the deploy history and identify the specific change that introduced the regression, distinguishing the culprit diff from unrelated commits deployed in the same window."
+    },
+    {
+      "id": "pool_config",
+      "name": "Connection Pool Config",
+      "format": "fill_blank",
+      "description": "Configure database connection pooling parameters from measured connection patterns."
+    },
+    {
+      "id": "tier_migration",
+      "name": "Tier Migration Runbook",
+      "format": "ordered_sequence",
+      "description": "Order the steps of a live tier change so capacity grows without dropping traffic or data."
+    },
+    {
+      "id": "terraform_resize",
+      "name": "Terraform Resize",
+      "format": "fill_blank",
+      "description": "Edit the infrastructure-as-code change that moves a node to a new tier without downtime."
+    },
+    {
+      "id": "shell_fix",
+      "name": "Shell Fix",
+      "format": "terminal",
+      "description": "Read prior shell output and type the exact command suffix that fixes the incident without touching healthy components."
+    },
+    {
+      "id": "log_hunt_rca",
+      "name": "Log Hunt: Root Cause",
+      "format": "log_hunt",
+      "description": "Scroll a realistic log stream and click the single line that is the root cause, not the downstream blast-radius errors."
+    },
+    {
+      "id": "config_patch",
+      "name": "Config Patch",
+      "format": "patch",
+      "description": "Edit exactly one line of a config file to fix a misconfiguration while leaving every other line intact."
+    },
+    {
+      "id": "live_monitor",
+      "name": "Live Monitor",
+      "format": "monitor",
+      "description": "Watch live metric gauges drift in real time and click the right metric inside the threshold-crossing window."
+    },
+    {
+      "id": "signal_sort",
+      "name": "Signal Sort",
+      "format": "classify",
+      "description": "Sort observability signals and operational items into the correct category bins by applying a set of stated classification rules."
     }
   ]
 }

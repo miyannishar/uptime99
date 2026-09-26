@@ -10,9 +10,9 @@ describe('data/minigames/formats.json', () => {
     expectValidAgainst('data/schema/minigame-format.schema.json', 'data/minigames/formats.json')
   })
 
-  it('defines exactly the five formats', () => {
+  it('defines exactly the ten formats', () => {
     expect(formats.map((f: any) => f.id).sort()).toEqual(
-      ['dial', 'evidence', 'fill_blank', 'ordered_sequence', 'wiring'],
+      ['classify', 'dial', 'evidence', 'fill_blank', 'log_hunt', 'monitor', 'ordered_sequence', 'patch', 'terminal', 'wiring'],
     )
   })
 

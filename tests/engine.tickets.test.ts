@@ -41,8 +41,20 @@ const ticketA = c.ticketById.get('scale_app_t2') as TicketDef
 const ticketC_all = c.ticketById.get('encrypt_db') as TicketDef
 // add_db_replica: Shape C — tags_any: ["has_replica"], layers: ["data"]
 const ticketC_any = c.ticketById.get('add_db_replica') as TicketDef
-// dr_region_ready: Shape B — node_id: "backup_system", min_count: 1
-const ticketB = c.ticketById.get('dr_region_ready') as TicketDef
+// Shape B — node_id: "backup_system", min_count: 1 (built inline; no scenario carries this shape after the rewrite)
+const ticketB: TicketDef = {
+  id: 'test_backup_count',
+  name: 'Test min_count fixture',
+  blurb: '',
+  kind: 'add_node',
+  severity: 1,
+  requirement: { node_id: 'backup_system', min_count: 1 },
+  hint_actions: ['upgrade_tier'],
+  appears_at_tick: 1,
+  deadline_ticks: 5,
+  reputation_penalty_per_tick: 0,
+  bonus_reputation: 0,
+}
 
 describe('isTicketComplete', () => {
   describe('Shape A — node_id + min_tier', () => {
@@ -312,11 +324,18 @@ describe('processTickets', () => {
     expect(out.active_tickets).not.toBe(state.active_tickets)
   })
 
-  it('produces empty active_tickets for a scenario with no ticket_ids', () => {
-    // free-play has ticket_ids: [] — no tickets should activate
+  it('produces no active_tickets for free-play at tick 5 (earliest ticket appears at tick 12)', () => {
+    // free-play now uses only long-deadline tickets; earliest is audit_logging at tick 12
     const freePlayBase = loadScenario('free-play', c)
     const state = { ...freePlayBase, phase: 'run' as const, rng_seed: 42, tick: 5 }
     const out = processTickets(state, c)
-    expect(out.active_tickets).toHaveLength(0)
+    expect(out.active_tickets.length).toBe(0)
+  })
+
+  it('activates add_backup for free-play at tick 12 (earliest free-play ticket)', () => {
+    const freePlayBase = loadScenario('free-play', c)
+    const state = { ...freePlayBase, phase: 'run' as const, rng_seed: 42, tick: 12 }
+    const out = processTickets(state, c)
+    expect(out.active_tickets.some(t => t.ticket_id === 'add_backup')).toBe(true)
   })
 })

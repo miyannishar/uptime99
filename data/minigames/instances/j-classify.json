@@ -1,0 +1,256 @@
+{
+  "instances": [
+    {
+      "id": "sort_metrics_logs_traces",
+      "minigame": "signal_sort",
+      "difficulty": 2,
+      "for_actions": [
+        "enable_observability"
+      ],
+      "brief": "{{node_name}} is being instrumented. Sort each signal into the right observability pillar. Metrics = numbers aggregated over time; logs = discrete events with detail text; traces = records of one request's path across services.",
+      "teaches": "Observability pillars differ by structure: metrics compress many events into a number, logs capture event detail verbatim, and traces correlate work units across service boundaries using span and trace IDs.",
+      "levers": {
+        "item_count": 8,
+        "bin_count": 3
+      },
+      "given": {
+        "items": [
+          {
+            "id": "p95_latency",
+            "label": "p95 latency per endpoint"
+          },
+          {
+            "id": "request_count",
+            "label": "request count per minute"
+          },
+          {
+            "id": "stack_trace",
+            "label": "stack trace of a 500 error"
+          },
+          {
+            "id": "audit_line",
+            "label": "audit line: user 812 changed billing email"
+          },
+          {
+            "id": "span_checkout",
+            "label": "span: checkout → payments 340 ms"
+          },
+          {
+            "id": "cpu_pct",
+            "label": "CPU % per pod"
+          },
+          {
+            "id": "sql_text",
+            "label": "SQL statement text of a failed query"
+          },
+          {
+            "id": "trace_id",
+            "label": "trace ID propagated across 4 services"
+          }
+        ],
+        "bins": [
+          {
+            "id": "metrics",
+            "label": "Metrics"
+          },
+          {
+            "id": "logs",
+            "label": "Logs"
+          },
+          {
+            "id": "traces",
+            "label": "Traces"
+          }
+        ]
+      },
+      "solution": {
+        "bins": {
+          "p95_latency": "metrics",
+          "request_count": "metrics",
+          "stack_trace": "logs",
+          "audit_line": "logs",
+          "span_checkout": "traces",
+          "cpu_pct": "metrics",
+          "sql_text": "logs",
+          "trace_id": "traces"
+        }
+      },
+      "wrong_outcomes": [
+        {
+          "when": "wrong_bin",
+          "shows": "Misplaced signals landed in the wrong pillar: the query-plan dashboard showed NaN for p95 because SQL text was treated as a metric and aggregated; root-cause lookups for the 500 error failed because the stack trace was routed to the trace store instead of the log index.",
+          "why_wrong": "Signals must go to the store built for their structure. A metric store expects numbers with timestamps; a log store expects text events; a trace store expects parent-child span pairs. Mixing structures causes query failures or silently discards data."
+        }
+      ],
+      "reveal": "Metrics aggregate many occurrences into a single number (p95 latency, request count, CPU %). Logs preserve the full event text so you can reconstruct what happened (stack traces, SQL statements, audit entries). Traces correlate work across service boundaries using a shared trace ID and parent-span relationships — the span entry and propagated trace ID both belong in traces because they describe one request's journey, not a standalone event."
+    },
+    {
+      "id": "sort_resource_exposure",
+      "minigame": "signal_sort",
+      "difficulty": 2,
+      "for_actions": [
+        "restrict_access"
+      ],
+      "brief": "Classify each resource by its required access level. Public = reachable from the internet without authentication; private (VPC only) = reachable only from inside the private network, no public route; admin-only (SSO + MFA) = reachable only by authenticated internal staff via SSO and a second factor.",
+      "teaches": "Access classification starts from the audience: anonymous internet users need public; internal services need private; privileged staff need admin-only. A resource in the wrong class either blocks legitimate users or exposes sensitive data.",
+      "levers": {
+        "item_count": 8,
+        "bin_count": 3
+      },
+      "given": {
+        "items": [
+          {
+            "id": "marketing_bucket",
+            "label": "Public marketing site bucket"
+          },
+          {
+            "id": "product_images_cdn",
+            "label": "Product images CDN origin"
+          },
+          {
+            "id": "customer_invoices",
+            "label": "Customer invoices bucket — opened by finance staff through the back-office console"
+          },
+          {
+            "id": "db_snapshots",
+            "label": "Database snapshots — read only by the restore job running inside the VPC"
+          },
+          {
+            "id": "admin_api",
+            "label": "Internal admin API — used by support staff to refund orders"
+          },
+          {
+            "id": "grafana",
+            "label": "Grafana — used by on-call engineers"
+          },
+          {
+            "id": "payment_webhook",
+            "label": "Payment webhook endpoint — called by the payment provider from the internet (requests are signed)"
+          },
+          {
+            "id": "ci_artifact_store",
+            "label": "CI artifact store — pulled only by build runners inside the VPC"
+          }
+        ],
+        "bins": [
+          {
+            "id": "public",
+            "label": "Public"
+          },
+          {
+            "id": "private",
+            "label": "Private (VPC only)"
+          },
+          {
+            "id": "admin_only",
+            "label": "Admin-only (SSO + MFA)"
+          }
+        ]
+      },
+      "solution": {
+        "bins": {
+          "marketing_bucket": "public",
+          "product_images_cdn": "public",
+          "customer_invoices": "admin_only",
+          "db_snapshots": "private",
+          "admin_api": "admin_only",
+          "grafana": "admin_only",
+          "payment_webhook": "public",
+          "ci_artifact_store": "private"
+        }
+      },
+      "wrong_outcomes": [
+        {
+          "when": "wrong_bin",
+          "shows": "A misconfigured policy left customer invoices publicly readable. The S3 bucket policy audit flagged 3,400 invoice PDFs accessible without authentication — a GDPR reportable event within 72 hours.",
+          "why_wrong": "PII and financial data require authentication regardless of how unlikely discovery feels. Public means no credentials needed; admin-only enforces SSO and MFA so only named staff can reach the data."
+        }
+      ],
+      "reveal": "Marketing assets and product images are intentionally public — any anonymous visitor needs them. The payment webhook is also public because the payment provider calls it from the internet, but it is signed with a shared secret that the handler verifies before processing. Customer invoices contain PII and are opened by finance staff, so they are admin-only — the audience is people, not services. Database snapshots and CI artifacts contain sensitive internals and belong on the private network where only services can reach them. Grafana and the admin API expose operational controls and require SSO with a second factor."
+    },
+    {
+      "id": "sort_alert_routing",
+      "minigame": "signal_sort",
+      "difficulty": 2,
+      "for_actions": [
+        "rebalance_oncall"
+      ],
+      "brief": "Route each alert to the right handling tier. Page now = customer-visible impact now, or expected within the next 4 hours; ticket = will cause customer-visible impact or data loss within 30 days if nobody acts; drop = expected behaviour with no impact projected.",
+      "teaches": "Alert fatigue builds when non-urgent signals page on-call engineers at night. The routing decision is a function of two questions: is a customer affected right now, and is there a human action that changes the outcome?",
+      "levers": {
+        "item_count": 8,
+        "bin_count": 3
+      },
+      "given": {
+        "items": [
+          {
+            "id": "checkout_error",
+            "label": "Checkout error rate 6% for 5 min"
+          },
+          {
+            "id": "disk_85_log",
+            "label": "Disk 85% on log volume, growing 1%/day"
+          },
+          {
+            "id": "cpu_batch",
+            "label": "CPU 90% on batch worker during nightly job"
+          },
+          {
+            "id": "tls_cert",
+            "label": "TLS cert expires in 6 days"
+          },
+          {
+            "id": "replica_lag",
+            "label": "DB replica lag steady at 800 ms for a week; all reads are served by the primary"
+          },
+          {
+            "id": "deploy_canary",
+            "label": "Canary deploy error rate 4% vs baseline 0.1%, with 5% of users on the canary"
+          },
+          {
+            "id": "cron_skipped",
+            "label": "Nightly billing export skipped once; finance needs the export by month-end in 12 days"
+          },
+          {
+            "id": "memory_90_api",
+            "label": "API server memory 90%, OOM kill expected in 2 h"
+          }
+        ],
+        "bins": [
+          {
+            "id": "page_now",
+            "label": "Page now"
+          },
+          {
+            "id": "ticket",
+            "label": "Ticket"
+          },
+          {
+            "id": "drop",
+            "label": "Drop"
+          }
+        ]
+      },
+      "solution": {
+        "bins": {
+          "checkout_error": "page_now",
+          "disk_85_log": "ticket",
+          "cpu_batch": "drop",
+          "tls_cert": "ticket",
+          "replica_lag": "drop",
+          "deploy_canary": "page_now",
+          "cron_skipped": "ticket",
+          "memory_90_api": "page_now"
+        }
+      },
+      "wrong_outcomes": [
+        {
+          "when": "wrong_bin",
+          "shows": "Paging on the 85% log-volume disk woke on-call at 03:10 for a problem 15 days away. Two weeks later the TLS cert page was suppressed as noise — the cert expired unnoticed, causing a full checkout outage at 09:00.",
+          "why_wrong": "Routing non-urgent signals as pages trains engineers to dismiss pages. The missed cert expiry is the direct consequence: a ticket would have been caught in the morning triage queue."
+        }
+      ],
+      "reveal": "Checkout errors at 6% are customer-visible now — page. A canary failing 4% of requests for the 5% of users routed to it is customer-visible now — page. Memory at 90% with an OOM kill expected in 2 hours falls inside the 4-hour window — page. The log disk fills in about 15 days, the TLS cert expires in 6 days, and the billing export is due in 12 days: all will hurt within 30 days, so each is a ticket. CPU at 90% on a batch worker during its nightly job is expected behaviour, and replica lag that has been steady for a week while every read is served by the primary projects no impact — drop both."
+    }
+  ]
+}

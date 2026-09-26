@@ -4,9 +4,13 @@
       "id": "cutover_lower_ttl_first",
       "minigame": "dns_cutover",
       "difficulty": 2,
-      "brief": "You have a maintenance window tonight to migrate the database from pg-primary to pg-replica-01. The replica is fully caught up and you have confirmed the window with stakeholders.",
+      "brief": "{{node_name}} is scheduled for DNS migration tonight. You have a maintenance window tonight to migrate the database from pg-primary to pg-replica-01. The replica is fully caught up and you have confirmed the window with stakeholders.",
       "teaches": "A DNS record change only takes effect once the old TTL has expired everywhere, so the TTL must be lowered and allowed to propagate before the record is changed.",
-      "levers": { "step_count": 4, "labels_hint_order": true, "decoy_steps": 0 },
+      "levers": {
+        "step_count": 4,
+        "labels_hint_order": true,
+        "decoy_steps": 0
+      },
       "given": {
         "steps": [
           "Update the A record to point at pg-replica-01",
@@ -15,7 +19,14 @@
           "Once the old TTL window has elapsed, confirm pg-replica-01 is accepting writes and note its IP address for the A record"
         ]
       },
-      "solution": { "order": [1, 2, 3, 0] },
+      "solution": {
+        "order": [
+          1,
+          2,
+          3,
+          0
+        ]
+      },
       "wrong_outcomes": [
         {
           "when": "wrong_order",
@@ -29,9 +40,13 @@
       "id": "cutover_drain_before_switch",
       "minigame": "dns_cutover",
       "difficulty": 4,
-      "brief": "You are migrating live traffic from old-lb-01 to new-lb-01 with zero dropped connections. Both targets are currently in the pool.",
+      "brief": "{{node_name}} traffic is being cut over to a new load balancer. You are migrating live traffic from old-lb-01 to new-lb-01 with zero dropped connections. Both targets are currently in the pool.",
       "teaches": "Active connections to the old target must be fully drained before it is removed, and the new target must pass health checks before any traffic is shifted to it.",
-      "levers": { "step_count": 6, "labels_hint_order": false, "decoy_steps": 2 },
+      "levers": {
+        "step_count": 6,
+        "labels_hint_order": false,
+        "decoy_steps": 2
+      },
       "given": {
         "steps": [
           "Confirm the load balancer reports new-lb-01 healthy — two consecutive 200s on /healthz",
@@ -44,7 +59,16 @@
           "Set the deregistration delay to 0 to speed up the cutover"
         ]
       },
-      "solution": { "order": [1, 0, 2, 5, 3, 6] },
+      "solution": {
+        "order": [
+          1,
+          0,
+          2,
+          5,
+          3,
+          6
+        ]
+      },
       "wrong_outcomes": [
         {
           "when": "wrong_order",
@@ -58,9 +82,13 @@
       "id": "restore_enable_backup",
       "minigame": "restore_drill",
       "difficulty": 2,
-      "brief": "You have just provisioned a new database server. You need to configure and prove the backup agent is working.",
+      "brief": "{{node_name}} (Tier {{current_tier}}) has just been provisioned. You need to configure and prove the backup agent is working.",
       "teaches": "A backup is not configured until its first run has completed and been verified — a schedule entry alone means no backup exists yet.",
-      "levers": { "step_count": 4, "labels_hint_order": true, "decoy_steps": 0 },
+      "levers": {
+        "step_count": 4,
+        "labels_hint_order": true,
+        "decoy_steps": 0
+      },
       "given": {
         "steps": [
           "Trigger the first manual backup run",
@@ -69,7 +97,14 @@
           "Confirm the backup job completed with 0 errors and nonzero bytes written"
         ]
       },
-      "solution": { "order": [2, 0, 3, 1] },
+      "solution": {
+        "order": [
+          2,
+          0,
+          3,
+          1
+        ]
+      },
       "wrong_outcomes": [
         {
           "when": "wrong_order",
@@ -83,9 +118,13 @@
       "id": "restore_verify_then_promote",
       "minigame": "restore_drill",
       "difficulty": 3,
-      "brief": "pg-primary has a corrupted data directory. You have a recent backup. You need to restore service with confidence the data is intact.",
+      "brief": "{{node_name}} has a corrupted data directory. You have a recent backup. You need to restore service with confidence the data is intact.",
       "teaches": "Restoring to a scratch instance and verifying integrity before promotion means corruption is discovered while the old system is still intact — promoting an unverified restore can leave you with bad data and no fallback.",
-      "levers": { "step_count": 5, "labels_hint_order": false, "decoy_steps": 1 },
+      "levers": {
+        "step_count": 5,
+        "labels_hint_order": false,
+        "decoy_steps": 1
+      },
       "given": {
         "steps": [
           "Restore the backup to scratch-pg-01, a temporary non-production instance",
@@ -96,7 +135,15 @@
           "Promote scratch-pg-01 to production by updating the connection string"
         ]
       },
-      "solution": { "order": [0, 3, 4, 5, 1] },
+      "solution": {
+        "order": [
+          0,
+          3,
+          4,
+          5,
+          1
+        ]
+      },
       "wrong_outcomes": [
         {
           "when": "wrong_order",
@@ -110,9 +157,13 @@
       "id": "restore_under_fire",
       "minigame": "restore_drill",
       "difficulty": 5,
-      "brief": "pg-primary is erroring on most queries but still committing some writes. You are performing a PITR restore under a live outage.",
+      "brief": "{{node_name}} is erroring on most queries but still committing some writes. You are performing a PITR restore under a live outage.",
       "teaches": "Post-recovery-target writes to the old primary are lost when the restored instance is promoted, and the WAL archive can recycle segments you still need to fetch if writes continue advancing the LSN.",
-      "levers": { "step_count": 7, "labels_hint_order": false, "decoy_steps": 2 },
+      "levers": {
+        "step_count": 7,
+        "labels_hint_order": false,
+        "decoy_steps": 2
+      },
       "given": {
         "steps": [
           "Apply WAL segments to scratch-pg-01 up to the recovery target LSN",
@@ -126,7 +177,17 @@
           "Promote scratch-pg-01 to primary and update the connection string"
         ]
       },
-      "solution": { "order": [2, 4, 6, 0, 7, 8, 3] },
+      "solution": {
+        "order": [
+          2,
+          4,
+          6,
+          0,
+          7,
+          8,
+          3
+        ]
+      },
       "wrong_outcomes": [
         {
           "when": "wrong_order",
@@ -140,18 +201,29 @@
       "id": "cert_chain_leaf_first",
       "minigame": "cert_chain_puzzle",
       "difficulty": 2,
-      "brief": "Your TLS handshake is failing with 'unable to get local issuer certificate'. The server is presenting only its leaf certificate — the intermediate is missing from the chain file.",
+      "brief": "{{node_name}} is failing TLS handshakes. Your TLS handshake is failing with 'unable to get local issuer certificate'. The server is presenting only its leaf certificate — the intermediate is missing from the chain file.",
       "teaches": "A server must present the full chain from its leaf up to but excluding a trusted root — the client already holds the root, and the common failure is an intermediate that was never presented at all.",
-      "levers": { "step_count": 4, "labels_hint_order": true, "decoy_steps": 0 },
+      "levers": {
+        "step_count": 4,
+        "labels_hint_order": true,
+        "decoy_steps": 0
+      },
       "given": {
         "steps": [
+          "Concatenate leaf then intermediate into the chain file and reload nginx",
           "Read the leaf certificate's Issuer field to identify which intermediate signed it",
-          "Download that intermediate from the CA's published bundle URL",
           "Confirm the intermediate's own Issuer matches a root already present in the client trust store",
-          "Concatenate leaf then intermediate into the chain file and reload nginx"
+          "Download that intermediate from the CA's published bundle URL"
         ]
       },
-      "solution": { "order": [0, 1, 2, 3] },
+      "solution": {
+        "order": [
+          1,
+          3,
+          2,
+          0
+        ]
+      },
       "wrong_outcomes": [
         {
           "when": "wrong_order",
@@ -162,12 +234,92 @@
       "reveal": "A TLS server must present every certificate in the chain from its own leaf up to — but not including — the trusted root. The client already holds the root in its trust store; the root does not need to be transmitted. The common failure is a chain file that contains only the leaf: the client receives the leaf, looks up its Issuer to find who signed it, and finds nothing, producing 'unable to get local issuer certificate'. The fix requires knowing exactly which intermediate signed the leaf — the leaf's own Issuer field names it — then fetching and verifying that intermediate chains to a trusted root before assembling the file."
     },
     {
+      "id": "tier_migration_side_by_side",
+      "minigame": "tier_migration",
+      "difficulty": 3,
+      "brief": "{{node_name}} is moving from Tier {{current_tier}} ({{current_capacity}}) to Tier {{target_tier}} ({{target_capacity}}) during business hours. Traffic cannot drop and nothing may be lost. Put the runbook in order.",
+      "teaches": "A live tier change is a side-by-side swap: build and sync the new capacity first, prove it with a small slice of real traffic, move the rest, and only then retire the old capacity — every step before the last keeps a way back.",
+      "levers": {
+        "step_count": 5,
+        "labels_hint_order": false,
+        "decoy_steps": 0
+      },
+      "given": {
+        "steps": [
+          "Move the remaining traffic to the Tier {{target_tier}} {{node_name}}",
+          "Verify the new tier passes health checks and its sync lag reads 0",
+          "Keep the Tier {{current_tier}} instance idle for 24 h, then decommission it",
+          "Bring up a Tier {{target_tier}} {{node_name}} alongside the current Tier {{current_tier}} and start syncing its state",
+          "Send 10% of traffic to the new tier and compare its error rate and p95 with the old tier"
+        ]
+      },
+      "solution": {
+        "order": [
+          3,
+          1,
+          4,
+          0,
+          2
+        ]
+      },
+      "wrong_outcomes": [
+        {
+          "when": "wrong_order",
+          "shows": "Traffic reaches the Tier {{target_tier}} node before it has synced: 4.2% of requests return stale or missing data, and with the Tier {{current_tier}} node already gone there is nothing to fall back to — error rate holds at 4% for 20 minutes.",
+          "why_wrong": "Traffic can only move to capacity that exists, is synced, and has been proven on a small slice; retiring the old tier early removes the rollback path."
+        }
+      ],
+      "reveal": "Each step buys evidence for the next. Bringing the new tier up alongside the old costs double for an hour but keeps the old path live. Health checks and sync lag prove it can serve correct data; the 10% slice proves it under real traffic, where a regression hurts one request in ten instead of all of them. Only then is moving the rest safe — and the old tier stays idle for 24 h because some failures (slow memory leaks, daily batch jobs) only show up after hours of load."
+    },
+    {
+      "id": "tier_migration_rollback_ready",
+      "minigame": "tier_migration",
+      "difficulty": 3,
+      "brief": "The change board approved upgrading {{node_name}} to Tier {{target_tier}} in tonight's window, on one condition: the change ticket must record the snapshot id and the rollback trigger before anything is applied. Order the steps.",
+      "teaches": "A change is only reversible if the way back is prepared before the change starts: take the restore point first, write the trigger that forces a rollback second, and only then apply and watch against that trigger.",
+      "levers": {
+        "step_count": 5,
+        "labels_hint_order": false,
+        "decoy_steps": 0
+      },
+      "given": {
+        "steps": [
+          "Record the snapshot id in the change ticket together with the rollback trigger: p95 above 2× baseline or error rate above 1% for 5 minutes",
+          "Mark the change complete and release the snapshot after 7 days",
+          "Snapshot {{node_name}}'s Tier {{current_tier}} configuration and data",
+          "Watch p95 and error rate against the rollback trigger for 15 minutes",
+          "Apply the Tier {{target_tier}} change"
+        ]
+      },
+      "solution": {
+        "order": [
+          2,
+          0,
+          4,
+          3,
+          1
+        ]
+      },
+      "wrong_outcomes": [
+        {
+          "when": "wrong_order",
+          "shows": "The Tier {{target_tier}} change is live and p95 has climbed from 90 ms to 310 ms, but there is no snapshot to restore and no agreed trigger — the team argues for 40 minutes about whether to roll back while error rate sits at 2.3%.",
+          "why_wrong": "The snapshot id must exist before it can be written into the ticket, and both must exist before the change is applied — otherwise there is nothing to roll back to and no rule for when to do it."
+        }
+      ],
+      "reveal": "The ordering is forced by dependencies. You cannot record a snapshot id that does not exist yet, so the snapshot comes first. The trigger is written before the change so the rollback decision is made calmly, in advance, not argued about while users are affected. Applying comes third, watching against the pre-agreed trigger fourth, and the snapshot is released only after a week because a restore point is cheap insurance against slow-burning regressions."
+    },
+    {
       "id": "restore_point_in_time",
       "minigame": "restore_drill",
       "difficulty": 3,
-      "brief": "A bad migration ran against pg-primary at 14:36 UTC and corrupted 12 tables. You need to restore to 14:32 UTC using PITR.",
+      "brief": "A bad migration ran against {{node_name}} at 14:36 UTC and corrupted 12 tables. You need to restore to 14:32 UTC using PITR.",
       "teaches": "A point-in-time restore requires the base snapshot applied before the WAL segments, with the recovery target time configured before PostgreSQL starts — otherwise replay overshoots or stops at the wrong point.",
-      "levers": { "step_count": 5, "labels_hint_order": false, "decoy_steps": 1 },
+      "levers": {
+        "step_count": 5,
+        "labels_hint_order": false,
+        "decoy_steps": 1
+      },
       "given": {
         "steps": [
           "Copy the most recent base backup taken before that target timestamp to /var/lib/postgresql/15/recovery/",
@@ -178,7 +330,15 @@
           "Set recovery_target_time = '2026-09-18 14:32:00+00' and restore_command in postgresql.auto.conf, then create the recovery.signal file"
         ]
       },
-      "solution": { "order": [2, 0, 3, 5, 1] },
+      "solution": {
+        "order": [
+          2,
+          0,
+          3,
+          5,
+          1
+        ]
+      },
       "wrong_outcomes": [
         {
           "when": "wrong_order",
@@ -187,6 +347,168 @@
         }
       ],
       "reveal": "Point-in-time recovery in PostgreSQL works in two phases: the base backup establishes the physical cluster state at a known consistent point, then WAL segments are replayed one by one in commit order until the recovery target is reached. The recovery parameters (including recovery_target_time) must be written before PostgreSQL starts, because the process reads them at startup to know where to stop. Note they live in postgresql.auto.conf alongside a recovery.signal file, not in a recovery.conf — that file was removed in PostgreSQL 12, and a modern server that finds one refuses to start at all. The '+00' on the target time is not decoration either: recovery_target_time is interpreted in the server's own TimeZone, so an unqualified literal silently recovers to the wrong instant. If you have gaps in your WAL archive — segments missing between the base backup LSN and the target time — PostgreSQL either stops early or errors out mid-replay. You cannot check archive coverage until you know where the base backup starts — the backup_label file records the START WAL LOCATION that the replay must begin from, and only by copying the backup first can you confirm whether the archive runs continuously all the way to your target."
+    },
+    {
+      "id": "emergency_rollback_steps",
+      "minigame": "tier_migration",
+      "difficulty": 3,
+      "for_actions": [
+        "rollback_deploy"
+      ],
+      "brief": "{{tenant}}-api error rate jumped from 0.3% to 12% at 14:02 UTC when {{deploy_version}} was deployed. Roll back cleanly to restore service.",
+      "teaches": "Read the revision history before issuing the undo — rolling back past a clean revision re-introduces a previous bug. Verify the error rate after rollback; closing before confirmation lets a concurrent failure go unnoticed.",
+      "levers": {
+        "step_count": 4,
+        "labels_hint_order": false,
+        "decoy_steps": 1
+      },
+      "given": {
+        "steps": [
+          "Confirm the 5-minute error rate on {{tenant}}-api has returned to pre-deploy baseline",
+          "Read the rollout history to confirm which revision predates {{deploy_version}}: `kubectl rollout history deployment/{{tenant}}-api`",
+          "Scale {{tenant}}-api to 0 replicas until the root cause is fully investigated",
+          "Roll back to the revision before {{deploy_version}}: `kubectl rollout undo deployment/{{tenant}}-api --to-revision={{revision - 1}}`",
+          "Watch all pods reach Ready: `kubectl rollout status deployment/{{tenant}}-api`"
+        ]
+      },
+      "solution": {
+        "order": [
+          1,
+          3,
+          4,
+          0
+        ]
+      },
+      "wrong_outcomes": [
+        {
+          "when": "wrong_order",
+          "shows": "Rollback issued before history was read. Revision {{revision - 1}} contained a separate hotfix that went unconfirmed — the rollback overshot. Error rate drops from 12% to 2.1% but does not clear. A second incident opens 8 minutes later.",
+          "why_wrong": "Issuing undo without reading history first risks rolling back past a prior fix. The history step establishes which revision is clean before the undo lands."
+        }
+      ],
+      "reveal": "kubectl rollout undo --to-revision targets a specific entry in the rollout history. Each revision is a snapshot of the pod template. Without reading the history first you cannot confirm whether revision {{revision - 1}} was itself clean — a rollback that overshoots a good revision trades one regression for another. Scaling to zero replicas takes all pods offline rather than rolling them back, creating a complete outage instead of a graceful recovery. The verify step is not optional: the error rate might drop but not fully recover if a second independent issue exists."
+    },
+    {
+      "id": "credential_breach_steps",
+      "minigame": "cert_chain_puzzle",
+      "difficulty": 2,
+      "for_actions": [
+        "rotate_credentials"
+      ],
+      "brief": "An API key belonging to the {{tenant}} service was found in a public git repository 20 minutes ago. The key controls write access to the {{tenant}} object store in {{region}}. Contain the breach.",
+      "teaches": "Issue the new credential and update the application before revoking the old one — revoking first creates an outage window. Flush sessions after the credential is live, not before, to force re-authentication on the new key.",
+      "levers": {
+        "step_count": 4,
+        "labels_hint_order": true,
+        "decoy_steps": 1
+      },
+      "given": {
+        "steps": [
+          "Flush the {{tenant}} sessions database to force all clients to re-authenticate with the new credential",
+          "Monitor for 24 hours before acting — the attacker may not have found the key yet",
+          "Revoke the exposed old API key in the IAM console",
+          "Generate a new API key for the {{tenant}} service account in {{region}}",
+          "Update the {{tenant}}-api deployment to use the new key: `kubectl set env deploy/{{tenant}}-api OBJECT_STORE_KEY=$NEW_KEY`"
+        ]
+      },
+      "solution": {
+        "order": [
+          3,
+          4,
+          2,
+          0
+        ]
+      },
+      "wrong_outcomes": [
+        {
+          "when": "wrong_order",
+          "shows": "Old key revoked before the new key was deployed. {{tenant}}-api returns 403 Forbidden on all object-store writes for 4 minutes while the new key is being pushed. 218 user uploads fail with no retry.",
+          "why_wrong": "Revoking the old key before the application holds the new one creates a window where neither key is valid and every authenticated request fails."
+        }
+      ],
+      "reveal": "The order is forced by a dependency: the application cannot use the new key until it is deployed, so the new key must be generated first and pushed to the deployment before the old key is revoked. Revoking first creates a window where neither key is valid and all authenticated requests fail. Once the application is running on the new key, the old key can be safely revoked. Sessions are flushed last — after the new credential is live — so clients re-authenticate against the new key rather than the already-revoked one."
+    },
+    {
+      "id": "ddos_mitigation_steps",
+      "minigame": "tier_migration",
+      "difficulty": 3,
+      "for_actions": [
+        "enable_rate_limit"
+      ],
+      "brief": "{{tenant}}-api is under an HTTP flood. Traffic analysis shows 93% of requests in the last 2 minutes originate from the 203.0.{{ip_octet}}.0/24 subnet. Mitigate without blocking legitimate users.",
+      "teaches": "Confirm the attack source from live traffic data before applying blocks — acting on stale data may block legitimate traffic. Apply rate-limiting before IP blocks: rate-limiting degrades the attack gracefully while blocks are binary.",
+      "levers": {
+        "step_count": 4,
+        "labels_hint_order": false,
+        "decoy_steps": 1
+      },
+      "given": {
+        "steps": [
+          "Verify legitimate traffic from other source IPs is still being served normally",
+          "Immediately scale {{tenant}}-api to 0 replicas to stop all traffic until the attack subsides",
+          "Block 203.0.{{ip_octet}}.0/24 at the WAF level",
+          "Confirm the attack source: `kubectl logs deploy/{{tenant}}-api | awk '{print $1}' | sort | uniq -c | sort -rn | head -5`",
+          "Apply rate-limit rules targeting 203.0.{{ip_octet}}.0/24: `kubectl apply -f rate-limit-203.0.{{ip_octet}}.yaml`"
+        ]
+      },
+      "solution": {
+        "order": [
+          3,
+          4,
+          2,
+          0
+        ]
+      },
+      "wrong_outcomes": [
+        {
+          "when": "wrong_order",
+          "shows": "{{tenant}}-api scaled to 0 replicas. Legitimate traffic from 34 countries drops to 0. Attack subsides after 18 minutes. Total legitimate-traffic outage: 18 minutes 46 seconds — longer than the attack itself.",
+          "why_wrong": "Scaling to zero replicas is an outage, not a mitigation. It inflicts 100% downtime to stop an attack that would have caused partial degradation."
+        }
+      ],
+      "reveal": "Scaling to zero replicas stops the attack by stopping the service — every legitimate user is also blocked. Rate-limiting is proportional: a legitimate user who happens to share a subnet gets a degraded experience, not a block. IP-level blocks are binary and more likely to catch edge-of-subnet legitimate traffic. Confirming from live logs first avoids acting on cached data where the 203.0.{{ip_octet}}.0/24 attribution may have been from minutes ago. The final verify step is required because blocks applied mid-attack may have caught legitimate IPs at the subnet boundary."
+    },
+    {
+      "id": "db_failover_steps",
+      "minigame": "dns_cutover",
+      "difficulty": 4,
+      "for_actions": [
+        "failover"
+      ],
+      "brief": "pg-primary in {{region}} stopped accepting connections 4 minutes ago. pg-replica-{{tenant}}-01 was fully caught up 90 seconds ago. Promote it to primary with zero data loss.",
+      "teaches": "Stop all application writes before promoting — promotion diverges the timeline and any writes on the old primary after that point are lost. Confirm lag is zero before promoting, not after.",
+      "levers": {
+        "step_count": 5,
+        "labels_hint_order": false,
+        "decoy_steps": 1
+      },
+      "given": {
+        "steps": [
+          "Verify {{tenant}}-api is accepting both reads and writes against the promoted primary",
+          "Promote pg-replica-{{tenant}}-01 immediately: `pg_ctl promote -D /var/lib/postgresql/data`",
+          "Update DATABASE_URL across all {{tenant}} deployments to point to pg-replica-{{tenant}}-01",
+          "Set all {{tenant}}-api pods to read-only mode to stop writes from reaching pg-primary",
+          "Promote pg-replica-{{tenant}}-01 to primary: `pg_ctl promote -D /var/lib/postgresql/data`",
+          "Confirm pg-replica-{{tenant}}-01 shows 0 replication lag: `SELECT now() - pg_last_xact_replay_timestamp() AS lag`"
+        ]
+      },
+      "solution": {
+        "order": [
+          3,
+          5,
+          4,
+          2,
+          0
+        ]
+      },
+      "wrong_outcomes": [
+        {
+          "when": "wrong_order",
+          "shows": "pg-replica-{{tenant}}-01 promoted before writes were stopped. The old primary committed 3 transactions during the promotion window. Those 3 rows in the `orders` table are not in pg-replica-{{tenant}}-01's timeline and cannot be recovered.",
+          "why_wrong": "Promoting before stopping writes creates two diverged sources of truth. Any transaction committed on the old primary after the replica's last received LSN is gone from the promoted node's history."
+        }
+      ],
+      "reveal": "A replica's WAL stream stops the moment it is promoted to primary. Any transaction committed on the old primary after the replica's last received LSN is not in the replica's history and cannot be recovered. Stopping all application writes first freezes the old primary's LSN, then you confirm the replica is caught up to exactly that position before promoting. The lag check comes before the promotion step: running it after is too late. The connection string update comes last so applications connect only when writes are guaranteed to land on the new primary."
     }
   ]
 }

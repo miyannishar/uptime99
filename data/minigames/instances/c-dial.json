@@ -4,7 +4,7 @@
       "id": "queue_workers_for_arrival",
       "minigame": "queue_triage",
       "difficulty": 2,
-      "brief": "Queue depth is 14,200 and climbing. Consumers are keeping up with less than half the inbound.",
+      "brief": "{{node_name}} queue depth is at 14,200 and climbing. Consumers are keeping up with less than half the inbound.",
       "teaches": "A queue only drains when total consumer throughput exceeds the arrival rate; below that line the backlog grows no matter how long you wait.",
       "levers": {
         "tolerance_pct": 0,
@@ -13,6 +13,10 @@
       },
       "given": {
         "table": [
+          {
+            "label": "Node",
+            "value": "{{node_name}}"
+          },
           {
             "label": "Arrival rate",
             "value": "4,800 msg/s"
@@ -57,7 +61,7 @@
       "id": "queue_drain_with_deadline",
       "minigame": "queue_triage",
       "difficulty": 3,
-      "brief": "A consumer deployment was rolled back four hours ago and nobody scaled the replacement. 198,000 orders are queued and the fulfilment SLA gives you 15 minutes to clear them. The consumers share the order database's connection pool.",
+      "brief": "{{node_name}} has a 198,000-message backlog due to a deployment rollback four hours ago. The fulfilment SLA gives you 15 minutes to clear them. The consumers share the order database's connection pool.",
       "teaches": "Clearing a backlog against a deadline needs throughput above the arrival rate plus the backlog divided by the time remaining \u2014 and the surge you provision is still bounded by whatever downstream resource the consumers share.",
       "levers": {
         "tolerance_pct": 10,
@@ -66,6 +70,10 @@
       },
       "given": {
         "table": [
+          {
+            "label": "Node",
+            "value": "{{node_name}}"
+          },
           {
             "label": "Arrival rate",
             "value": "3,600 msg/s"
@@ -122,7 +130,7 @@
       "id": "threshold_cpu_autoscale",
       "minigame": "threshold_tuning",
       "difficulty": 2,
-      "brief": "Traffic has been growing all week. The autoscaler is set to add pods at 85% CPU, and every scale-up so far has arrived after latency had already breached the SLO.",
+      "brief": "{{node_name}} (Tier {{current_tier}}) autoscaler is triggering too late. Traffic has been growing all week. The autoscaler is set to add pods at 85% CPU, and every scale-up so far has arrived after latency had already breached the SLO.",
       "teaches": "A scale-up trigger must fire early enough that the new capacity is serving traffic before load reaches the point where latency degrades \u2014 the provisioning delay, not the saturation point, sets the threshold.",
       "levers": {
         "tolerance_pct": 0,
@@ -131,6 +139,10 @@
       },
       "given": {
         "table": [
+          {
+            "label": "Node",
+            "value": "{{node_name}}"
+          },
           {
             "label": "p95 latency at 55% CPU",
             "value": "140 ms"
@@ -187,7 +199,7 @@
       "id": "threshold_alert_on_burn",
       "minigame": "threshold_tuning",
       "difficulty": 3,
-      "brief": "The error-rate alert pages on any five-minute window above 0.5% errors. It has fired nine times this month, every time during a marketing spike, and every time it was nothing. Eighteen days in, you are replacing it with an error-budget burn-rate alert and have to pick the rate that pages.",
+      "brief": "{{node_name}} error-rate alerting is too noisy. The error-rate alert pages on any five-minute window above 0.5% errors. It has fired nine times this month, every time during a marketing spike, and every time it was nothing. Eighteen days in, you are replacing it with an error-budget burn-rate alert and have to pick the rate that pages.",
       "teaches": "Page on error-budget burn rate rather than raw error rate, and set the trigger above the highest burn your benign traffic already produces \u2014 an alert that fires on ordinary noise trains its own audience to ignore it, which costs more than having no alert.",
       "levers": {
         "tolerance_pct": 10,
@@ -196,6 +208,10 @@
       },
       "given": {
         "table": [
+          {
+            "label": "Node",
+            "value": "{{node_name}}"
+          },
           {
             "label": "SLO",
             "value": "99.9% availability over a 30-day window"
@@ -248,7 +264,7 @@
       "id": "sizing_memory_headroom",
       "minigame": "resource_sizing",
       "difficulty": 2,
-      "brief": "The payment service has been OOM-killing pods twice a day for the past week. Memory profiling shows average RSS of 1.8 GB and a peak observed RSS of 2.4 GB under high traffic. GC pressure at peak is causing the kills \u2014 the compaction cycle needs working space that the current 2.5 GB limit does not provide.",
+      "brief": "{{node_name}} (Tier {{current_tier}}) is OOM-killing pods twice a day. Memory profiling shows average RSS of 1.8 GB and a peak observed RSS of 2.4 GB under high traffic. GC pressure at peak is causing the kills \u2014 the compaction cycle needs working space that the current 2.5 GB limit does not provide.",
       "teaches": "Size memory limits to peak observed usage plus a GC headroom buffer, not to average \u2014 average RSS tells you nothing about the burst the garbage collector needs during heap compaction, and that burst is when the OOM killer fires.",
       "levers": {
         "tolerance_pct": 0,
@@ -257,6 +273,10 @@
       },
       "given": {
         "table": [
+          {
+            "label": "Node",
+            "value": "{{node_name}}"
+          },
           {
             "label": "Average RSS",
             "value": "1.8 GB"
@@ -305,8 +325,8 @@
       "id": "capacity_tier_for_growth",
       "minigame": "capacity_planning",
       "difficulty": 3,
-      "brief": "The API gateway is running on Tier 2 at 730 rps average, rising 12 rps each day as new customers onboard. Provisioning a tier migration takes 14 days. Finance has approved a monthly spend ceiling of $2,000. You need to select the destination tier before current capacity is exhausted.",
-      "teaches": "Pick the cheapest tier whose capacity survives the full provisioning window at the measured growth rate \u2014 committing to excess capacity wastes budget, but selecting a tier that fills up mid-migration forces an emergency re-provision at emergency prices.",
+      "brief": "{{node_name}} is on Tier {{current_tier}}, currently at {{utilization_pct}}% of its {{current_capacity}} capacity. Provisioning a tier migration takes 14 days. Tier {{target_tier}} raises capacity to {{target_capacity}} at ${{target_cost}}/month. Select the destination tier that handles projected load without exceeding the approved spend ceiling.",
+      "teaches": "Pick the cheapest tier whose capacity covers the full provisioning window \u2014 committing to excess capacity wastes budget, but selecting a tier that fills up mid-migration forces an emergency re-provision at premium rates.",
       "levers": {
         "tolerance_pct": 10,
         "table_complete": true,
@@ -314,75 +334,37 @@
       },
       "given": {
         "table": [
-          {
-            "label": "Current RPS (today)",
-            "value": "730 rps"
-          },
-          {
-            "label": "Daily growth rate",
-            "value": "12 rps per day"
-          },
-          {
-            "label": "Provisioning window",
-            "value": "14 days"
-          },
-          {
-            "label": "Monthly spend ceiling",
-            "value": "$2,000"
-          },
-          {
-            "label": "Tier 1",
-            "value": "500 rps \u00b7 $400/month"
-          },
-          {
-            "label": "Tier 2",
-            "value": "750 rps \u00b7 $750/month"
-          },
-          {
-            "label": "Tier 3",
-            "value": "1,000 rps \u00b7 $1,400/month"
-          },
-          {
-            "label": "Tier 4",
-            "value": "1,500 rps \u00b7 $2,400/month"
-          },
-          {
-            "label": "Tier 5",
-            "value": "2,500 rps \u00b7 $3,800/month"
-          },
-          {
-            "label": "Tier 6",
-            "value": "4,000 rps \u00b7 $6,200/month"
-          }
+          { "label": "Node", "value": "{{node_name}}" },
+          { "label": "Current tier", "value": "Tier {{current_tier}} \u00b7 {{current_capacity}} \u00b7 ${{current_cost}}/month" },
+          { "label": "Target tier", "value": "Tier {{target_tier}} \u00b7 {{target_capacity}} \u00b7 ${{target_cost}}/month" },
+          { "label": "Current utilization", "value": "{{utilization_pct}}%" },
+          { "label": "Provisioning window", "value": "14 days" }
         ],
         "unit": "tier",
-        "range": {
-          "min": 1,
-          "max": 6
-        }
+        "range": { "min": 1, "max": 4 }
       },
       "solution": {
-        "value": 3
+        "value": "{{target_tier}}"
       },
       "wrong_outcomes": [
         {
           "when": "below",
-          "shows": "Migration begins. On day 2 load reaches 754 rps and Tier 2 is already past its 750 rps ceiling; by day 9 it is 838 rps against a tier that stopped coping a week earlier. Requests start shedding. A second emergency migration opens but provisioning takes another 14 days. The service runs saturated for 5 days before the new capacity arrives.",
-          "why_wrong": "Tier 2 capacity is 750 rps. By the end of the 14-day provisioning window, load will be 730 plus 168, or 898 rps \u2014 past the ceiling. You saturate mid-migration and must reprovision at emergency rates."
+          "shows": "Migration begins but current utilization exceeds the selected tier's capacity before provisioning completes. Requests start failing on day 3. A second emergency migration opens \u2014 another 14-day window at emergency pricing.",
+          "why_wrong": "The selected tier capacity is below current load. Tier {{target_tier}} ({{target_capacity}}) is the minimum that handles {{utilization_pct}}% of {{current_capacity}}."
         },
         {
           "when": "above",
-          "shows": "Tier 4 is provisioned cleanly and handles the growth with ease. Monthly spend lands at $2,400 \u2014 $400 over the approved ceiling. Finance flags the overrun at month-end and freezes the infrastructure budget for Q4.",
-          "why_wrong": "Tier 4 covers the growth window on capacity but costs $2,400/month, exceeding the $2,000 ceiling. Tier 3 handles the same window at $1,400/month, $600 under budget, with 102 rps of headroom to spare."
+          "shows": "The higher tier handles load with room to spare, but monthly cost jumps above the approved ceiling. Finance flags the overrun and freezes the infrastructure budget for the quarter.",
+          "why_wrong": "Tier {{target_tier}} covers the load at ${{target_cost}}/month. A higher tier adds capacity you do not need at cost you did not budget for."
         }
       ],
-      "reveal": "Load at the end of the provisioning window: 730 + (12 \u00d7 14) = 730 + 168 = 898 rps. The new tier must handle at least 898 rps. Tier 2 (750 rps) is already saturated at that point. Tier 3 (1,000 rps) fits and costs $1,400/month \u2014 inside the $2,000 ceiling. Tier 4 (1,500 rps) also handles 898 rps, but at $2,400/month it breaches the budget. Tier 3 is the only tier that satisfies both the growth constraint and the budget constraint. The second constraint is the spend ceiling, and without it Tier 4 would look like a safer choice; the gap between 'covers the load' and 'fits the budget' is precisely where this decision lives."
+      "reveal": "{{node_name}} at Tier {{current_tier}} is at {{utilization_pct}}% capacity ({{current_capacity}}). Tier {{target_tier}} raises capacity to {{target_capacity}} \u2014 enough headroom \u2014 at ${{target_cost}}/month. That is the minimum viable upgrade. A higher tier handles the same load at unnecessary additional cost."
     },
     {
       "id": "threshold_ratelimit_budget",
       "minigame": "threshold_tuning",
       "difficulty": 3,
-      "brief": "The search API has no inbound rate limit and is hit by credential-stuffing bots roughly twice a month. Each event saturates the service, triggers SLA penalties, and pages the on-call team at 3 a.m. You are setting a gateway rate limit on total inbound traffic \u2014 high enough to pass all legitimate users at peak, low enough to stop the service saturating before the bot is noticed.",
+      "brief": "{{node_name}} has no inbound rate limit and is hit by credential-stuffing bots roughly twice a month. Each event saturates the service, triggers SLA penalties, and pages the on-call team at 3 a.m. You are setting a gateway rate limit on total inbound traffic \u2014 high enough to pass all legitimate users at peak, low enough to stop the service saturating before the bot is noticed.",
       "teaches": "A rate limit must sit above legitimate peak traffic and below the service saturation point \u2014 setting it below legitimate peak rejects paying users, and setting it above the saturation point offers no protection when abuse arrives.",
       "levers": {
         "tolerance_pct": 0,
@@ -391,6 +373,10 @@
       },
       "given": {
         "table": [
+          {
+            "label": "Node",
+            "value": "{{node_name}}"
+          },
           {
             "label": "Registered active users",
             "value": "40,000"
@@ -455,7 +441,7 @@
       "id": "queue_dlq_retry_ceiling",
       "minigame": "queue_triage",
       "difficulty": 2,
-      "brief": "The order processing queue sees roughly four poison messages per week \u2014 corrupted payloads that will never deserialise. The current max-retries setting of 25 blocks each partition for over 12 minutes before the message finally reaches the DLQ. The partition SLA is 5 minutes.",
+      "brief": "{{node_name}} queue has a misconfigured retry ceiling causing SLA violations. Roughly four poison messages per week block each partition for over 12 minutes before reaching the DLQ. The partition SLA is 5 minutes.",
       "teaches": "Set the retry ceiling to the maximum that fits the partition lag SLA, not to an arbitrary round number \u2014 it must exhaust all transient-error recovery time without blocking the partition past the point where downstream penalties begin.",
       "levers": {
         "tolerance_pct": 0,
@@ -464,6 +450,10 @@
       },
       "given": {
         "table": [
+          {
+            "label": "Node",
+            "value": "{{node_name}}"
+          },
           {
             "label": "Processing timeout per attempt",
             "value": "8 s"
@@ -520,7 +510,7 @@
       "id": "sizing_cpu_requests",
       "minigame": "resource_sizing",
       "difficulty": 2,
-      "brief": "An API service is throttling intermittently, causing p99 latency spikes to 800ms. CPU profiling shows steady-state usage of 190m cores with bursts to 340m under load. The current CPU request is 150m, which means Kubernetes is throttling the container when it tries to burst.",
+      "brief": "{{node_name}} (Tier {{current_tier}}) is being CPU-throttled intermittently, causing p99 latency spikes to 800ms. CPU profiling shows steady-state usage of 190m cores with bursts to 340m under load. The current CPU request is 150m, which means Kubernetes is throttling the container when it tries to burst.",
       "teaches": "CPU requests in Kubernetes are specified in millicores and should be set to steady-state usage rounded up to the nearest 25m step. The limit handles bursts; the request guarantees baseline capacity.",
       "levers": {
         "tolerance_pct": 0,
@@ -529,6 +519,10 @@
       },
       "given": {
         "table": [
+          {
+            "label": "Node",
+            "value": "{{node_name}}"
+          },
           {
             "label": "Steady-state CPU",
             "value": "190m",
@@ -578,6 +572,239 @@
         }
       ],
       "reveal": "The correct CPU request is 200m: 190m steady-state rounded up to the nearest 25m step. The request guarantees those cores under normal load; the limit of 500m allows burst to 340m. Setting requests at peak wastes capacity \u2014 requests are reservations, limits are ceilings."
+    },
+    {
+      "id": "capacity_spike_peak_load",
+      "minigame": "capacity_planning",
+      "difficulty": 3,
+      "brief": "{{node_name}} is on Tier {{current_tier}} at {{utilization_pct}}% of its {{current_capacity}}. A product launch in 14 days is projected to bring a 3\u00d7 traffic spike for 6 hours. Infrastructure policy requires 25% capacity headroom above peak. Confirm the right destination tier.",
+      "teaches": "For spike events, size to the sustained peak plus the headroom policy \u2014 not average load, not the maximum budget allows. The right tier is the cheapest one that covers peak load with required headroom.",
+      "levers": {
+        "tolerance_pct": 0,
+        "table_complete": true,
+        "second_constraint": false
+      },
+      "given": {
+        "table": [
+          { "label": "Node", "value": "{{node_name}}" },
+          { "label": "Tier {{current_tier}} (current)", "value": "{{current_capacity}} \u00b7 ${{current_cost}}/month" },
+          { "label": "Tier {{target_tier}}", "value": "{{target_capacity}} \u00b7 ${{target_cost}}/month" },
+          { "label": "Current utilization", "value": "{{utilization_pct}}%" },
+          { "label": "Projected peak", "value": "3\u00d7 normal traffic (+ 25% headroom policy)" },
+          { "label": "Provisioning window", "value": "14 days" }
+        ],
+        "unit": "tier",
+        "range": { "min": 1, "max": 4 }
+      },
+      "solution": { "value": "{{target_tier}}" },
+      "wrong_outcomes": [
+        {
+          "when": "below",
+          "shows": "Migration completes. At 2.5\u00d7 normal traffic, {{node_name}} is already at 97% capacity. By 3\u00d7 peak it saturates, request queues form, and latency climbs past the SLO. A second emergency migration is opened mid-event.",
+          "why_wrong": "3\u00d7 load + 25% headroom = 3.75\u00d7 current load. Tier {{current_tier}} ({{current_capacity}}) cannot absorb 3.75\u00d7 of its capacity ceiling."
+        },
+        {
+          "when": "above",
+          "shows": "{{node_name}} handles the launch with ease \u2014 at 3\u00d7 peak you are at 30% capacity. Monthly cost is well above what the event requires. Post-launch, you are running two tiers of headroom you will not use.",
+          "why_wrong": "Tier {{target_tier}} ({{target_capacity}}) handles the 3.75\u00d7 requirement. Jumping further costs more without benefit."
+        }
+      ],
+      "reveal": "3\u00d7 load + 25% headroom = 3.75\u00d7 current load. Tier {{current_tier}} ({{current_capacity}}) saturates at 3\u00d7 normal. Tier {{target_tier}} ({{target_capacity}}) handles 3.75\u00d7 with margin at ${{target_cost}}/month \u2014 sized to the event, not beyond it."
+    },
+    {
+      "id": "capacity_cost_ceiling",
+      "minigame": "capacity_planning",
+      "difficulty": 3,
+      "brief": "{{node_name}} is on Tier {{current_tier}} at {{utilization_pct}}% of its {{current_capacity}}. Traffic is growing 12% per month. Finance has approved up to ${{target_cost}}/month for this node. Select the tier that covers 90-day growth while staying within the approved budget ceiling.",
+      "teaches": "Capacity planning requires both a load projection and a cost constraint. The right tier is the cheapest one that handles the forecast load, not the most capable one the budget technically allows.",
+      "levers": {
+        "tolerance_pct": 0,
+        "table_complete": true,
+        "second_constraint": true
+      },
+      "given": {
+        "table": [
+          { "label": "Node", "value": "{{node_name}}" },
+          { "label": "Tier {{current_tier}} (current)", "value": "{{current_capacity}} \u00b7 ${{current_cost}}/month" },
+          { "label": "Tier {{target_tier}}", "value": "{{target_capacity}} \u00b7 ${{target_cost}}/month" },
+          { "label": "Current utilization", "value": "{{utilization_pct}}%" },
+          { "label": "90-day growth estimate", "value": "~40% higher load (12%/month compounded)" },
+          { "label": "Finance ceiling", "value": "${{target_cost}}/month" },
+          { "label": "Provisioning window", "value": "14 days" }
+        ],
+        "unit": "tier",
+        "range": { "min": 1, "max": 4 }
+      },
+      "solution": { "value": "{{target_tier}}" },
+      "wrong_outcomes": [
+        {
+          "when": "below",
+          "shows": "You stayed at the current tier. At 12% monthly growth compounded, load will be 40% higher in 90 days. If you are already above 60% utilization today, that hits the 80% saturation threshold within the quarter \u2014 another emergency upgrade window.",
+          "why_wrong": "No migration was triggered. Tier {{current_tier}} will hit the saturation threshold within 90 days at the measured growth rate."
+        },
+        {
+          "when": "above",
+          "shows": "The tier above the budget ceiling would handle the load, but Finance has not approved the cost. The change is blocked at review, delaying the migration by 3 weeks while approvals are sought.",
+          "why_wrong": "Tier {{target_tier + 1}} exceeds the ${{target_cost}}/month ceiling Finance approved. The right tier is the one that handles the load within the approved budget."
+        }
+      ],
+      "reveal": "12% monthly growth compounded over 90 days = \u00d71.40 load. Tier {{target_tier}} ({{target_capacity}}) handles the 40% growth projection at ${{target_cost}}/month \u2014 within the Finance ceiling. The tier above costs more and was not approved; the current tier saturates within the quarter."
+    },
+    {
+      "id": "threshold_queue_depth_alert",
+      "minigame": "threshold_tuning",
+      "difficulty": 2,
+      "brief": "{{node_name}} queue depth alert is firing during normal batch processing windows \u2014 4 pages per week for non-incidents. Set a threshold that only fires when the queue is genuinely building toward a consumer backlog, not during expected burst windows.",
+      "teaches": "Alert thresholds must clear normal variation (including legitimate spikes like batch jobs) while triggering before actual harm. The ideal threshold is the midpoint of the gap between highest-normal and lowest-harmful \u2014 maximum margin in both directions.",
+      "levers": {
+        "tolerance_pct": 20,
+        "table_complete": true,
+        "second_constraint": false
+      },
+      "given": {
+        "table": [
+          { "label": "Node", "value": "{{node_name}}" },
+          { "label": "Off-peak queue depth (normal)", "value": "12 messages" },
+          { "label": "Peak queue depth (business hours)", "value": "45 messages" },
+          { "label": "Batch job burst depth (daily 02:00)", "value": "85 messages" },
+          { "label": "Last 3 genuine incident depths", "value": "200, 320, 280 messages" },
+          { "label": "Queue depth at consumer saturation", "value": "400 messages" },
+          { "label": "Alert goal", "value": "Page before saturation, after all batch bursts have resolved" }
+        ],
+        "unit": "messages",
+        "range": { "min": 0, "max": 500 }
+      },
+      "solution": { "value": 142 },
+      "wrong_outcomes": [
+        {
+          "when": "below",
+          "shows": "On-call pages rise throughout the week. At 85 or below, the alert fires during routine daily batch processing windows. Between 86 and 113, the threshold is within 28 messages of the batch burst ceiling \u2014 brief batch overruns or end-of-window queue accumulation can push depth past this mark. After three false pages in a week, on-call begins acknowledging queue-depth alerts without investigating. A real incident builds to depth 320 before anyone checks.",
+          "why_wrong": "A threshold below 114 is either inside the batch-job burst range (0\u201385) or within 28 messages of the batch ceiling (86\u2013113). The margin above the burst is too small \u2014 queue variation fires false pages, eroding on-call trust before a real incident arrives."
+        },
+        {
+          "when": "above",
+          "shows": "The queue builds to dangerous depths before the alert fires. With 30 or fewer messages between the threshold and the lowest recorded incident depth (200), genuine backlogs are already established when the page arrives. Response begins too late \u2014 consumer queues are above 300 messages and SLO penalties accumulate before the drain is complete.",
+          "why_wrong": "A threshold above 170 is within 30 messages of the lowest recorded incident depth (200). By the time it fires, the queue is near or past genuine backlog levels \u2014 there is no early warning window left."
+        }
+      ],
+      "reveal": "The threshold must sit well above the batch burst ceiling (85 messages) and well below the lowest observed incident depth (200). 142 is the midpoint of the 85\u2013200 gap \u2014 the point of maximum margin in both directions. Values between 114 and 170 are accepted: above all batch activity with a clear buffer, and below the incident zone with time to respond."
+    },
+    {
+      "id": "threshold_storage_forecast",
+      "minigame": "threshold_tuning",
+      "difficulty": 3,
+      "brief": "{{node_name}} disk is filling at a predictable rate. Set the alert threshold to page exactly 7 days before full \u2014 3 days to provision new storage, 4 days for the SRE team to act. Calculate when 7 days-before-full occurs as a percentage.",
+      "teaches": "Forecast-based alerts fire at (total - lead_time \u00d7 daily_rate) / total. Work backwards from your required action time, not forward from current usage.",
+      "levers": {
+        "tolerance_pct": 0,
+        "table_complete": true,
+        "second_constraint": true
+      },
+      "given": {
+        "table": [
+          { "label": "Node", "value": "{{node_name}}" },
+          { "label": "Total disk", "value": "3,000 GB" },
+          { "label": "Currently used", "value": "2,160 GB (72%)" },
+          { "label": "Daily growth rate", "value": "40 GB/day (measured, last 30 days)" },
+          { "label": "Time to full at current rate", "value": "21 days" },
+          { "label": "Provisioning lead time", "value": "3 days" },
+          { "label": "On-call response time budget", "value": "4 days" },
+          { "label": "Required warning window", "value": "3 + 4 = 7 days before full" }
+        ],
+        "unit": "% full",
+        "range": { "min": 50, "max": 99 }
+      },
+      "solution": { "value": 91 },
+      "wrong_outcomes": [
+        {
+          "when": "below",
+          "shows": "Alert fires with 17 days remaining. The SRE team opens a ticket, but provisioning isn't urgent \u2014 the ticket sits for 12 days before a junior engineer picks it up. New storage arrives 1 day before the disk fills, triggering an emergency change window over the weekend.",
+          "why_wrong": "Too much warning lead time. SREs deprioritise tickets that appear to have weeks of runway \u2014 the urgency signal is too early to drive timely action."
+        },
+        {
+          "when": "above",
+          "shows": "Alert fires with 4 days remaining. Provisioning takes 3 days. The storage arrives with 1 day to spare, but the deployment and verification steps take the remaining day \u2014 the disk fills during the migration window.",
+          "why_wrong": "Only 4 days of warning. Provisioning alone takes 3 days, leaving 1 day for deployment, validation, and any delay \u2014 not enough buffer."
+        }
+      ],
+      "reveal": "7 days \u00d7 40 GB/day = 280 GB of growth remaining when alert fires. 3,000 GB \u2212 280 GB = 2,720 GB used at alert time. 2,720 \u00f7 3,000 = 90.7% \u2192 round up to 91% to ensure the alert fires before, not after, the 7-day mark."
+    },
+    {
+      "id": "sizing_burst_memory",
+      "minigame": "resource_sizing",
+      "difficulty": 2,
+      "brief": "{{node_name}} (Tier {{current_tier}}) is OOM-killing pods during traffic spikes. Memory profiling shows three distinct usage tiers. Set the memory limit that prevents OOM kills while respecting the GC headroom rule and the co-tenant allocation ceiling.",
+      "teaches": "Memory limits must cover p99 burst plus the GC headroom percentage \u2014 never average or p50. The GC headroom is above the observed peak, not above normal operating level. The co-tenant ceiling is a hard upper bound set by the node pool.",
+      "levers": {
+        "tolerance_pct": 0,
+        "table_complete": true,
+        "second_constraint": true
+      },
+      "given": {
+        "table": [
+          { "label": "Node", "value": "{{node_name}}" },
+          { "label": "Baseline RSS (idle)", "value": "1.2 GB" },
+          { "label": "p50 traffic RSS", "value": "2.1 GB" },
+          { "label": "p95 traffic burst RSS", "value": "3.4 GB" },
+          { "label": "p99 traffic burst RSS", "value": "4.1 GB" },
+          { "label": "GC headroom rule", "value": "25% above measured peak (p99)" },
+          { "label": "Maximum safe allocation (co-tenant ceiling)", "value": "6 GB" }
+        ],
+        "unit": "GB",
+        "range": { "min": 1, "max": 8 }
+      },
+      "solution": { "value": 6 },
+      "wrong_outcomes": [
+        {
+          "when": "below",
+          "shows": "GC needs 5.125 GB at p99 load (4.1 \u00d7 1.25). Any limit below 6 GB leaves insufficient room for GC work \u2014 long pauses trigger and pods restart under sustained peak load.",
+          "why_wrong": "p99 RSS (4.1 GB) \u00d7 1.25 = 5.125 GB minimum. Any limit below 6 GB violates the GC headroom rule, leaving the collector without the working space it needs to compact the heap."
+        },
+        {
+          "when": "above",
+          "shows": "Memory limit set above 6 GB. During routine deployment, the node runs out of allocatable memory \u2014 co-tenant pods are evicted to make room. The deployment triggers a node-level incident.",
+          "why_wrong": "The co-tenant ceiling is 6 GB. Exceeding it causes eviction pressure for other pods on the same node."
+        }
+      ],
+      "reveal": "p99 RSS \u00d7 (1 + GC headroom) = 4.1 \u00d7 1.25 = 5.125 GB. Round up to the nearest whole GB: 6 GB. This is exactly at the co-tenant ceiling \u2014 the largest safe allocation. 5 GB violates the GC headroom rule; 7 or 8 GB exceeds the co-tenant ceiling."
+    },
+    {
+      "id": "sizing_ingress_workers",
+      "minigame": "resource_sizing",
+      "difficulty": 2,
+      "brief": "{{node_name}} (Tier {{current_tier}}) NGINX worker count is misconfigured. Too few workers: connections queue under load. Too many: the server runs out of file descriptors under concurrent connections. Set worker_processes correctly.",
+      "teaches": "NGINX worker_processes should equal the number of available vCPUs \u2014 more workers adds context-switch overhead without throughput gain on a CPU-bound server. Each worker is bounded by file descriptor limits.",
+      "levers": {
+        "tolerance_pct": 0,
+        "table_complete": true,
+        "second_constraint": false
+      },
+      "given": {
+        "table": [
+          { "label": "Node", "value": "{{node_name}}" },
+          { "label": "Available vCPUs", "value": "4" },
+          { "label": "NGINX best practice", "value": "1 worker per vCPU" },
+          { "label": "Peak concurrent connections", "value": "2,800" },
+          { "label": "worker_connections (OS default)", "value": "1,024 per worker" },
+          { "label": "File descriptor limit", "value": "1,024 per process" }
+        ],
+        "unit": "workers",
+        "range": { "min": 1, "max": 16 }
+      },
+      "solution": { "value": 4 },
+      "wrong_outcomes": [
+        {
+          "when": "below",
+          "shows": "With 2 workers \u00d7 1,024 connections, peak capacity is 2,048 concurrent connections. During the 2,800-connection peak, new connections queue. Latency climbs to 4.2 s and 8% of requests time out.",
+          "why_wrong": "2 workers \u00d7 1,024 connections = 2,048 concurrent connections \u2014 below the 2,800 peak. Connections queue and time out."
+        },
+        {
+          "when": "above",
+          "shows": "8 workers on a 4-vCPU node: each worker competes for CPU time, increasing context switches. Under load, scheduler overhead cuts effective throughput by 15%. p95 latency climbs from 45 ms to 70 ms and CPU is pinned on context switching, not request handling.",
+          "why_wrong": "Exceeding 1 worker per CPU adds scheduling overhead. 8 workers \u00d7 1,024 connections exceeds what 4 CPUs can efficiently serve \u2014 throughput drops, latency rises."
+        }
+      ],
+      "reveal": "1 worker per vCPU = 4 workers on a 4-vCPU machine. 4 \u00d7 1,024 connections = 4,096 concurrent connections \u2014 comfortably above the 2,800 peak. Fewer workers under-serve peak load; more workers add context-switch overhead with no throughput benefit when CPU is the bottleneck."
     }
   ]
 }

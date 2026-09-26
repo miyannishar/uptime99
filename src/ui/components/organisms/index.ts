@@ -34,6 +34,21 @@ export type { WiringGameProps } from './WiringGame'
 export { EvidenceGame } from './EvidenceGame'
 export type { EvidenceGameProps } from './EvidenceGame'
 
+export { TerminalGame } from './TerminalGame'
+export type { TerminalGameProps } from './TerminalGame'
+
+export { LogHuntGame } from './LogHuntGame'
+export type { LogHuntGameProps } from './LogHuntGame'
+
+export { PatchGame } from './PatchGame'
+export type { PatchGameProps } from './PatchGame'
+
+export { MonitorGame } from './MonitorGame'
+export type { MonitorGameProps } from './MonitorGame'
+
+export { ClassifyGame } from './ClassifyGame'
+export type { ClassifyGameProps } from './ClassifyGame'
+
 export { DesignPhasePanel } from './DesignPhasePanel'
 export type { DesignPhasePanelProps } from './DesignPhasePanel'
 
@@ -48,3 +63,8 @@ export type { TaskDockProps, DockProvisioning, DockCooldown } from './TaskDock'
 
 export { TicketFeed } from './TicketFeed'
 export type { TicketFeedProps } from './TicketFeed'
+
+export { PagerOverlay } from './PagerOverlay'
+export type { PagerOverlayProps, PagerPage } from './PagerOverlay'
+export { StakeholderCard } from './StakeholderCard'
+export type { StakeholderCardProps } from './StakeholderCard'

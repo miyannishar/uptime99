@@ -125,7 +125,7 @@
     "starting_budget": 800,
     "credit_rate": 0.25,
     "emergency_premium_multiplier": 2.5,
-    "reputation_decay_per_tick": 1.5,
+    "reputation_decay_per_tick": 1.0,
     "reputation_recovery_per_tick": 0.8,
     "tick_seconds": 5,
     "reputation_growth_rate": 0.03,

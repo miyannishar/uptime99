@@ -22,6 +22,7 @@ import type { IncidentRecord } from '@engine/types'
 import type { EngineCatalog } from '@engine/catalogFrom'
 import { engineCatalog } from './data/catalog'
 import type { ActiveIncident, BoardNode, MetricReading } from './types'
+import { buildIncidentContext, buildTicketContext, resolveText } from '@engine/template'
 
 /** Resolve a flat BoardNodeView into the richer BoardNode the UI components use.
  *  Pass the engine GameState so that inst.active_incidents can be derived from
@@ -130,6 +131,7 @@ export function adaptMetrics(
 export function adaptIncidents(
   records: readonly IncidentRecord[],
   tick: number,
+  state: GameState | null = null,
   catalog: EngineCatalog = engineCatalog,
 ): ActiveIncident[] {
   // Group records by key so each key becomes one ActiveIncident.
@@ -162,20 +164,34 @@ export function adaptIncidents(
       .map((id: string) => catalog.actionById.get(id))
       .filter(Boolean)
 
-    // Populate signals from the incident definition.
-    // Level 0 is always visible (no observability required).
-    // Levels 1-3 require specific observability nodes - always shown as locked for now
-    // since signalsFor() (which checks the board) isn't built yet.
-    const signals = ((def as any).signals ?? []).map((sig: any) => ({
-      level: sig.level,
-      text: sig.text,
-      unlocked: sig.requires === null || sig.level === 0,
-      requirementLabel: sig.requires
-        ? Object.entries(sig.requires as Record<string, any>)
-            .flatMap(([k, v]) => Array.isArray(v) ? v.map(String) : [`${k}: ${v}`])
-            .join(', ')
-        : undefined,
-    }))
+    // Build template context from live game state (if available)
+    const ctx = state ? buildIncidentContext(state, key, catalog) : {}
+
+    const signals = ((def as any).signals ?? []).map((sig: any) => {
+      // Check if player's board satisfies this signal's observability requirement
+      let unlocked = sig.requires === null || sig.level === 0
+      if (!unlocked && sig.requires && state) {
+        const req = sig.requires as Record<string, any>
+        const reqNodeIds: string[] = req.node_ids ?? []
+        const minTier: number = req.min_tier ?? 1
+        // Signal unlocked when any required node exists on board at or above min_tier
+        unlocked = reqNodeIds.length === 0 || reqNodeIds.some((nodeId: string) =>
+          state.instances.some(inst =>
+            inst.def_id === nodeId && inst.tier >= minTier
+          )
+        )
+      }
+      return {
+        level: sig.level,
+        text: resolveText(sig.text, ctx),
+        unlocked,
+        requirementLabel: sig.requires
+          ? Object.entries(sig.requires as Record<string, any>)
+              .flatMap(([k, v]) => Array.isArray(v) ? v.map(String) : [`${k}: ${v}`])
+              .join(', ')
+          : undefined,
+      }
+    })
 
     result.push({
       def,
@@ -353,16 +369,19 @@ export function adaptTickets(
   activeTickets: readonly import('@engine/types').TicketRecord[] | undefined,
   catalog: EngineCatalog,
   currentTick: number,
+  state?: GameState,
 ): AdaptedTicket[] {
   return (activeTickets ?? []).map(record => {
     const def = (catalog as any).ticketById?.get(record.ticket_id)
     if (!def) return null
+    const ctx = state ? buildTicketContext(state, record, catalog) : {}
+    const resolvedBlurb: string = resolveText(def.blurb, ctx)
     const ticksUntilDeadline = record.deadline_tick - currentTick
     const overdue = !record.completed && ticksUntilDeadline < 0
     const status: AdaptedTicket['status'] = record.completed
       ? 'completed'
       : overdue ? 'overdue' : 'pending'
-    return { def, record, ticksUntilDeadline, overdue, status }
+    return { def: { ...def, blurb: resolvedBlurb }, record, ticksUntilDeadline, overdue, status }
   }).filter(Boolean) as AdaptedTicket[]
 }
 

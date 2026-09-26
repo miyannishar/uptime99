@@ -4,6 +4,7 @@
       "id": "ordered_sequence",
       "name": "Ordered sequence",
       "description": "Drags four to seven procedure steps into the order they must actually be performed in to resolve the incident correctly.",
+      "ai_fields": ["brief", "wrong_outcomes[].shows"],
       "levers": {
         "step_count": {
           "type": "integer",
@@ -27,6 +28,7 @@
       "id": "fill_blank",
       "name": "Fill in the blanks",
       "description": "Reads a config snippet or command and fills in the one to four missing values that would make it correct and safe.",
+      "ai_fields": ["brief", "wrong_outcomes[].shows"],
       "levers": {
         "blank_count": {
           "type": "integer",
@@ -49,6 +51,7 @@
       "id": "dial",
       "name": "Dial and allocate",
       "description": "Turns a numeric dial to set a resource allocation — such as replica count or memory limit — within the constraints shown on screen.",
+      "ai_fields": ["brief", "wrong_outcomes[].shows"],
       "levers": {
         "tolerance_pct": {
           "type": "integer",
@@ -70,6 +73,7 @@
       "id": "wiring",
       "name": "Visual wiring",
       "description": "Draws connections between architecture components on a canvas to restore the correct traffic flow after a misconfiguration.",
+      "ai_fields": ["brief", "wrong_outcomes[].shows"],
       "levers": {
         "component_count": {
           "type": "integer",
@@ -87,6 +91,7 @@
       "id": "evidence",
       "name": "Evidence selection",
       "description": "Scans a scrollable log or metrics panel and selects exactly the lines that prove the root cause of the current incident.",
+      "ai_fields": ["brief", "wrong_outcomes[].shows"],
       "levers": {
         "distractor_count": {
           "type": "integer",
@@ -104,6 +109,112 @@
           "min": 3,
           "max": 20,
           "description": "Total lines in the log panel. More lines mean more scanning before finding evidence."
+        }
+      }
+    },
+    {
+      "id": "terminal",
+      "name": "Terminal command",
+      "description": "Reads prior shell output and types the rest of a partially-given command to fix the incident correctly without affecting healthy components.",
+      "ai_fields": ["brief", "given.history", "wrong_outcomes[].shows"],
+      "levers": {
+        "history_lines": {
+          "type": "integer",
+          "min": 0,
+          "max": 20,
+          "description": "Lines of prior shell output shown above the prompt; the facts needed to finish the command live here."
+        },
+        "show_placeholder": {
+          "type": "boolean",
+          "description": "When true, a greyed placeholder hints at the shape of the missing argument."
+        }
+      }
+    },
+    {
+      "id": "log_hunt",
+      "name": "Log hunt",
+      "description": "Scrolls a realistic log stream and clicks the single line that is the root cause of the incident, distinguishing cause from downstream blast-radius errors.",
+      "ai_fields": ["brief", "wrong_outcomes[].shows"],
+      "levers": {
+        "line_count": {
+          "type": "integer",
+          "min": 20,
+          "max": 120,
+          "description": "Lines in the log; more lines mean more scrolling and filtering."
+        },
+        "decoy_errors": {
+          "type": "integer",
+          "min": 0,
+          "max": 8,
+          "description": "ERROR lines that are symptoms, not the cause."
+        },
+        "search_enabled": {
+          "type": "boolean",
+          "description": "When false, the player must scan without a search box."
+        }
+      }
+    },
+    {
+      "id": "patch",
+      "name": "Config patch",
+      "description": "Edits exactly one line of a real config file to fix a misconfiguration; every other line must stay byte-for-byte identical to the original.",
+      "ai_fields": ["brief", "wrong_outcomes[].shows"],
+      "levers": {
+        "file_lines": {
+          "type": "integer",
+          "min": 5,
+          "max": 80,
+          "description": "Length of the file; the target line is buried among correct lines."
+        },
+        "target_highlighted": {
+          "type": "boolean",
+          "description": "When true, the gutter marks the line that needs changing."
+        }
+      }
+    },
+    {
+      "id": "monitor",
+      "name": "Live monitor",
+      "description": "Watches live metric gauges drift in real time and clicks the right metric inside the correct time window when it crosses a threshold.",
+      "ai_fields": ["brief", "given.rule", "wrong_outcomes[].shows"],
+      "levers": {
+        "metric_count": {
+          "type": "integer",
+          "min": 1,
+          "max": 5,
+          "description": "Gauges on screen; extra gauges are decoys."
+        },
+        "window_s": {
+          "type": "number",
+          "min": 2,
+          "max": 15,
+          "description": "Seconds after the crossing in which acting counts as on time."
+        },
+        "noise_amplitude_pct": {
+          "type": "number",
+          "min": 0,
+          "max": 30,
+          "description": "Wobble on each curve as a percentage of its range; more wobble means false crossings to resist."
+        }
+      }
+    },
+    {
+      "id": "classify",
+      "name": "Classify and sort",
+      "description": "Drags items from an unplaced tray into one of two to four labelled bins according to the stated categorisation rules.",
+      "ai_fields": ["brief", "wrong_outcomes[].shows"],
+      "levers": {
+        "item_count": {
+          "type": "integer",
+          "min": 4,
+          "max": 10,
+          "description": "Items to sort."
+        },
+        "bin_count": {
+          "type": "integer",
+          "min": 2,
+          "max": 4,
+          "description": "Bins to sort into."
         }
       }
     }

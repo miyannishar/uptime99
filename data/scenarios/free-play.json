@@ -4,7 +4,7 @@
   "blurb": "No time limit. No score. Build any system you want and let incidents come. The clock never stops.",
   "level": null,
   "difficulty": {
-    "arrival_mean_ticks": 60,
+    "arrival_mean_ticks": 30,
     "severity_max": 4,
     "max_concurrent": 2
   },
@@ -57,5 +57,14 @@
     "kind": "endless"
   },
   "incidents": [],
-  "ticket_ids": []
+  "ticket_ids": [
+    "add_backup",
+    "lb_multi_az",
+    "rate_limit_api",
+    "scale_out_app",
+    "add_db_replica",
+    "upgrade_db_t3",
+    "cdn_multi_az",
+    "upgrade_app_t4"
+  ]
 }

@@ -1,4 +1,5 @@
 import type { AdaptedTicket } from '../../adapt'
+import type { HintTarget } from '../../hintTarget'
 import { SectionLabel } from '../atoms'
 import { formatDuration } from '../../utils/format'
 import s from './TicketFeed.module.css'
@@ -8,10 +9,10 @@ export interface TicketFeedProps {
   selectedKey?: string | null
   onSelect?: (ticketId: string) => void
   tickSeconds?: number
-  /** Called when player clicks a hint button — should select the relevant node */
+  /** Called when player clicks a hint button — opens that action's minigame */
   onHintAction?: (ticketId: string, actionId: string) => void
-  /** Board nodes, used to check if add_node tickets can be acted on */
-  board?: { def: { id: string; name: string } }[]
+  /** Resolves which node a hint acts on, its label, and why it is disabled */
+  hintTarget?: (ticketId: string, actionId: string) => HintTarget
 }
 
 function sevBadgeClass(sev: number): string {
@@ -26,7 +27,7 @@ export function TicketFeed({
   onSelect,
   tickSeconds = 5,
   onHintAction,
-  board = [],
+  hintTarget,
 }: TicketFeedProps) {
   // Sort: overdue first, then pending, then completed
   const sorted = [...tickets].sort((a, b) => {
@@ -53,12 +54,6 @@ export function TicketFeed({
         {sorted.map(ticket => {
           const open = selectedKey === ticket.def.id
           const { def, record, ticksUntilDeadline, overdue, status } = ticket
-
-          // For add_node tickets, check if the required node is on the board
-          const isAddNode = def.kind === 'add_node'
-          const reqNodeId = def.requirement?.node_id
-          const nodeOnBoard = !isAddNode || !reqNodeId || board.some(n => n.def.id === reqNodeId)
-          const missingNodeName = !nodeOnBoard ? reqNodeId : undefined
 
           const chipClass = status === 'completed'
             ? s['chip-completed']
@@ -131,31 +126,28 @@ export function TicketFeed({
                     {/* Hint buttons */}
                     {!record.completed && def.hint_actions && def.hint_actions.length > 0 && (
                       <div className={s.hints}>
-                        <span className={s['hints-label']}>hint actions</span>
-
-                        {!nodeOnBoard && (
-                          <p className={s['node-missing']}>
-                            Add {missingNodeName ?? 'the required node'} to your board first
-                          </p>
-                        )}
+                        <span className={s['hints-label']}>actions</span>
                         <div className={s['hint-btns']}>
-                          {(def.hint_actions as string[]).map((actionId: string) => (
-                            <button
-                              key={actionId}
-                              type="button"
-                              className={s['hint-btn']}
-                              disabled={!nodeOnBoard || !onHintAction}
-                              title={!nodeOnBoard
-                                ? 'Provisioning not yet implemented — add the node to your board first'
-                                : onHintAction ? `Hint: ${actionId}` : 'Not available'}
-                              onClick={e => {
-                                e.stopPropagation()
-                                onHintAction?.(def.id, actionId)
-                              }}
-                            >
-                              {actionId}
-                            </button>
-                          ))}
+                          {(def.hint_actions as string[]).map((actionId: string) => {
+                            const target = hintTarget?.(def.id, actionId)
+                            const reason = !onHintAction || !target ? 'Not available' : target.disabledReason
+                            const label = target?.label ?? actionId
+                            return (
+                              <button
+                                key={actionId}
+                                type="button"
+                                className={s['hint-btn']}
+                                disabled={reason !== null}
+                                title={reason ?? `Open ${label}`}
+                                onClick={e => {
+                                  e.stopPropagation()
+                                  onHintAction?.(def.id, actionId)
+                                }}
+                              >
+                                {label}
+                              </button>
+                            )
+                          })}
                         </div>
                       </div>
                     )}

@@ -51,7 +51,12 @@ export function ActionRow({ action, onPlay, dense }: ActionRowProps) {
 
         {!dense && (
           <span className={s.sub}>
-            <DifficultyDots difficulty={def.difficulty} label={minigame.name} />
+            <DifficultyDots
+              difficulty={def.difficulty}
+              label={(def.minigame_pool?.length ?? 0) > 0
+                ? `${def.minigame_pool!.length + 1} puzzle types`
+                : minigame.name}
+            />
           </span>
         )}
 

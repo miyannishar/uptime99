@@ -1,0 +1,107 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+
+/* Filename tab at the top of the editor pane */
+.tab {
+  display: inline-block;
+  font-family: var(--font);
+  font-size: var(--fs-0);
+  color: #8b949e;
+  background: #161b22;
+  border: 1px solid #30363d;
+  border-bottom: none;
+  border-radius: var(--r-2) var(--r-2) 0 0;
+  padding: var(--sp-1) var(--sp-4);
+}
+
+/* Editor frame: gutter + textarea side by side */
+.editor {
+  display: flex;
+  background: #0d1117;
+  border: 1px solid #30363d;
+  border-radius: 0 var(--r-2) var(--r-2) var(--r-2);
+  overflow: hidden;
+  position: relative;
+}
+
+/* Line-number gutter */
+.gutter {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  padding: var(--sp-3) var(--sp-3);
+  background: #0d1117;
+  border-right: 1px solid #21262d;
+  user-select: none;
+  min-width: 2.8rem;
+  overflow: hidden;
+}
+
+.lineNum {
+  font-family: var(--font);
+  font-size: var(--fs-1);
+  line-height: 1.6;
+  color: #3b434b;
+  white-space: nowrap;
+}
+
+/* Highlighted target line number */
+.lineNumTarget {
+  color: #f0883e;
+  font-weight: 600;
+}
+
+/* The textarea where the player edits */
+.textarea {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  resize: none;
+  font-family: var(--font);
+  font-size: var(--fs-1);
+  line-height: 1.6;
+  color: #e6edf3;
+  caret-color: #58a6ff;
+  padding: var(--sp-3) var(--sp-4);
+  min-height: 8rem;
+  white-space: pre;
+  overflow-x: auto;
+  tab-size: 2;
+}
+
+.textarea:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+/* Reset button row */
+.controls {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.resetBtn {
+  font-size: var(--fs-0);
+  padding: var(--sp-1) var(--sp-4);
+  background: transparent;
+  border: 1px solid #30363d;
+  border-radius: var(--r-1);
+  color: #8b949e;
+  cursor: pointer;
+  font-family: var(--font);
+  transition: border-color 0.1s, color 0.1s;
+}
+
+.resetBtn:hover:not(:disabled) {
+  border-color: #58a6ff;
+  color: #58a6ff;
+}
+
+.resetBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}

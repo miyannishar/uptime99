@@ -1,0 +1,128 @@
+{
+  "instances": [
+    {
+      "id": "patch_db_pool_threads",
+      "minigame": "config_patch",
+      "difficulty": 3,
+      "for_actions": [
+        "increase_connections"
+      ],
+      "brief": "Puma workers each run `threads 12, 12`, so each process can hold 12 concurrent DB connections. The database pool size must equal the thread count so no thread queues waiting for a free connection. The current pool setting is too small for this thread count.",
+      "teaches": "Rails database pool size must equal the application server thread count. A pool smaller than the thread count means some threads will block waiting for a connection under load, producing `ActiveRecord::ConnectionTimeoutError` after the checkout_timeout expires.",
+      "levers": {
+        "file_lines": 14,
+        "target_highlighted": true
+      },
+      "given": {
+        "filename": "config/database.yml",
+        "language": "yaml",
+        "content": "default: &default\n  adapter: postgresql\n  encoding: unicode\n  host: <%= ENV['DB_HOST'] %>\n  username: <%= ENV['DB_USER'] %>\n  password: <%= ENV['DB_PASSWORD'] %>\n\n# Puma config: workers 2, threads 12, 12\n# Each thread holds one DB connection.\n# Pool must equal the per-process thread count.\ndevelopment:\n  <<: *default\n  database: app_development\n  pool: 5\n  timeout: 5000"
+      },
+      "solution": {
+        "line": 14,
+        "must_contain": [
+          "pool: 12"
+        ],
+        "must_not_contain": [
+          "pool: 5"
+        ]
+      },
+      "wrong_outcomes": [
+        {
+          "when": "wrong_edit",
+          "shows": "7 of 12 threads block on connection checkout at peak. After 5 s, `ActiveRecord::ConnectionTimeoutError` is raised and the request fails with HTTP 500.",
+          "why_wrong": "The pool is smaller than the thread count. Under load, threads that cannot immediately acquire a connection queue; after `checkout_timeout` (default 5 s) they raise an error instead of serving the request."
+        },
+        {
+          "when": "collateral_edit",
+          "shows": "The pool setting was not the only thing changed. Every other line must remain byte-for-byte identical — changing the host or timeout alongside pool creates an untested config state.",
+          "why_wrong": "Only the pool value is under-provisioned. Editing any other line introduces a second unverified change that complicates rollback and root-cause analysis."
+        }
+      ],
+      "reveal": "The rule is: pool size = Puma thread count. With `threads 12, 12`, each process can run 12 concurrent requests, each requiring one DB connection. A pool of 5 means 7 threads always wait. Raising pool to 12 eliminates the wait entirely without over-allocating connections to the database server."
+    },
+    {
+      "id": "patch_nginx_rate",
+      "minigame": "config_patch",
+      "difficulty": 3,
+      "for_actions": [
+        "enable_rate_limit"
+      ],
+      "brief": "A scraper is hammering the `/api/` prefix. The current rate zone is misconfigured. Comment in the file states: legitimate clients peak at 12 r/s per IP. Apply the policy: cap at the next round number above 1.5 × legitimate peak.",
+      "teaches": "Rate-limit thresholds follow a two-step rule: multiply legitimate peak by the safety factor (here 1.5×), then round up to the next round number. 1.5 × 12 = 18, next round number above 18 is 20. Setting it below 20 drops real checkout traffic at peak; leaving it at 1000 r/s lets the scraper saturate the origin at 800 r/s.",
+      "levers": {
+        "file_lines": 17,
+        "target_highlighted": true
+      },
+      "given": {
+        "filename": "nginx.conf",
+        "language": "nginx",
+        "content": "worker_processes auto;\nevents { worker_connections 1024; }\n\nhttp {\n    # Rate limiting for /api/ prefix\n    # Legitimate clients peak at 12 r/s per IP.\n    # Policy: cap at next round number above 1.5x legitimate peak.\n    limit_req_zone $binary_remote_addr zone=api:10m rate=1000r/s;\n\n    server {\n        listen 80;\n        server_name example.com;\n\n        location /api/ {\n            limit_req zone=api burst=5 nodelay;\n            proxy_pass http://app_upstream;\n        }\n    }\n}"
+      },
+      "solution": {
+        "line": 8,
+        "must_contain": [
+          "rate=20r/s"
+        ],
+        "must_not_contain": [
+          "rate=1000r/s"
+        ]
+      },
+      "wrong_outcomes": [
+        {
+          "when": "wrong_edit",
+          "shows": "Setting 10 r/s: peak checkout traffic (12 r/s) now triggers the limit, blocking 30% of real users with HTTP 429 at peak. Setting 1000 r/s: scraper sends 800 r/s through unthrottled, saturating the app tier and raising p95 to 1,400 ms.",
+          "why_wrong": "Any value below 20 r/s cuts legitimate traffic before scraper traffic. Any value above 20 r/s leaves the scraper partially or fully unthrottled — the point of rate limiting is to protect the origin, not just the client."
+        },
+        {
+          "when": "collateral_edit",
+          "shows": "Changing `burst` or the `listen` port alongside the rate value creates two simultaneous config changes. If the burst value is wrong, it will be harder to tell which change caused the 429 storm.",
+          "why_wrong": "Only the `rate=` value needs correcting. The burst and nodelay settings are already correct for this zone. Changing more than one value at a time violates the principle of atomic config changes."
+        }
+      ],
+      "reveal": "The policy is: cap = next round number above (1.5 × legitimate peak). 1.5 × 12 r/s = 18 r/s. The next round number above 18 is 20. So `rate=20r/s` is the correct value. It gives legitimate clients a 67% headroom above their typical peak while throttling the scraper to a safe fraction of its attempted 800 r/s."
+    },
+    {
+      "id": "patch_dns_ttl_precutover",
+      "minigame": "config_patch",
+      "difficulty": 3,
+      "for_actions": [
+        "change_ttl"
+      ],
+      "brief": "Cutover to a new IP is scheduled in 2 hours. The runbook requires: lower the A record TTL to 60 s at least one old-TTL window before the cutover, so resolvers will have expired the old answer before the IP changes. The IP address must NOT change in this edit — that happens in the next step.",
+      "teaches": "Pre-cutover TTL reduction works as follows: resolvers cache the old answer for up to the current TTL. Lowering the TTL now means that within one TTL window, all resolvers will re-query and pick up the new TTL. When the IP changes later, propagation completes in 60 s instead of 3600 s. Changing the IP in the same edit is wrong: the new host is not yet serving traffic.",
+      "levers": {
+        "file_lines": 11,
+        "target_highlighted": true
+      },
+      "given": {
+        "filename": "db.example.com",
+        "language": "bind",
+        "content": "$ORIGIN example.com.\n$TTL 3600\n@   IN  SOA  ns1 hostmaster 2026092401 3600 900 604800 300\n    IN  NS   ns1\n    IN  NS   ns2\nns1 IN  A    198.51.100.1\nns2 IN  A    198.51.100.2\nwww 3600  IN  A  203.0.113.10\napi 3600  IN  A  203.0.113.10\ndb  3600  IN  A  203.0.113.20\nmail 3600  IN  MX  10 mail.example.com."
+      },
+      "solution": {
+        "line": 9,
+        "must_contain": [
+          "api 60",
+          "203.0.113.10"
+        ],
+        "must_not_contain": [
+          "3600"
+        ]
+      },
+      "wrong_outcomes": [
+        {
+          "when": "wrong_edit",
+          "shows": "Leaving TTL at 3600: 62% of clients still resolve to the old IP 40 minutes after cutover because their resolvers cached the old answer. Changing the IP before the new host is ready: 100% of traffic immediately routes to a host not yet serving the application — the site goes dark.",
+          "why_wrong": "Pre-cutover TTL reduction must lower the TTL to 60 s without changing the IP. The IP change is a separate, later step. If the TTL stays high, propagation after the IP change will take up to one hour. If the IP changes prematurely, traffic hits an unready host."
+        },
+        {
+          "when": "collateral_edit",
+          "shows": "Touching the `www` or `db` record alongside the `api` TTL introduces two simultaneous DNS changes. If the wrong record gets a low TTL, those records will be polled more aggressively during a window when the zone is in a transitional state.",
+          "why_wrong": "Only the `api` record needs its TTL changed before cutover. Editing any other record alongside it turns a targeted pre-cutover step into a zone-wide change, making the blast radius larger if something goes wrong."
+        }
+      ],
+      "reveal": "The pre-cutover sequence is: (1) lower the record TTL to 60 s while keeping the same IP, (2) wait one old-TTL window (3600 s = 1 hour) for all resolvers to expire the cached answer, (3) change the IP. Step 1 is this edit: `api 60  IN  A  203.0.113.10`. The TTL drops from 3600 to 60; the IP is unchanged. After one hour, every resolver will have re-queried and will hold the 60-second TTL, so the IP change in step 3 propagates globally within one minute."
+    }
+  ]
+}

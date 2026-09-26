@@ -9,8 +9,8 @@ describe('data/minigames/instances/c-dial.json', () => {
     expectValidInstanceFile('data/minigames/instances/c-dial.json')
   })
 
-  it('holds nine instances', () => {
-    expect(instances).toHaveLength(9)
+  it('holds fifteen instances', () => {
+    expect(instances).toHaveLength(15)
   })
 
   it('covers all six dial difficulty-slots', () => {
@@ -34,10 +34,15 @@ describe('data/minigames/instances/c-dial.json', () => {
     }
   })
 
-  it('puts the solution value inside the dial range', () => {
+  it('puts the solution value inside the dial range (or is a template string)', () => {
     for (const i of instances) {
-      expect(i.solution.value, i.id).toBeGreaterThanOrEqual(i.given.range.min)
-      expect(i.solution.value, i.id).toBeLessThanOrEqual(i.given.range.max)
+      if (typeof i.solution.value === 'string') {
+        // template string — e.g. "{{target_tier}}"; range check is deferred to runtime
+        expect(i.solution.value, i.id).toMatch(/^\{\{.+\}\}$/)
+      } else {
+        expect(i.solution.value, i.id).toBeGreaterThanOrEqual(i.given.range.min)
+        expect(i.solution.value, i.id).toBeLessThanOrEqual(i.given.range.max)
+      }
     }
   })
 

@@ -21,5 +21,5 @@
   ],
   "end": { "kind": "fixed_window", "ticks": 120 },
   "incidents": [],
-  "ticket_ids": ["multi_az_deploy", "audit_logging", "add_waf", "cert_renewal"]
+  "ticket_ids": ["multi_az_deploy", "data_multi_region", "encrypt_db", "dr_region_ready"]
 }

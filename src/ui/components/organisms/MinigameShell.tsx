@@ -1,15 +1,23 @@
 import type { ReactNode } from 'react'
 import type {
+  ClassifyGiven, ClassifySolution,
   DialGiven, DialSolution, EvidenceGiven, EvidenceSolution, FillBlankGiven,
-  FillBlankSolution, MinigameAnswer, MinigameSession, SequenceGiven,
-  SequenceSolution, WiringGiven, WiringSolution, WrongOutcome,
+  FillBlankSolution, LogHuntGiven, LogHuntSolution, MinigameAnswer, MinigameSession, MonitorGiven,
+  MonitorSolution, PatchGiven,
+  PatchSolution, SequenceGiven,
+  SequenceSolution, TerminalGiven, TerminalSolution, WiringGiven, WiringSolution, WrongOutcome,
 } from '../../types'
 import { Button, DifficultyDots, SectionLabel } from '../atoms'
 import { RevealPanel, TeachesCallout, WrongOutcomeCard } from '../molecules'
 import { DialGame } from './DialGame'
 import { EvidenceGame } from './EvidenceGame'
 import { FillBlankGame } from './FillBlankGame'
+import { PatchGame } from './PatchGame'
+import { ClassifyGame } from './ClassifyGame'
+import { MonitorGame } from './MonitorGame'
 import { SequenceGame } from './SequenceGame'
+import { LogHuntGame } from './LogHuntGame'
+import { TerminalGame } from './TerminalGame'
 import { WiringGame } from './WiringGame'
 import { cx, formatDuration, formatMoney } from '../../utils/format'
 import s from './MinigameShell.module.css'
@@ -59,6 +67,11 @@ export function MinigameShell({
           <h2 className={s.title}>{minigame.name}</h2>
           <DifficultyDots difficulty={action.difficulty} />
           <span className={s.format}>{format.name}</span>
+          {session.aiText && (
+            <span className={s.live} title="Text written for your live system by AI; the answer is unchanged">
+              ✦ live
+            </span>
+          )}
         </div>
         <p className={s.via}>
           via <b>{action.name}</b> · {formatDuration(action.time_cost_s)} ·{' '}
@@ -218,6 +231,81 @@ function renderFormat(
         />
       )
     }
+    case 'terminal': {
+      const given = instance.given as TerminalGiven
+      const solution = instance.solution as TerminalSolution
+      return (
+        <TerminalGame
+          given={given}
+          solution={solution}
+          text={answer.kind === 'terminal' ? answer.text : ''}
+          onChange={(text) => onAnswerChange({ kind: 'terminal', text })}
+          showPlaceholder={levers.show_placeholder === true}
+          disabled={locked}
+          revealed={showReveal}
+        />
+      )
+    }
+    case 'log_hunt': {
+      const given = instance.given as LogHuntGiven
+      const solution = instance.solution as LogHuntSolution
+      return (
+        <LogHuntGame
+          given={given}
+          solution={solution}
+          line={answer.kind === 'log_hunt' ? answer.line : null}
+          onChange={(line) => onAnswerChange({ kind: 'log_hunt', line })}
+          searchEnabled={levers.search_enabled !== false}
+          disabled={locked}
+          revealed={showReveal}
+        />
+      )
+    }
+    case 'patch': {
+      const given = instance.given as PatchGiven
+      const solution = instance.solution as PatchSolution
+      return (
+        <PatchGame
+          given={given}
+          solution={solution}
+          content={answer.kind === 'patch' ? answer.content : given.content}
+          onChange={(content) => onAnswerChange({ kind: 'patch', content })}
+          targetHighlighted={levers.target_highlighted === true}
+          disabled={locked}
+          revealed={showReveal}
+        />
+      )
+    }
+    case 'monitor': {
+      const given = instance.given as MonitorGiven
+      const sol = instance.solution as MonitorSolution
+      return (
+        <MonitorGame
+          given={given}
+          solution={sol}
+          metric={answer.kind === 'monitor' ? answer.metric : null}
+          t={answer.kind === 'monitor' ? answer.t : 0}
+          onChange={({ metric, t }) => onAnswerChange({ kind: 'monitor', metric, t })}
+          disabled={locked}
+          revealed={showReveal}
+          attemptKey={session.attempt}
+        />
+      )
+    }
+    case 'classify': {
+      const given = instance.given as ClassifyGiven
+      const sol = instance.solution as ClassifySolution
+      return (
+        <ClassifyGame
+          given={given}
+          placements={answer.kind === 'classify' ? answer.placements : {}}
+          onChange={(placements) => onAnswerChange({ kind: 'classify', placements })}
+          disabled={locked}
+          revealed={showReveal}
+          solution={showReveal ? sol : undefined}
+        />
+      )
+    }
   }
 }
 
@@ -275,6 +363,66 @@ function renderSolution(session: MinigameSession): ReactNode {
     case 'evidence': {
       const solution = instance.solution as EvidenceSolution
       return <p className={cx(s.solutionValue, s.solutionText)}>{solution.choice}</p>
+    }
+    case 'terminal': {
+      const given = instance.given as TerminalGiven
+      const solution = instance.solution as TerminalSolution
+      return (
+        <code className={s.solutionCode}>
+          $ {given.prefix}{solution.accepts[0]}
+        </code>
+      )
+    }
+    case 'log_hunt': {
+      const given = instance.given as LogHuntGiven
+      const solution = instance.solution as LogHuntSolution
+      const answerLine = given.lines[solution.line - 1]
+      return (
+        <p className={cx(s.solutionValue, s.solutionText)}>
+          Line {solution.line}: [{answerLine?.level}] {answerLine?.text}
+        </p>
+      )
+    }
+    case 'patch': {
+      const given = instance.given as PatchGiven
+      const solution = instance.solution as PatchSolution
+      const origLine = given.content.split('\n')[solution.line - 1] ?? ''
+      return (
+        <>
+          <p className={s.solutionValue}>
+            Line {solution.line} — before: <code className={s.solutionCode}>{origLine.trim()}</code>
+          </p>
+          <p className={s.solutionValue}>
+            Line {solution.line} — after contains: <code className={s.solutionCode}>{solution.must_contain.join(', ')}</code>
+          </p>
+        </>
+      )
+    }
+    case 'monitor': {
+      const given = instance.given as MonitorGiven
+      const solution = instance.solution as MonitorSolution
+      const m = given.metrics.find((x) => x.id === solution.metric)
+      return (
+        <p className={s.solutionValue}>
+          Click <b>{m?.label ?? solution.metric}</b> ({m?.unit ?? ''}) when it crosses{' '}
+          <b>{solution.direction}</b> <b>{solution.threshold}</b> — window is {solution.window_s} s wide
+        </p>
+      )
+    }
+    case 'classify': {
+      const given = instance.given as ClassifyGiven
+      const solution = instance.solution as ClassifySolution
+      const binLabel = (id: string) => given.bins.find((b) => b.id === id)?.label ?? id
+      return (
+        <ul className={s.solutionList}>
+          {given.items.map((item) => (
+            <li key={item.id}>
+              <span className={s.solutionOrdinal}>{item.label}</span>
+              → <b>{binLabel(solution.bins[item.id])}</b>
+            </li>
+          ))}
+        </ul>
+      )
     }
   }
 }

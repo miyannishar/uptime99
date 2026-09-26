@@ -9,15 +9,16 @@ describe('data/minigames/instances/b-fill-blank.json', () => {
     expectValidInstanceFile('data/minigames/instances/b-fill-blank.json')
   })
 
-  it('holds nine instances', () => {
-    expect(instances).toHaveLength(9)
+  it('holds fourteen instances', () => {
+    expect(instances).toHaveLength(14)
   })
 
-  it('covers all seven fill-blank difficulty-slots', () => {
+  it('covers all nine fill-blank difficulty-slots', () => {
     const slots = [...new Set(instances.map((i: any) => `${i.minigame}:${i.difficulty}`))].sort()
     expect(slots).toEqual([
       'cache_key_match:2', 'iam_policy_puzzle:3', 'iam_policy_puzzle:4',
-      'incident_comms:1', 'incident_comms:2', 'yaml_manifest:2', 'yaml_manifest:5',
+      'incident_comms:1', 'incident_comms:2', 'pool_config:2',
+      'terraform_resize:3', 'yaml_manifest:2', 'yaml_manifest:5',
     ])
   })
 

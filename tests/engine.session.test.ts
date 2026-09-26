@@ -156,8 +156,9 @@ describe('runSession — the golden run', () => {
     // oom_kill damage: health_delta -70 on app-cluster-1 (starts at 100 → 30)
     const app = out.instances.find((i) => i.instance_id === 'app-cluster-1')!
     expect(app.health).toBe(30)
-    // reputation decays to 0 while the incident remains active across the full window
-    expect(out.carried.reputation).toBe(0)
+    // reputation decays while the incident remains active — rep > 0 since decay
+    // rate dropped from 1.5 to 1.0 (oom_kill severity 3 no longer kills rep in 40 ticks)
+    expect(out.carried.reputation).toBeCloseTo(7, 0)
     // cost_month and profit_month — precisely the values corrupted by the
     // ledger.recurring sign inversion; anchoring them makes a recurrence visible.
     expect(out.history.cost_month?.at(-1)).toBe(115)

@@ -49,7 +49,7 @@ describe('CLAUDE.md', () => {
 
   it('documents the minigame model', () => {
     expect(doc).toContain('data/minigames/')
-    expect(doc).toMatch(/five (interaction )?formats|5 (interaction )?formats/i)
+    expect(doc).toMatch(/six (interaction )?formats|6 (interaction )?formats/i)
     expect(doc).toMatch(/difficulty-slot/i)
   })
 

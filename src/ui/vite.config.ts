@@ -1,6 +1,7 @@
-import { defineConfig } from 'vite'
+import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
 import { fileURLToPath } from 'node:url'
+import { devAiPlugin } from './devAiPlugin'
 
 const uiRoot = fileURLToPath(new URL('.', import.meta.url))
 const repoRoot = fileURLToPath(new URL('../../', import.meta.url))
@@ -46,27 +47,33 @@ const loggingPlugin = {
   },
 }
 
-export default defineConfig({
-  root: uiRoot,
-  plugins: [loggingPlugin, react()],
-  resolve: {
-    alias: {
-      // The real data/ directory. There are no fixtures: the UI reads the same
-      // files npm run validate checks, so the two can never drift.
-      '@data': fileURLToPath(new URL('../../data', import.meta.url)),
-      // Seam for the engine session. Pure modules, imported directly - the game
-      // runs entirely in the browser, so there is no server to start.
-      '@engine': fileURLToPath(new URL('../engine', import.meta.url)),
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, repoRoot, '')
+  return {
+    root: uiRoot,
+    // .env lives at the repo root; pointing envDir there makes Vite watch it and
+    // restart when the key changes. Only VITE_-prefixed vars ever reach the browser.
+    envDir: repoRoot,
+    plugins: [loggingPlugin, devAiPlugin(env), react()],
+    resolve: {
+      alias: {
+        // The real data/ directory. There are no fixtures: the UI reads the same
+        // files npm run validate checks, so the two can never drift.
+        '@data': fileURLToPath(new URL('../../data', import.meta.url)),
+        // Seam for the engine session. Pure modules, imported directly - the game
+        // runs entirely in the browser, so there is no server to start.
+        '@engine': fileURLToPath(new URL('../engine', import.meta.url)),
+      },
     },
-  },
-  server: {
-    port: 5199,
-    open: true,
-    // data/ and src/engine/ sit above the Vite root and must be readable.
-    fs: { allow: [repoRoot] },
-  },
-  build: {
-    outDir: fileURLToPath(new URL('../../dist/ui', import.meta.url)),
-    emptyOutDir: true,
-  },
+    server: {
+      port: 5199,
+      open: true,
+      // data/ and src/engine/ sit above the Vite root and must be readable.
+      fs: { allow: [repoRoot] },
+    },
+    build: {
+      outDir: fileURLToPath(new URL('../../dist/ui', import.meta.url)),
+      emptyOutDir: true,
+    },
+  }
 })

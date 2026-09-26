@@ -19,6 +19,51 @@ export interface TemplateContext {
   layer_name?: string
   incident_name?: string
   incident_severity?: number
+  // Per-incident/ticket generated facts (buildSeedContext) — make the details a
+  // puzzle's answer depends on differ from one incident to the next.
+  entity_id?: number
+  tenant?: string
+  key_prefix?: string
+  revision?: number
+  pid?: number
+  deploy_version?: string
+  region?: string
+  ip_octet?: number
+  db_index?: number
+}
+
+const TENANTS = ['acme', 'globex', 'initech', 'umbrella', 'hooli', 'stark', 'wayne', 'soylent'] as const
+const KEY_PREFIXES = ['user', 'session', 'cart', 'product'] as const
+const REGIONS = ['us-east-1', 'eu-west-1', 'ap-south-1', 'us-west-2'] as const
+
+/** FNV-1a — matches rng.seedFrom; duplicated here to keep this module dependency-free. */
+function hash(text: string): number {
+  let h = 2166136261
+  for (let i = 0; i < text.length; i += 1) {
+    h ^= text.charCodeAt(i)
+    h = Math.imul(h, 16777619)
+  }
+  return h >>> 0
+}
+
+/**
+ * Deterministic facts for one incident or ticket (seedKey = its context key).
+ * Pure: the same key always yields the same values, so a run replays exactly,
+ * while two incidents see different ids, revisions, tenants and so on.
+ */
+export function buildSeedContext(seedKey: string): TemplateContext {
+  const h = (salt: string) => hash(`${salt}|${seedKey}`)
+  return {
+    entity_id: 100 + (h('entity') % 9900),
+    tenant: TENANTS[h('tenant') % TENANTS.length],
+    key_prefix: KEY_PREFIXES[h('prefix') % KEY_PREFIXES.length],
+    revision: 10 + (h('revision') % 80),
+    pid: 1000 + (h('pid') % 60000),
+    deploy_version: `v${1 + (h('major') % 4)}.${h('minor') % 30}.${h('patch') % 10}`,
+    region: REGIONS[h('region') % REGIONS.length],
+    ip_octet: 10 + (h('ip') % 240),
+    db_index: 1 + (h('db') % 14),
+  }
 }
 
 /**
@@ -130,7 +175,9 @@ export function buildTicketContext(
       return nd && req.layers.includes(nd.layer)
     })
   }
-  const nodeDef = inst ? (catalog.nodeById.get(inst.def_id) as any) : undefined
+  // Look up node def even when the node isn't on the board yet (add_node tickets)
+  const defId = inst?.def_id ?? req.node_id ?? ''
+  const nodeDef = defId ? (catalog.nodeById.get(defId) as any) : undefined
   const targetTierNum: number | undefined =
     req.min_tier ?? (inst ? inst.tier + 1 : undefined)
   const tierDef = inst

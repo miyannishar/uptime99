@@ -11,7 +11,11 @@ export interface IncidentFeedProps {
   /** Sum of `severity` across all active incidents - feeds the reputation formula. */
   incidentSeverity?: number
   /** Called when the player clicks a resolving action button. */
-  onPlayAction?: (instanceId: string, actionId: string) => void
+  onPlayAction?: (instanceId: string, actionId: string, incidentKey: string) => void
+  /** How this incident's page was handled: seconds to ACK, 'unacked', or undefined (not paged). */
+  ackOf?: (key: string) => number | 'unacked' | undefined
+  /** Why an action cannot be played on an instance right now, or null. */
+  blockedReason?: (instanceId: string, actionId: string) => string | null
 }
 
 /**
@@ -32,6 +36,8 @@ export function IncidentFeed({
   tickSeconds = 5,
   incidentSeverity,
   onPlayAction,
+  blockedReason,
+  ackOf,
 }: IncidentFeedProps) {
   const severity = incidentSeverity ?? incidents.reduce((n, i) => n + i.def.severity, 0)
 
@@ -66,31 +72,36 @@ export function IncidentFeed({
                 selected={open}
                 onSelect={onSelect}
               />
+              {(() => {
+                const ack = ackOf?.(incident.key)
+                if (ack === undefined) return null
+                return (
+                  <span className={ack === 'unacked' ? s.unacked : s.acked}>
+                    {ack === 'unacked' ? 'page unacknowledged' : `acked in ${ack}s`}
+                  </span>
+                )
+              })()}
 
               {open && (
                 <div className={s.detail}>
-                  <div className={s.signals}>
-                    {incident.signals.map((signal) => (
-                      <SignalRow key={signal.level} signal={signal} />
-                    ))}
-                  </div>
-
+                  {/* Actions first — the player needs them immediately */}
                   {incident.resolvingActions.length > 0 ? (
                     <div className={s.resolvers}>
                       <span className={s.resolversLabel}>resolved by</span>
                       <div className={s.actionButtons}>
                         {incident.resolvingActions.map((a) => {
-                          // Use the first affected instance (instance scope → exactly one; group → any)
                           const instanceId = incident.affectedInstanceIds[0]
-                          const canPlay = Boolean(onPlayAction && instanceId)
+                          const reason = !onPlayAction || !instanceId
+                            ? 'No affected instance'
+                            : blockedReason?.(instanceId, a.id) ?? null
                           return (
                             <button
                               key={a.id}
                               type="button"
                               className={s.actionBtn}
-                              disabled={!canPlay}
-                              onClick={canPlay ? () => onPlayAction!(instanceId, a.id) : undefined}
-                              title={canPlay ? `Play ${a.name} minigame` : 'No affected instance'}
+                              disabled={reason !== null}
+                              onClick={reason === null ? () => onPlayAction!(instanceId, a.id, incident.key) : undefined}
+                              title={reason ?? `Play ${a.name} minigame`}
                             >
                               {a.name}
                             </button>
@@ -104,6 +115,13 @@ export function IncidentFeed({
                       {incident.ticksRemaining !== null && ` - ${incident.ticksRemaining} ticks left`}.
                     </p>
                   )}
+
+                  {/* Signals below actions */}
+                  <div className={s.signals}>
+                    {incident.signals.map((signal) => (
+                      <SignalRow key={signal.level} signal={signal} />
+                    ))}
+                  </div>
                 </div>
               )}
             </li>

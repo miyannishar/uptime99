@@ -16,7 +16,7 @@ interface Layout {
 }
 
 const DEFAULT: Layout = {
-  leftW: 280,
+  leftW: 400,
   rightW: 340,
   dockH: 140,
   dockOrder: ['provisioning', 'cooldowns', 'ledger'],

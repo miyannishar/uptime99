@@ -20,5 +20,5 @@
   ],
   "end": { "kind": "fixed_window", "ticks": 100 },
   "incidents": [],
-  "ticket_ids": ["add_dlq_queue", "add_alerting", "enable_autoscale"]
+  "ticket_ids": ["add_dlq_queue", "encrypt_db", "enable_autoscale"]
 }

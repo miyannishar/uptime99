@@ -92,7 +92,8 @@ export function useGameState(scenarioId: string): UseGameStateReturn {
         if (isSessionOver(s, engineCatalog)) return endSession(s)
         const next = advance(s, 1, engineCatalog)
         // Check for sustained reputation failure (10 ticks at 0)
-        if (next.carried.reputation <= 0) {
+        // Free play is explicitly "no time limit, no score" — don't end on rep failure
+        if (next.carried.reputation <= 0 && scenarioId !== 'free-play') {
           repZeroTicksRef.current = (repZeroTicksRef.current ?? 0) + 1
           if (repZeroTicksRef.current >= 10) {
             repZeroTicksRef.current = 0

@@ -1,0 +1,230 @@
+{
+  "instances": [
+    {
+      "id": "monitor_resume_producers",
+      "minigame": "live_monitor",
+      "difficulty": 3,
+      "for_actions": [
+        "drain_queue"
+      ],
+      "brief": "The queue drain is in progress. Your job is to resume message producers at the right moment — once queue depth falls below 1,000 messages. Resume too soon and the backlog regrows; wait too long and orders pile up unnecessarily.",
+      "teaches": "Resuming producers at a stable low-depth threshold avoids oscillation. Acting on CPU or publish-rate during a drain is a common mistake — those metrics stay high by design while the backlog clears.",
+      "levers": {
+        "metric_count": 3,
+        "window_s": 5,
+        "noise_amplitude_pct": 10
+      },
+      "given": {
+        "metrics": [
+          {
+            "id": "queue_depth",
+            "label": "Queue Depth",
+            "unit": "msgs",
+            "start": 9000,
+            "slope": -450,
+            "amplitude": 150,
+            "period_s": 4,
+            "floor": 0
+          },
+          {
+            "id": "consumer_cpu",
+            "label": "Consumer CPU",
+            "unit": "%",
+            "start": 88,
+            "slope": 0,
+            "amplitude": 4,
+            "period_s": 6,
+            "floor": 0,
+            "ceil": 100
+          },
+          {
+            "id": "publish_rate",
+            "label": "Publish Rate",
+            "unit": "msgs/s",
+            "start": 0,
+            "slope": 0,
+            "amplitude": 2,
+            "period_s": 3,
+            "floor": 0
+          }
+        ],
+        "duration_s": 30,
+        "rule": "Resume producers when queue depth falls below 1,000 messages."
+      },
+      "solution": {
+        "metric": "queue_depth",
+        "threshold": 1000,
+        "direction": "below",
+        "window_s": 5
+      },
+      "wrong_outcomes": [
+        {
+          "when": "too_early",
+          "shows": "Queue depth was still at 4,200 msgs when you clicked. Producers flood back in and the backlog regrows past 6,000 within a minute — the drain stalls.",
+          "why_wrong": "Resuming before depth falls below 1,000 reintroduces load faster than the drain can absorb it."
+        },
+        {
+          "when": "too_late",
+          "shows": "You waited 20 s past the threshold. Producers were held offline unnecessarily and 1,400 orders sat queued longer than required.",
+          "why_wrong": "Holding producers off after the threshold is clear wastes capacity and extends customer-facing delays."
+        },
+        {
+          "when": "wrong_metric",
+          "shows": "You acted on a gauge other than queue depth. Consumer CPU sits above 85% for the whole drain by design and publish rate is near zero while producers are paused, so neither says when it is safe — queue depth fell below 1,000 unnoticed and producers stayed offline another 40 s, delaying 1,400 orders.",
+          "why_wrong": "Consumer CPU stays high while the queue drains by design. The triggering condition is queue depth, not CPU."
+        }
+      ],
+      "reveal": "Queue depth falls linearly as consumers drain at full speed. Consumer CPU stays elevated during the drain because consumers are working hard — that is correct, not a problem. Publish rate is zero because producers are paused. The only signal that the system is ready to resume producers is queue depth crossing below 1,000 messages."
+    },
+    {
+      "id": "monitor_alert_threshold",
+      "minigame": "live_monitor",
+      "difficulty": 3,
+      "for_actions": [
+        "tune_rules"
+      ],
+      "brief": "You are tuning an alerting rule for {{node_name}}. Watch the gauges and act at the moment the rule's condition becomes true — that is the point your alert must match.",
+      "teaches": "Alert thresholds should match the metric's actual crossing point, not an earlier wobble. Acting on a transient peak below 250 ms reproduces the noisy false-page the team was trying to eliminate.",
+      "levers": {
+        "metric_count": 3,
+        "window_s": 4,
+        "noise_amplitude_pct": 15
+      },
+      "given": {
+        "metrics": [
+          {
+            "id": "p95_ms",
+            "label": "p95 Latency",
+            "unit": "ms",
+            "start": 140,
+            "slope": 6,
+            "amplitude": 12,
+            "period_s": 3
+          },
+          {
+            "id": "error_rate_pct",
+            "label": "Error Rate",
+            "unit": "%",
+            "start": 0.4,
+            "slope": 0.02,
+            "amplitude": 0.1,
+            "period_s": 5,
+            "floor": 0,
+            "ceil": 100
+          },
+          {
+            "id": "rps",
+            "label": "Requests / s",
+            "unit": "rps",
+            "start": 420,
+            "slope": 1.5,
+            "amplitude": 20,
+            "period_s": 7
+          }
+        ],
+        "duration_s": 30,
+        "rule": "The tuned alert should fire when p95 latency stays above 250 ms — act when p95 crosses 250 ms."
+      },
+      "solution": {
+        "metric": "p95_ms",
+        "threshold": 250,
+        "direction": "above",
+        "window_s": 4
+      },
+      "wrong_outcomes": [
+        {
+          "when": "too_early",
+          "shows": "p95 was at 238 ms when you clicked — a sinusoidal wobble, not a sustained crossing. The old alert used this same threshold and produced 3–5 false pages per day.",
+          "why_wrong": "Clicking on a transient peak below the threshold copies the false-positive pattern the team wanted to fix."
+        },
+        {
+          "when": "too_late",
+          "shows": "You waited until t=25 s. p95 was 290 ms by then — 40 ms above the threshold for 7 s before you acted. The alert fires late and the on-call engineer misses the early window.",
+          "why_wrong": "The rule must fire at the crossing, not after the metric has climbed well past it."
+        },
+        {
+          "when": "wrong_metric",
+          "shows": "You acted on a gauge other than p95 latency. Error rate was still 0.6% and request rate was flat when p95 crossed 250 ms and kept climbing to 320 ms — the tuned alert is keyed to latency, so on the real incident it would never fire.",
+          "why_wrong": "Error rate is a lagging indicator here. The rule targets p95 latency, which crosses first."
+        }
+      ],
+      "reveal": "p95 latency rises steadily with a sinusoidal wobble of ±12 ms. The wobble causes brief peaks near 240–245 ms before the true crossing at roughly 18 s. Error rate and RPS are decoys — they are rising but neither crosses the threshold the rule specifies. The correct approach is to watch p95 specifically and click at the moment it passes 250 ms."
+    },
+    {
+      "id": "monitor_scale_out_trigger",
+      "minigame": "live_monitor",
+      "difficulty": 3,
+      "for_actions": [
+        "enable_autoscaling"
+      ],
+      "brief": "You are configuring {{node_name}}'s autoscaler. Watch the gauges and act at the moment the policy's trigger fires — that is where scale-out should begin.",
+      "teaches": "Autoscaler thresholds must match CPU specifically, even when p95 latency moves first. p95 rises before CPU crosses 70% because existing instances saturate, but the correct trigger for adding capacity is CPU, not latency.",
+      "levers": {
+        "metric_count": 3,
+        "window_s": 5,
+        "noise_amplitude_pct": 8
+      },
+      "given": {
+        "metrics": [
+          {
+            "id": "cpu_pct",
+            "label": "CPU",
+            "unit": "%",
+            "start": 48,
+            "slope": 1.6,
+            "amplitude": 3,
+            "period_s": 5,
+            "floor": 0,
+            "ceil": 100
+          },
+          {
+            "id": "memory_pct",
+            "label": "Memory",
+            "unit": "%",
+            "start": 62,
+            "slope": 0,
+            "amplitude": 1,
+            "period_s": 8,
+            "floor": 0,
+            "ceil": 100
+          },
+          {
+            "id": "p95_ms",
+            "label": "p95 Latency",
+            "unit": "ms",
+            "start": 110,
+            "slope": 5,
+            "amplitude": 8,
+            "period_s": 4
+          }
+        ],
+        "duration_s": 30,
+        "rule": "Policy: scale out when average CPU crosses 70%."
+      },
+      "solution": {
+        "metric": "cpu_pct",
+        "threshold": 70,
+        "direction": "above",
+        "window_s": 5
+      },
+      "wrong_outcomes": [
+        {
+          "when": "too_early",
+          "shows": "CPU was at 61% when you clicked — still well below 70%. The autoscaler fires prematurely and adds instances while the cluster still has headroom, wasting 60 credits.",
+          "why_wrong": "Firing the scale-out before CPU crosses 70% over-provisions the cluster and inflates cost."
+        },
+        {
+          "when": "too_late",
+          "shows": "You clicked at t=22 s when CPU had been above 70% for 7 s. p95 reached 210 ms during the delay — the scale-out happened too late to prevent latency impact.",
+          "why_wrong": "Waiting beyond the window means the cluster has been running overloaded while the new instance spins up."
+        },
+        {
+          "when": "wrong_metric",
+          "shows": "You acted on a gauge other than CPU. Memory holds near 62% and p95 rises with load, but the autoscaler policy reads average CPU — no scale-out fires, and CPU keeps climbing past 90% while the cluster stays at its current size.",
+          "why_wrong": "The policy specifies CPU as the trigger. p95 is a symptom of high CPU, not the signal the autoscaler watches."
+        }
+      ],
+      "reveal": "CPU rises steadily from 48% at 1.6% per second, with a ±3% oscillation on a 5-second period. It crosses 70% at roughly 14.65 s. Memory stays flat at 62% — it is a decoy. p95 latency starts climbing earlier because the existing instances saturate before CPU hits the threshold, but the policy says to act on CPU. Click CPU at the 70% crossing to fire the autoscaler at the right moment."
+    }
+  ]
+}

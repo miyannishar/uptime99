@@ -20,5 +20,5 @@
       "@engine/*": ["../engine/*"]
     }
   },
-  "include": ["**/*.ts", "**/*.tsx"]
+  "include": ["**/*.ts", "**/*.tsx", "../ai/**/*.ts"]
 }

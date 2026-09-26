@@ -1,6 +1,7 @@
 import { readdirSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { loadJson } from './loadJson'
+import { eligibleInstances, slotsFor } from '../engine/minigamePick'
 
 const INSTANCE_DIR = 'data/minigames/instances'
 
@@ -17,7 +18,7 @@ export function loadMinigameData() {
 export function checkRegistryMatchesActions(minigames: any[], actions: any[]): string[] {
   const problems: string[] = []
   const inRegistry = new Set(minigames.map((m) => m.id))
-  const inActions = new Set(actions.map((a) => a.minigame))
+  const inActions = new Set(actions.flatMap((a) => slotsFor(a).map((s) => s.minigame)))
   for (const id of inActions) {
     if (!inRegistry.has(id)) problems.push(`action references minigame '${id}' absent from registry.json`)
   }
@@ -35,12 +36,39 @@ export function checkFormatsResolve(minigames: any[], formats: any[]): string[] 
 }
 
 export function checkSlotCoverage(instances: any[], actions: any[]): string[] {
-  const have = new Set(instances.map((i) => `${i.minigame}:${i.difficulty}`))
-  const need = new Set(actions.map((a) => `${a.minigame}:${a.difficulty}`))
-  return [...need]
-    .filter((s) => !have.has(s))
-    .sort()
-    .map((s) => `no instance for slot '${s}' — an action selects it and the pool would be empty`)
+  const problems: string[] = []
+  for (const a of actions) {
+    for (const s of slotsFor(a)) {
+      const pool = instances.filter((i) => i.minigame === s.minigame && i.difficulty === s.difficulty)
+      if (eligibleInstances(pool, a.id).length === 0) {
+        problems.push(
+          `no instance for slot '${s.minigame}:${s.difficulty}' usable by action '${a.id}' — the pool would be empty`,
+        )
+      }
+    }
+  }
+  return problems.sort()
+}
+
+/**
+ * `for_actions` restricts an instance to actions whose scenario it fits. Each
+ * named action must exist and must actually select this instance's slot.
+ */
+export function checkForActionsRefs(instances: any[], actions: any[]): string[] {
+  const problems: string[] = []
+  const byId = new Map(actions.map((a) => [a.id, a]))
+  for (const i of instances) {
+    for (const id of i.for_actions ?? []) {
+      const a = byId.get(id)
+      if (!a) {
+        problems.push(`instance '${i.id}': for_actions names unknown action '${id}'`)
+        continue
+      }
+      const selects = slotsFor(a).some((s) => s.minigame === i.minigame && s.difficulty === i.difficulty)
+      if (!selects) problems.push(`instance '${i.id}': action '${id}' never selects '${i.minigame}:${i.difficulty}'`)
+    }
+  }
+  return problems
 }
 
 export function checkInstanceRefs(instances: any[], minigames: any[], formats: any[]): string[] {
@@ -76,6 +104,11 @@ export const WHEN_BY_FORMAT: Record<string, string[]> = {
   dial: ['any', 'below', 'above'],
   wiring: ['any', 'wrong_target'],
   evidence: ['any', 'wrong_choice'],
+  terminal: ['any', 'wrong_command'],
+  log_hunt: ['any', 'wrong_line'],
+  patch: ['any', 'wrong_edit', 'collateral_edit'],
+  monitor: ['any', 'too_early', 'too_late', 'wrong_metric'],
+  classify: ['any', 'wrong_bin'],
 }
 
 /**
@@ -125,7 +158,7 @@ const SHAPE_BY_FORMAT: Record<string, { given: Req[]; solution: Req[] }> = {
         want: 'an object with numeric min and max',
       },
     ],
-    solution: [{ path: 'value', test: (v) => typeof v === 'number', want: 'a number' }],
+    solution: [{ path: 'value', test: (v) => typeof v === 'number' || (typeof v === 'string' && /^\{\{.+\}\}$/.test(v)), want: 'a number or a {{template}} string' }],
   },
   wiring: {
     given: [
@@ -148,6 +181,107 @@ const SHAPE_BY_FORMAT: Record<string, { given: Req[]; solution: Req[] }> = {
       { path: 'output', test: nonEmptyString, want: 'a non-empty string' },
     ],
     solution: [{ path: 'choice', test: nonEmptyString, want: 'a non-empty string' }],
+  },
+  terminal: {
+    given: [
+      { path: 'prefix', test: nonEmptyString, want: 'a non-empty string' },
+      { path: 'history', test: nonEmptyArray, want: 'a non-empty array' },
+    ],
+    solution: [
+      {
+        path: 'accepts',
+        test: (v) => nonEmptyArray(v) && v.every((s: any) => nonEmptyString(s)),
+        want: 'a non-empty array of non-empty strings',
+      },
+    ],
+  },
+  log_hunt: {
+    given: [
+      { path: 'source', test: nonEmptyString, want: 'a non-empty string' },
+      {
+        path: 'lines',
+        test: (v) => nonEmptyArray(v) && v.every(
+          (l: any) => plainObject(l) && nonEmptyString(l.ts) && nonEmptyString(l.level) && nonEmptyString(l.text),
+        ),
+        want: 'a non-empty array of objects with string ts, level, and text',
+      },
+    ],
+    solution: [
+      {
+        path: 'line',
+        test: (v) => Number.isInteger(v) && v >= 1,
+        want: 'a positive integer (1-based line number)',
+      },
+    ],
+  },
+  patch: {
+    given: [
+      { path: 'filename', test: nonEmptyString, want: 'a non-empty string' },
+      { path: 'language', test: nonEmptyString, want: 'a non-empty string' },
+      { path: 'content', test: nonEmptyString, want: 'a non-empty string' },
+    ],
+    solution: [
+      {
+        path: 'line',
+        test: (v) => Number.isInteger(v) && v >= 1,
+        want: 'a positive integer (1-based line number)',
+      },
+      {
+        path: 'must_contain',
+        test: (v) => nonEmptyArray(v) && v.every((s: any) => nonEmptyString(s)),
+        want: 'a non-empty array of non-empty strings',
+      },
+    ],
+  },
+  monitor: {
+    given: [
+      {
+        path: 'metrics',
+        test: (v) => nonEmptyArray(v) && v.every(
+          (m: any) => plainObject(m) && nonEmptyString(m.id) && typeof m.start === 'number' &&
+            typeof m.slope === 'number' && typeof m.amplitude === 'number' && typeof m.period_s === 'number',
+        ),
+        want: 'a non-empty array of MonitorMetric objects (id, start, slope, amplitude, period_s)',
+      },
+      { path: 'duration_s', test: (v) => typeof v === 'number' && v > 0, want: 'a positive number' },
+      { path: 'rule', test: nonEmptyString, want: 'a non-empty string' },
+    ],
+    solution: [
+      { path: 'metric', test: nonEmptyString, want: 'a non-empty string' },
+      { path: 'threshold', test: (v) => typeof v === 'number', want: 'a number' },
+      {
+        path: 'direction',
+        test: (v) => v === 'above' || v === 'below',
+        want: "one of 'above' or 'below'",
+      },
+      { path: 'window_s', test: (v) => typeof v === 'number' && v > 0, want: 'a positive number' },
+    ],
+  },
+  classify: {
+    given: [
+      {
+        path: 'items',
+        test: (v) => nonEmptyArray(v) && v.every(
+          (i: any) => plainObject(i) && nonEmptyString(i.id) && nonEmptyString(i.label),
+        ),
+        want: 'a non-empty array of objects with string id and label',
+      },
+      {
+        path: 'bins',
+        test: (v) => nonEmptyArray(v) && v.every(
+          (b: any) => plainObject(b) && nonEmptyString(b.id) && nonEmptyString(b.label),
+        ),
+        want: 'a non-empty array of objects with string id and label',
+      },
+    ],
+    solution: [
+      {
+        path: 'bins',
+        test: (v) => plainObject(v) && Object.keys(v).length > 0 &&
+          Object.values(v).every((x) => nonEmptyString(x)),
+        want: 'an object mapping item id to bin id (all strings)',
+      },
+    ],
   },
 }
 

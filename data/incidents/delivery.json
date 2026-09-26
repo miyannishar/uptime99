@@ -63,7 +63,7 @@
             ],
             "min_tier": 1
           },
-          "text": "Error rate on the compute layer spiked from 0.4% to 67% at 14:22 UTC. CPU utilisation is 31% above baseline, and request latency at the 99th percentile has increased by 4.8x. The pattern started simultaneously across affected instances."
+          "text": "Error rate on the {{layer_name}} layer spiked from 0.4% to 67% at 14:22 UTC. CPU utilisation is 31% above baseline, and request latency at the 99th percentile has increased by 4.8x. The pattern started simultaneously across affected instances."
         },
         {
           "level": 2,
@@ -73,7 +73,7 @@
             ],
             "min_tier": 2
           },
-          "text": "app-us-02 is returning HTTP 500 on 71% of requests since 14:22 UTC. Its health score has dropped to 22 and the instance is consuming excess CPU on every request cycle. The anomaly correlates with a deployment event at 14:20 UTC."
+          "text": "{{node_name}} (Tier {{current_tier}}) is returning HTTP 500 on 71% of requests since 14:22 UTC. Its health score has dropped to {{health}} and the instance is consuming excess CPU on every request cycle. The anomaly correlates with a deployment event at 14:20 UTC."
         },
         {
           "level": 3,
@@ -83,7 +83,7 @@
             ],
             "min_tier": 2
           },
-          "text": "Tracing shows app-us-02 panicking on startup after the 14:20 deploy introduced an incompatible schema migration. The process is restarting in a crash loop, consuming CPU on each failed boot cycle before the supervisor relaunches it. No rollback mechanism is configured on this node, so the deploy cannot be undone automatically. Restarting the instance clears the crash loop and returns it to a stable state, though the underlying schema issue may persist until the next deploy corrects it."
+          "text": "Tracing shows {{node_name}} panicking on startup after the 14:20 deploy introduced an incompatible schema migration. The process is restarting in a crash loop, consuming CPU on each failed boot cycle before the supervisor relaunches it. No rollback mechanism is configured on this node, so the deploy cannot be undone automatically. Restarting the instance clears the crash loop and returns it to a stable state, though the underlying schema issue may persist until the next deploy corrects it."
         }
       ]
     },
@@ -137,7 +137,7 @@
             ],
             "min_tier": 1
           },
-          "text": "A subset of requests on the compute layer is showing a 3.2% elevated error rate and 180ms higher median latency compared to the rest of the fleet. The divergence began approximately 18 minutes ago and is limited to a fraction of traffic."
+          "text": "A subset of requests on the {{layer_name}} layer is showing a 3.2% elevated error rate and 180ms higher median latency compared to the rest of the fleet. The divergence began approximately 18 minutes ago and is limited to a fraction of traffic."
         },
         {
           "level": 2,
@@ -147,7 +147,7 @@
             ],
             "min_tier": 2
           },
-          "text": "app-us-01's canary cohort is recording a 4.1% error rate and 240ms p50 latency regression versus the stable fleet at 09:47 UTC. Health score is at 84 and declining. The canary traffic split is currently at 10%."
+          "text": "{{node_name}}'s canary cohort is recording a 4.1% error rate and 240ms p50 latency regression versus the stable fleet at 09:47 UTC. Health score is at {{health}} and declining. The canary traffic split is currently at 10%."
         },
         {
           "level": 3,
@@ -157,7 +157,7 @@
             ],
             "min_tier": 2
           },
-          "text": "Tracing shows app-us-01's canary build introduced a dependency on a feature flag that is not enabled in production. Every request that reaches a code path guarded by that flag returns a partial response, causing the downstream client to log an error. The issue only affects the 10% canary cohort. Rolling back the deploy returns app-us-01 to the last stable build and clears the error immediately."
+          "text": "Tracing shows {{node_name}}'s canary build introduced a dependency on a feature flag that is not enabled in production. Every request that reaches a code path guarded by that flag returns a partial response, causing the downstream client to log an error. The issue only affects the 10% canary cohort. Rolling back the deploy returns {{node_name}} to the last stable build and clears the error immediately."
         }
       ]
     },
@@ -211,7 +211,7 @@
             ],
             "min_tier": 1
           },
-          "text": "Outbound API call success rate from the compute layer dropped to 34% starting at 06:10 UTC. The failures are isolated to calls reaching an external service and are returning 410 Gone responses consistently."
+          "text": "Outbound API call success rate from the {{layer_name}} layer dropped to 34% starting at 06:10 UTC. The failures are isolated to calls reaching an external service and are returning 410 Gone responses consistently."
         },
         {
           "level": 2,
@@ -221,7 +221,7 @@
             ],
             "min_tier": 2
           },
-          "text": "third-party-api-01 calls are failing with HTTP 410 Gone on every request since 06:00 UTC. The endpoint being called is returning a deprecation notice in the response body. Health score has fallen to 51 as dependent workflows fail to complete."
+          "text": "{{node_name}} calls are failing with HTTP 410 Gone on every request since 06:00 UTC. The endpoint being called is returning a deprecation notice in the response body. Health score has fallen to {{health}} as dependent workflows fail to complete."
         },
         {
           "level": 3,
@@ -231,7 +231,7 @@
             ],
             "min_tier": 2
           },
-          "text": "Tracing confirms third-party-api-01 is calling the v2 endpoint of the payment processor's API, which was retired at 06:00 UTC after six months of announced deprecation. All v2 calls now return 410 Gone. The v3 API requires a newer SDK version available only in higher tiers of the integration node. Upgrading the tier switches to the v3 client and restores full API functionality."
+          "text": "Tracing confirms {{node_name}} is calling the v2 endpoint of the payment processor's API, which was retired at 06:00 UTC after six months of announced deprecation. All v2 calls now return 410 Gone. The v3 API requires a newer SDK version available only in higher tiers of the integration node. Upgrading the tier switches to the v3 client and restores full API functionality."
         }
       ]
     },
@@ -295,7 +295,7 @@
             ],
             "min_tier": 2
           },
-          "text": "Alerting flagged two nodes — pg-replica-us-01 and object-store-us-01 — whose restore runbooks have not been executed since provisioning. The drill is actively testing their recovery procedures. No customer traffic is affected yet, but results will determine the organisation's true RTO."
+          "text": "Alerting flagged one or more nodes whose restore runbooks have not been executed since provisioning. The drill is actively testing their recovery procedures. No customer traffic is affected yet, but results will determine the organisation's true RTO."
         },
         {
           "level": 3,
@@ -305,7 +305,7 @@
             ],
             "min_tier": 2
           },
-          "text": "Tracing captured the restore timeline for each node under drill. pg-replica-us-01's restore from the last snapshot took 47 minutes — 3x the documented RTO — because the restore script referenced a deprecated snapshot format. object-store-us-01's restore completed successfully. The drill expires on its own; the findings feed directly into whether your actual RTO is achievable if a real incident requires a restore."
+          "text": "Tracing captured the restore timeline for each node under drill. One or more nodes revealed actual restore times significantly exceeding their documented RTO — in some cases because restore scripts referenced deprecated snapshot formats. The drill expires on its own; the findings feed directly into whether your actual RTO is achievable if a real incident requires a restore."
         }
       ]
     }

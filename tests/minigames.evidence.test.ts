@@ -9,8 +9,8 @@ describe('data/minigames/instances/e-evidence.json', () => {
     expectValidInstanceFile('data/minigames/instances/e-evidence.json')
   })
 
-  it('holds five instances', () => {
-    expect(instances).toHaveLength(5)
+  it('holds eight instances', () => {
+    expect(instances).toHaveLength(8)
   })
 
   it('covers all three evidence difficulty-slots', () => {

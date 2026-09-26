@@ -207,6 +207,11 @@ export type MinigameAnswer =
   | { readonly kind: 'dial'; readonly value: number }
   | { readonly kind: 'wiring'; readonly zone: string | null; readonly connectTo: readonly string[] }
   | { readonly kind: 'evidence'; readonly choice: string | null }
+  | { readonly kind: 'terminal'; readonly text: string }
+  | { readonly kind: 'log_hunt'; readonly line: number | null }
+  | { readonly kind: 'patch'; readonly content: string }
+  | { readonly kind: 'monitor'; readonly metric: string | null; readonly t: number }
+  | { readonly kind: 'classify'; readonly placements: Readonly<Record<string, string>> }
 
 /**
  * One attempt at a minigame. `attempt` is 1-based; at `attempt > 3` the shell
@@ -225,6 +230,8 @@ export interface MinigameSession {
   /** True once three attempts have failed. */
   readonly revealed: boolean
   readonly answer: MinigameAnswer
+  /** True when the text was rewritten by AI for the live system (answer unchanged). */
+  readonly aiText?: boolean
 }
 
 /* ------------------------------------------------------ design and debrief --- */

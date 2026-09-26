@@ -1,0 +1,144 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* ---- unplaced tray ---- */
+
+.tray {
+  border: 1px dashed var(--line-strong);
+  border-radius: 6px;
+  padding: 0.75rem;
+  min-height: 72px;
+  transition: border-color 0.1s, background 0.1s;
+}
+
+.trayDragOver {
+  border-color: var(--acc);
+  background: color-mix(in srgb, var(--acc) 8%, transparent);
+}
+
+.trayLabel {
+  display: block;
+  font-size: 0.7rem;
+  color: var(--txt-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 0.5rem;
+}
+
+.trayItems {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+/* ---- bins row ---- */
+
+.bins {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.75rem;
+}
+
+.bin {
+  border: 1.5px solid var(--line-strong);
+  border-radius: 6px;
+  padding: 0.625rem;
+  min-height: 90px;
+  cursor: default;
+  transition: border-color 0.1s, background 0.1s;
+}
+
+.binDragOver {
+  border-color: var(--acc);
+  background: color-mix(in srgb, var(--acc) 10%, transparent);
+}
+
+.binClickable {
+  cursor: pointer;
+  border-color: var(--acc);
+}
+
+.binLabel {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--txt-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 0.5rem;
+}
+
+.binItems {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+/* ---- draggable items ---- */
+
+.item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.3rem 0.6rem;
+  border-radius: 4px;
+  font-size: 0.82rem;
+  background: var(--bg-3);
+  border: 1px solid var(--line-strong);
+  cursor: grab;
+  user-select: none;
+  transition: border-color 0.1s, background 0.1s, box-shadow 0.1s;
+}
+
+.item:hover:not(.itemDisabled) {
+  border-color: var(--acc);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.45);
+}
+
+.item:focus-visible {
+  outline: 2px solid var(--acc);
+  outline-offset: 1px;
+}
+
+.itemSelected {
+  border-color: var(--acc);
+  background: color-mix(in srgb, var(--acc) 12%, var(--bg-2));
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--acc) 30%, transparent);
+}
+
+.itemPlaced {
+  width: 100%;
+}
+
+.itemDisabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.itemCorrect {
+  border-color: var(--ok);
+  background: color-mix(in srgb, var(--ok) 12%, var(--bg-2));
+}
+
+.itemWrong {
+  border-color: var(--bad);
+  background: color-mix(in srgb, var(--bad) 12%, var(--bg-2));
+}
+
+.revealMark {
+  margin-left: auto;
+  font-size: 0.7rem;
+  color: var(--txt-dim);
+  flex-shrink: 0;
+}
+
+/* ---- hint ---- */
+
+.hint {
+  font-size: 0.8rem;
+  color: var(--txt-dim);
+  margin: 0;
+}

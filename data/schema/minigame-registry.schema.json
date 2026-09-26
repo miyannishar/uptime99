@@ -6,8 +6,8 @@
   "properties": {
     "minigames": {
       "type": "array",
-      "minItems": 15,
-      "maxItems": 15,
+      "minItems": 23,
+      "maxItems": 23,
       "items": {
         "type": "object",
         "additionalProperties": false,
@@ -15,7 +15,7 @@
         "properties": {
           "id": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
           "name": { "type": "string", "minLength": 1 },
-          "format": { "enum": ["ordered_sequence", "fill_blank", "dial", "wiring", "evidence"] },
+          "format": { "enum": ["ordered_sequence", "fill_blank", "dial", "wiring", "evidence", "terminal", "log_hunt", "patch", "monitor", "classify"] },
           "description": { "type": "string", "minLength": 30 }
         }
       }

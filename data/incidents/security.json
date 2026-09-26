@@ -50,7 +50,7 @@
             ],
             "min_tier": 1
           },
-          "text": "Authentication success rate on the identity layer dropped 14% over the past hour, consistent with replayed or repurposed credentials. The pattern shows repeated successful logins from IP blocks with no prior history in user device records."
+          "text": "Authentication success rate on the {{layer_name}} layer dropped 14% over the past hour, consistent with replayed or repurposed credentials. The pattern shows repeated successful logins from IP blocks with no prior history in user device records."
         },
         {
           "level": 2,
@@ -60,7 +60,7 @@
             ],
             "min_tier": 2
           },
-          "text": "secrets-manager-01 shows 34 unique API keys last accessed in the past 6 hours that had zero usage in the previous 30 days. The spike correlates with credentials appearing in an external dump at 02:11 UTC."
+          "text": "{{node_name}} shows 34 unique API keys last accessed in the past 6 hours that had zero usage in the previous 30 days. The spike correlates with credentials appearing in an external dump at 02:11 UTC."
         },
         {
           "level": 3,
@@ -70,7 +70,7 @@
             ],
             "min_tier": 2
           },
-          "text": "ci-cd-01's deployment pipeline has been using a single admin API key since provisioning, stored in a shared config file committed to the repository. The key has full write access to all services. Tracing shows it being used from an external IP since 01:52 UTC. Rotating it immediately revokes the attacker's access but will break the deployment pipeline until the new credential is distributed to all consumers."
+          "text": "{{node_name}}'s deployment pipeline has been using a single admin API key since provisioning, stored in a shared config file committed to the repository. The key has full write access to all services. Tracing shows it being used from an external IP since 01:52 UTC. Rotating it immediately revokes the attacker's access but will break the deployment pipeline until the new credential is distributed to all consumers."
         }
       ]
     },
@@ -129,7 +129,7 @@
             ],
             "min_tier": 1
           },
-          "text": "Authentication error rate at the edge layer has climbed to 43% over the last 12 minutes. CPU utilization on the ingress tier is at 91%, significantly above the daily average of 38%."
+          "text": "Authentication error rate at the {{layer_name}} layer has climbed to 43% over the last 12 minutes. CPU utilization is at 91%, significantly above the daily average of 38%."
         },
         {
           "level": 2,
@@ -139,7 +139,7 @@
             ],
             "min_tier": 2
           },
-          "text": "cdn-edge-01 is processing 18,000 login requests per minute, up from a baseline of 900. The burst shows rotating User-Agent strings, sequential account enumeration, and no consistent browser fingerprint. Legitimate user logins are queued behind the attack traffic."
+          "text": "{{node_name}} is processing 18,000 login requests per minute, up from a baseline of 900. The burst shows rotating User-Agent strings, sequential account enumeration, and no consistent browser fingerprint. Legitimate user logins are queued behind the attack traffic."
         },
         {
           "level": 3,
@@ -149,7 +149,7 @@
             ],
             "min_tier": 2
           },
-          "text": "cdn-edge-01 has no per-client request rate limit configured. An automated attacker is replaying 14.2 million username-password pairs sourced from a known external breach dump. Each attempt reaches the origin authentication service, saturating the connection pool. Enabling a rate limit at the edge would block the attack burst before it reaches the origin."
+          "text": "{{node_name}} has no per-client request rate limit configured. An automated attacker is replaying 14.2 million username-password pairs sourced from a known external breach dump. Each attempt reaches the origin authentication service, saturating the connection pool. Enabling a rate limit at the edge would block the attack burst before it reaches the origin."
         }
       ]
     },
@@ -207,7 +207,7 @@
             ],
             "min_tier": 1
           },
-          "text": "Failed authentication attempts at the edge layer reached 12,000 per minute at 08:34 UTC — a 60x increase over the 24-hour average. CPU utilization on the ingress tier is at 85%."
+          "text": "Failed authentication attempts at the {{layer_name}} layer reached 12,000 per minute at 08:34 UTC — a 60x increase over the 24-hour average. CPU utilization is at 85%."
         },
         {
           "level": 2,
@@ -217,7 +217,7 @@
             ],
             "min_tier": 2
           },
-          "text": "ingress-us-01 is processing 9,800 failed login attempts per minute from a rotating pool of 340 distinct IP addresses. Account lockout policies have triggered on 1,200 user accounts in the last 8 minutes, preventing legitimate owners from logging in."
+          "text": "{{node_name}} is processing 9,800 failed login attempts per minute from a rotating pool of 340 distinct IP addresses. Account lockout policies have triggered on 1,200 user accounts in the last 8 minutes, preventing legitimate owners from logging in."
         },
         {
           "level": 3,
@@ -227,7 +227,7 @@
             ],
             "min_tier": 2
           },
-          "text": "ingress-us-01 has no rate limit on the /auth/login endpoint. The attacking client is cycling through a dictionary of 8 million common passwords against a list of 14,000 harvested email addresses. No throttle applies per IP or per account until the lockout policy fires, by which point accounts are already inaccessible to their owners. Enabling a rate limit would cap attempts per IP and break the attack loop within seconds."
+          "text": "{{node_name}} has no rate limit on the /auth/login endpoint. The attacking client is cycling through a dictionary of 8 million common passwords against a list of 14,000 harvested email addresses. No throttle applies per IP or per account until the lockout policy fires, by which point accounts are already inaccessible to their owners. Enabling a rate limit would cap attempts per IP and break the attack loop within seconds."
         }
       ]
     },
@@ -288,7 +288,7 @@
             ],
             "min_tier": 1
           },
-          "text": "Outbound data transfer volume from the data layer increased 340% at 03:42 UTC and has not returned to baseline. The egress destination is an IP range with no prior history in our access logs."
+          "text": "Outbound data transfer volume from the {{layer_name}} layer increased 340% at 03:42 UTC and has not returned to baseline. The egress destination is an IP range with no prior history in our access logs."
         },
         {
           "level": 2,
@@ -298,7 +298,7 @@
             ],
             "min_tier": 2
           },
-          "text": "object-store-us-01 has served 2.4 TB of unauthenticated GET requests in the past 90 minutes. The bucket's public read policy was enabled 11 days ago and has been accumulating access since then. Presigned URL logging was disabled."
+          "text": "{{node_name}} has served 2.4 TB of unauthenticated GET requests in the past 90 minutes. The bucket's public read policy was enabled 11 days ago and has been accumulating access since then. Presigned URL logging was disabled."
         },
         {
           "level": 3,
@@ -308,7 +308,7 @@
             ],
             "min_tier": 2
           },
-          "text": "object-store-us-01's bucket ACL was set to public-read during a configuration change on the 7th that was not reviewed. All objects in the bucket — including 4.1 million serialised user records exported for a data warehouse migration — have been publicly readable since then. An external crawler indexed the endpoint and the contents are circulating on data-broker forums. Restricting the bucket's access policy stops further exfiltration immediately but does not recover data already copied."
+          "text": "{{node_name}}'s bucket ACL was set to public-read during a configuration change on the 7th that was not reviewed. All objects in the bucket — including 4.1 million serialised user records exported for a data warehouse migration — have been publicly readable since then. An external crawler indexed the endpoint and the contents are circulating on data-broker forums. Restricting the bucket's access policy stops further exfiltration immediately but does not recover data already copied."
         }
       ]
     },
@@ -374,7 +374,7 @@
             ],
             "min_tier": 2
           },
-          "text": "iam-broker-01 records show four service accounts provisioned in Q2 — never decommissioned — performed bulk data exports from the user table between 02:00 and 04:45 UTC on Wednesday. No audit log entry exists for any of these exports."
+          "text": "Identity management records show four service accounts provisioned in Q2 — never decommissioned — performed bulk data exports from the user table between 02:00 and 04:45 UTC on Wednesday. No audit log entry exists for any of these exports."
         },
         {
           "level": 3,
@@ -451,7 +451,7 @@
             ],
             "min_tier": 2
           },
-          "text": "pg-primary, object-store-us-01, and backup-us-01 are all reporting corrupted or encrypted volumes as of 07:22 UTC. The encryption pattern across all three nodes is consistent with a ransomware payload that propagated laterally across the storage tier."
+          "text": "Multiple nodes across the data layer are reporting corrupted or encrypted volumes as of 07:22 UTC. The encryption pattern is consistent with a ransomware payload that propagated laterally across the storage tier."
         },
         {
           "level": 3,
@@ -515,7 +515,7 @@
             ],
             "min_tier": 1
           },
-          "text": "TLS negotiation failure rate at the edge layer climbed from 0.1% to 89% at 11:08 UTC. The spike is simultaneous across all geographic endpoints, ruling out a single-region issue."
+          "text": "TLS negotiation failure rate at the {{layer_name}} layer climbed from 0.1% to 89% at 11:08 UTC. The spike is simultaneous across all geographic endpoints, ruling out a single-region issue."
         },
         {
           "level": 2,
@@ -525,7 +525,7 @@
             ],
             "min_tier": 2
           },
-          "text": "tls-cert-01's handshake is failing for all clients presenting modern TLS 1.3 requirements. The certificate chain served to connecting clients is incomplete — the intermediate CA certificate is missing from the bundle, causing validation errors across all major browsers and HTTP clients."
+          "text": "{{node_name}}'s handshake is failing for all clients presenting modern TLS 1.3 requirements. The certificate chain served to connecting clients is incomplete — the intermediate CA certificate is missing from the bundle, causing validation errors across all major browsers and HTTP clients."
         },
         {
           "level": 3,
@@ -590,7 +590,7 @@
             ],
             "min_tier": 1
           },
-          "text": "TLS certificate validity on the edge layer is showing 0 days remaining. HTTP error rate spiked from 0.3% to 94% at 00:01 UTC. New connections are failing at the TLS layer before any application code is reached."
+          "text": "TLS certificate validity on the {{layer_name}} layer is showing 0 days remaining. HTTP error rate spiked from 0.3% to 94% at 00:01 UTC. New connections are failing at the TLS layer before any application code is reached."
         },
         {
           "level": 2,
@@ -600,7 +600,7 @@
             ],
             "min_tier": 2
           },
-          "text": "tls-cert-01's certificate for *.prod.example.com expired at 00:00:01 UTC. All HTTPS clients are receiving an SSL_ERROR_EXPIRED response."
+          "text": "{{node_name}}'s certificate expired at 00:00:01 UTC. All HTTPS clients are receiving an SSL_ERROR_EXPIRED response."
         },
         {
           "level": 3,
@@ -610,7 +610,7 @@
             ],
             "min_tier": 2
           },
-          "text": "tls-cert-01's certificate renewal was never automated. The engineer who managed it manually created a calendar reminder that was not transferred when they left the team. The cert entered stale_cert state four days before expiry, but no monitoring alert was wired to that state. It expired at midnight UTC. Renewing it requires provisioning a new certificate and deploying it; typical time-to-green is 8 minutes."
+          "text": "{{node_name}}'s certificate renewal was never automated. The engineer who managed it manually created a calendar reminder that was not transferred when they left the team. The cert entered stale_cert state four days before expiry, but no monitoring alert was wired to that state. It expired at midnight UTC. Renewing it requires provisioning a new certificate and deploying it; typical time-to-green is 8 minutes."
         }
       ]
     }

@@ -54,6 +54,8 @@ export interface EngineCatalog {
   readonly scenarioById: ReadonlyMap<string, any>
   readonly levelByNumber: ReadonlyMap<number, any>
   readonly ticketById: ReadonlyMap<string, any>
+  readonly stakeholders: readonly any[]
+  readonly stakeholderById: ReadonlyMap<string, any>
 }
 
 /** Pure constructor: takes already-parsed JSON arrays, does no I/O.
@@ -75,11 +77,14 @@ export function catalogFrom(rawData: {
   /** Optional: ticket definitions. Defaults to [] if omitted (e.g. browser contexts
    *  that have not yet wired up the tickets data file). */
   tickets?: any[]
+  /** Optional: stakeholder message definitions (data/stakeholders.json). Defaults to []. */
+  stakeholders?: any[]
 }): EngineCatalog {
   const {
     nodes, layers, tags, actions, metrics, economy,
     incidents, formats, minigames, minigameInstances, scenarios, levels,
     tickets = [],
+    stakeholders = [],
   } = rawData
 
   const index = <T extends { id: string }>(xs: T[]) =>
@@ -99,6 +104,7 @@ export function catalogFrom(rawData: {
     scenarios,
     levels,
     tickets,
+    stakeholders,
     nodeById: index(nodes),
     layerById: index(layers),
     tagById: index(tags),
@@ -108,5 +114,6 @@ export function catalogFrom(rawData: {
     scenarioById: index(scenarios),
     levelByNumber: new Map(levels.map((l: any) => [l.level, l])),
     ticketById: index(tickets),
+    stakeholderById: index(stakeholders),
   }) as EngineCatalog
 }

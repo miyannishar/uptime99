@@ -1,6 +1,7 @@
 import { readdirSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { loadJson } from './loadJson'
+import { checkStakeholders } from './stakeholderChecks'
 import { compileSchema } from './schemaValidator'
 import { matchActions, type Action, type Constraint } from './matchActions'
 import {
@@ -17,6 +18,7 @@ import {
   checkRegistryMatchesActions,
   checkFormatsResolve,
   checkSlotCoverage,
+  checkForActionsRefs,
   checkInstanceRefs,
   checkInstanceIdsUnique,
   checkInstanceShapes,
@@ -34,6 +36,7 @@ import {
   checkLevelIncidentCoverage,
   checkScenarioLevelRefs,
 } from './levelChecks'
+import { checkTicketHints } from './ticketChecks'
 
 const NODE_DIR = 'data/nodes'
 
@@ -381,11 +384,19 @@ export function runIntegrityChecks(): string[] {
     problems.push(...checkRegistryMatchesActions(mgData.minigames, actionList))
     problems.push(...checkFormatsResolve(mgData.minigames, mgData.formats))
     problems.push(...checkSlotCoverage(mgData.instances, actionList))
+    problems.push(...checkForActionsRefs(mgData.instances, actionList))
     problems.push(...checkInstanceRefs(mgData.instances, mgData.minigames, mgData.formats))
     problems.push(...checkInstanceIdsUnique(mgData.instances))
     problems.push(...checkInstanceShapes(mgData.instances, mgData.minigames))
     problems.push(...checkWhenLegality(mgData.instances, mgData.minigames))
   }
+
+  // Stakeholder messages: schema, then trigger metrics and fairness
+  const stakeholderSchema = compileSchema('data/schema/stakeholder.schema.json')
+  const stakeholderFile = loadJson<any>('data/stakeholders.json')
+  const sr = stakeholderSchema(stakeholderFile)
+  if (!sr.valid) problems.push(`data/stakeholders.json: ${sr.errors.join('; ')}`)
+  else problems.push(...checkStakeholders(stakeholderFile.stakeholders, metricIds))
 
   // 25–28. Scenario integrity checks
   const scenarioSchema = compileSchema('data/schema/scenario.schema.json')
@@ -399,6 +410,25 @@ export function runIntegrityChecks(): string[] {
   problems.push(...checkScenarioProgression(scenarios))
 
   // 29–32. Level integrity checks
+  // 33–34. Ticket integrity checks
+  const ticketData = loadJson<any>('data/tickets.json')
+  const ticketSchema = compileSchema('data/schema/ticket.schema.json')
+  const tr = ticketSchema(ticketData)
+  if (!tr.valid) problems.push(`data/tickets.json: ${tr.errors.join('; ')}`)
+  const actionById = new Map<string, Action>(c.actions.map((a) => [a.id, a]))
+  problems.push(
+    ...checkTicketHints(
+      ticketData.tickets ?? [],
+      loadScenarios(),
+      c.actions,
+      (id: string) => {
+        const action = actionById.get(id)
+        if (!action) return []
+        return matchableTiers(action, c.nodes, runtimeOnlyTags)
+      },
+    ),
+  )
+
   const levelSchema = compileSchema('data/schema/level.schema.json')
   const levelsRaw = loadJson('data/levels.json')
   const lr = levelSchema(levelsRaw)

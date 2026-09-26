@@ -12,9 +12,9 @@ describe('loadEngineCatalog', () => {
     expect(c.actions).toHaveLength(33)
     expect(c.metrics).toHaveLength(7)
     expect(c.incidents).toHaveLength(50)
-    expect(c.formats).toHaveLength(5)
-    expect(c.minigames).toHaveLength(15)
-    expect(c.minigameInstances).toHaveLength(32)
+    expect(c.formats).toHaveLength(10)
+    expect(c.minigames).toHaveLength(23)
+    expect(c.minigameInstances).toHaveLength(71)
     expect(c.scenarios).toHaveLength(6)
   })
 

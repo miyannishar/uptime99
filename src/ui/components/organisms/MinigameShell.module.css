@@ -148,3 +148,12 @@
   font-size: var(--fs-0);
   color: var(--txt-faint);
 }
+
+.live {
+  font-size: var(--fs-1);
+  color: var(--acc);
+  border: 1px solid var(--acc);
+  border-radius: var(--r-pill);
+  padding: 0 var(--sp-2);
+  letter-spacing: var(--ls-mid);
+}

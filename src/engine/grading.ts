@@ -4,6 +4,7 @@
 import type { GameState, IncidentRecord } from './types'
 import type { EngineCatalog } from './catalogFrom'
 import { ledgerEntriesFor } from './ledger'
+import { crossingTime } from './monitorCurve'
 
 export type MinigameAnswer =
   | { readonly kind: 'ordered_sequence'; readonly order: readonly number[] }
@@ -11,6 +12,11 @@ export type MinigameAnswer =
   | { readonly kind: 'dial'; readonly value: number }
   | { readonly kind: 'wiring'; readonly zone: string | null; readonly connectTo: readonly string[] }
   | { readonly kind: 'evidence'; readonly choice: string | null }
+  | { readonly kind: 'terminal'; readonly text: string }
+  | { readonly kind: 'log_hunt'; readonly line: number | null }
+  | { readonly kind: 'patch'; readonly content: string }
+  | { readonly kind: 'monitor'; readonly metric: string | null; readonly t: number }
+  | { readonly kind: 'classify'; readonly placements: Readonly<Record<string, string>> }
 
 export interface GradeResult {
   readonly correct: boolean
@@ -55,6 +61,81 @@ export function gradeAnswer(instanceDef: any, answer: MinigameAnswer): GradeResu
     case 'evidence': {
       const correct = answer.choice === instanceDef.solution.choice
       return correct ? { correct: true } : { correct: false, when: 'wrong_choice' }
+    }
+
+    case 'terminal': {
+      // Trailing quotes/semicolons that only close what the prefix opened are not
+      // significant: `pg_stat_replication` and `pg_stat_replication";` are the same command.
+      const norm = (s: string) => s.trim().replace(/\s+/g, ' ').replace(/["';\s]+$/, '')
+      const accepts: string[] = instanceDef.solution.accepts
+      const correct = accepts.map(norm).includes(norm(answer.text))
+      return correct ? { correct: true } : { correct: false, when: 'wrong_command' }
+    }
+
+    case 'log_hunt': {
+      // `accept` lists other lines that are the same root cause (e.g. every
+      // occurrence of one slow query), so the player is not graded on which copy.
+      const accept: number[] = instanceDef.solution.accept ?? []
+      const correct = answer.line !== null &&
+        (answer.line === instanceDef.solution.line || accept.includes(answer.line))
+      return correct ? { correct: true } : { correct: false, when: 'wrong_line' }
+    }
+
+    case 'patch': {
+      // Normalise for semantic comparison only; structural checks use trimEnd only.
+      // Spacing around ':' and '=' is not significant ("pool:12" == "pool: 12").
+      const norm = (s: string) =>
+        s.trim().toLowerCase().replace(/\s*([:=])\s*/g, '$1').replace(/\s+/g, ' ')
+      // Needles match on token boundaries, so "api 60" does not match "api 600".
+      const has = (hay: string, needle: string) => {
+        const esc = norm(needle).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+        return new RegExp(`(^|[^a-z0-9])${esc}([^a-z0-9]|$)`).test(hay)
+      }
+      const origLines: string[] = (instanceDef.given.content as string).split('\n')
+      const newLines: string[] = answer.content.split('\n')
+      const targetIdx: number = (instanceDef.solution.line as number) - 1
+
+      // Any change outside the target line, or a line count mismatch → collateral_edit
+      if (newLines.length !== origLines.length) {
+        return { correct: false, when: 'collateral_edit' }
+      }
+      for (let i = 0; i < origLines.length; i++) {
+        if (i === targetIdx) continue
+        if (newLines[i].trimEnd() !== origLines[i].trimEnd()) {
+          return { correct: false, when: 'collateral_edit' }
+        }
+      }
+
+      // Target line must contain every must_contain and none of must_not_contain
+      const targetNorm = norm(newLines[targetIdx] ?? '')
+      const mustContain: string[] = instanceDef.solution.must_contain ?? []
+      const mustNotContain: string[] = instanceDef.solution.must_not_contain ?? []
+      const containsAll = mustContain.every((s: string) => has(targetNorm, s))
+      const containsNone = mustNotContain.every((s: string) => !has(targetNorm, s))
+      if (containsAll && containsNone) return { correct: true }
+      return { correct: false, when: 'wrong_edit' }
+    }
+
+    case 'monitor': {
+      const { metrics, duration_s } = instanceDef.given
+      const { metric: solutionMetric, threshold, direction, window_s } = instanceDef.solution
+      // Find the solution metric's definition to compute tStar
+      const m = (metrics as any[]).find((x) => x.id === solutionMetric)
+      const tStar = m ? crossingTime(m, threshold, direction, duration_s) : null
+      // Order matters: too_late is checked first (even wrong metric can be too late)
+      if (tStar !== null && answer.t > tStar + window_s) return { correct: false, when: 'too_late' }
+      if (answer.metric !== solutionMetric) return { correct: false, when: 'wrong_metric' }
+      if (tStar === null || answer.t < tStar) return { correct: false, when: 'too_early' }
+      return { correct: true }
+    }
+
+    case 'classify': {
+      const expected: Record<string, string> = instanceDef.solution.bins
+      const items: Array<{ id: string }> = instanceDef.given.items
+      const correct = items.every(
+        (item) => answer.placements[item.id] === expected[item.id],
+      )
+      return correct ? { correct: true } : { correct: false, when: 'wrong_bin' }
     }
 
     default: {
@@ -183,50 +264,42 @@ export function applyOutcome(
   let newSession = state.session
   let newLedger = [...state.ledger]
 
-  if (incidentRecordIdx !== -1) {
+  if (correct) {
+    // One fix clears everything it fixes: the incident it was opened from (every
+    // record of that key — a group incident has one per instance) plus any other
+    // active incident on this instance that lists this action in resolved_by.
+    const keys = new Set<string>()
+    if (incidentRecordIdx !== -1) keys.add(newIncidents[incidentRecordIdx].key)
+    for (const r of newIncidents) {
+      if (r.instance_id !== instanceId) continue
+      const def = catalog.incidentById.get(r.incident_id) as { resolved_by?: string[] } | undefined
+      if (def?.resolved_by?.includes(actionId)) keys.add(r.key)
+    }
+    for (const key of keys) {
+      const group = newIncidents.filter((r) => r.key === key)
+      const incidentDef = catalog.incidentById.get(group[0].incident_id)
+      if (incidentDef) {
+        const affected = group.map((r) => r.instance_id).filter((id): id is string => id !== null)
+        newLedger = [...newLedger, ...ledgerEntriesFor(incidentDef, 'on_resolve', state, catalog, affected.length ? affected : [instanceId])]
+      }
+    }
+    if (keys.size > 0) {
+      newIncidents = newIncidents.filter((r) => !keys.has(r.key))
+      newSession = { ...state.session, incidents_resolved: state.session.incidents_resolved + keys.size }
+    }
+  } else if (incidentRecordIdx !== -1) {
+    // Wrong answer — count the attempt, keep the incident
     const record = newIncidents[incidentRecordIdx]
     const currentAttempts = record.attempts[minigameInstanceId] ?? 0
     const updatedRecord: IncidentRecord = {
       ...record,
-      attempts: {
-        ...record.attempts,
-        [minigameInstanceId]: currentAttempts + 1,
-      },
+      attempts: { ...record.attempts, [minigameInstanceId]: currentAttempts + 1 },
     }
-
-    if (correct) {
-      // Find the incident definition to emit on_resolve ledger entries
-      const incidentDef = catalog.incidentById.get(record.incident_id)
-      if (incidentDef) {
-        const resolveEntries = ledgerEntriesFor(
-          incidentDef,
-          'on_resolve',
-          state,
-          catalog,
-          [instanceId],
-        )
-        newLedger = [...newLedger, ...resolveEntries]
-      }
-
-      // Remove the resolved incident
-      newIncidents = [
-        ...newIncidents.slice(0, incidentRecordIdx),
-        ...newIncidents.slice(incidentRecordIdx + 1),
-      ]
-
-      // Increment incidents_resolved
-      newSession = {
-        ...state.session,
-        incidents_resolved: state.session.incidents_resolved + 1,
-      }
-    } else {
-      // Wrong answer — update attempts but keep incident
-      newIncidents = [
-        ...newIncidents.slice(0, incidentRecordIdx),
-        updatedRecord,
-        ...newIncidents.slice(incidentRecordIdx + 1),
-      ]
-    }
+    newIncidents = [
+      ...newIncidents.slice(0, incidentRecordIdx),
+      updatedRecord,
+      ...newIncidents.slice(incidentRecordIdx + 1),
+    ]
   } else if (incidentKey === null && incidentRecordIdx === -1) {
     // No incident to resolve — just update attempts on any matching record
     // (no-op if there's no record for this minigame instance)

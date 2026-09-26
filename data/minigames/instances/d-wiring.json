@@ -4,7 +4,7 @@
       "id": "topology_second_az",
       "minigame": "topology_puzzle",
       "difficulty": 3,
-      "brief": "Everything you run sits in us-east-1a. An AZ outage would take the whole system down.",
+      "brief": "{{node_name}} and all its dependencies share a single availability zone. Everything you run sits in us-east-1a. An AZ outage would take the whole system down.",
       "teaches": "Redundancy protects against a failure domain, not against a count. Two instances in one availability zone share the zone's fate.",
       "levers": { "component_count": 4, "connection_points_highlighted": true },
       "given": {
@@ -31,7 +31,7 @@
       "id": "topology_multi_region_write",
       "minigame": "topology_puzzle",
       "difficulty": 5,
-      "brief": "Your EU stack (lb-eu-01, app-eu-01) routes all writes to pg-primary in us-east-1. Last month a 23-minute us-east-1 outage caused 100% EU write failures despite EU compute staying healthy.",
+      "brief": "{{node_name}} is routing cross-region writes through us-east-1. Your EU stack (lb-eu-01, app-eu-01) routes all writes to pg-primary in us-east-1. Last month a 23-minute us-east-1 outage caused 100% EU write failures despite EU compute staying healthy.",
       "teaches": "A regional deployment is only as resilient as its most remote dependency. Cross-region writes re-centralise your failure domain across the wire regardless of where your compute lives.",
       "levers": { "component_count": 6, "connection_points_highlighted": false },
       "given": {
@@ -55,6 +55,66 @@
         }
       ],
       "reveal": "The trap here is geographic confusion: the new component is in Europe, so the EU stack looks independent. But if app-eu-01 still writes to pg-primary in us-east-1, the transatlantic link remains a single point of failure. The correct placement puts pg-replica in eu-west-1b — inside the EU region, but a different availability zone from app-eu-01, so an AZ failure does not take the app tier and its database together — and connects it to both app-eu-01 (the local write client) and pg-primary (the replication source). During a us-east-1 outage the EU database is promoted to accept writes locally; on recovery the two are reconciled and replication is re-established. Promotion is the step that makes the local write path real — a replica left in read-only mode fails EU writes exactly as the transatlantic dependency did. The failure domain is broken by moving the write dependency local — not just by placing a component in a new geography."
+    },
+    {
+      "id": "topology_cache_standby",
+      "minigame": "topology_puzzle",
+      "difficulty": 3,
+      "brief": "{{node_name}}'s primary Redis instance lives in us-east-1a with no replica. A zone failure would expose the application to cache miss storms — every request would fall through to the origin database simultaneously. Add a Redis standby in a second availability zone.",
+      "teaches": "Standbys protect against zone failures, not instance failures. The standby must be in a different AZ and must replicate directly from the primary — not from the application tier, which has no replication role.",
+      "levers": { "component_count": 4, "connection_points_highlighted": true },
+      "given": {
+        "nodes": [
+          { "id": "redis_primary", "label": "redis-primary", "zone": "us-east-1a" },
+          { "id": "app", "label": "app-us-01", "zone": "us-east-1a" },
+          { "id": "lb", "label": "Load balancer", "zone": "us-east-1a" }
+        ],
+        "zones": ["us-east-1a", "us-east-1b"],
+        "place": { "id": "redis_standby", "label": "Redis standby" }
+      },
+      "solution": {
+        "zone": "us-east-1b",
+        "connect_to": ["redis_primary"]
+      },
+      "wrong_outcomes": [
+        {
+          "when": "wrong_target",
+          "shows": "Replication does not establish. Either the standby is in the same zone as the primary (both fail together on a zone outage) or it is connected to the application server rather than the primary (no replication path exists).",
+          "why_wrong": "The standby must be in a different AZ from the primary and connected directly to the primary for replication. Connecting to the app tier or load balancer provides no data replication."
+        }
+      ],
+      "reveal": "A Redis standby requires: (1) a different availability zone from the primary, so a zone failure doesn't take both down; (2) a direct connection to the primary, so replication can establish. Connecting to app or lb instead of redis_primary leaves no replication path."
+    },
+    {
+      "id": "topology_dr_failover",
+      "minigame": "topology_puzzle",
+      "difficulty": 5,
+      "brief": "{{node_name}} runs in us-east-1. Your DR runbook requires a hot standby postgres in eu-west-1 that can serve reads within 60 seconds of a regional failure. The EU app stack (lb-eu, app-eu) is already deployed. Place the DR postgres replica and wire it into the EU stack.",
+      "teaches": "DR replicas must replicate directly from the primary — not from an existing replica, which adds replication lag and creates a chain dependency. The DR replica connects to the load balancer, which routes traffic during failover.",
+      "levers": { "component_count": 5, "connection_points_highlighted": false },
+      "given": {
+        "nodes": [
+          { "id": "pg_primary", "label": "pg-primary", "zone": "us-east-1a" },
+          { "id": "pg_replica", "label": "pg-replica", "zone": "us-east-1b" },
+          { "id": "lb_eu", "label": "lb-eu", "zone": "eu-west-1a" },
+          { "id": "app_eu", "label": "app-eu", "zone": "eu-west-1a" }
+        ],
+        "edges": [{"from": "pg_primary", "to": "pg_replica"}, {"from": "lb_eu", "to": "app_eu"}],
+        "zones": ["us-east-1a", "us-east-1b", "eu-west-1a", "eu-west-1b"],
+        "place": { "id": "pg_dr", "label": "DR postgres replica" }
+      },
+      "solution": {
+        "zone": "eu-west-1b",
+        "connect_to": ["pg_primary", "lb_eu"]
+      },
+      "wrong_outcomes": [
+        {
+          "when": "wrong_target",
+          "shows": "Either: replication lags because the DR replica is chained from pg-replica instead of pg-primary (replica-of-replica adds double the lag); or the EU load balancer cannot route to the DR postgres during failover because lb-eu was not wired to it.",
+          "why_wrong": "DR postgres must replicate from pg-primary directly (not pg-replica) and must be connected to lb-eu (not app-eu) so the EU load balancer can route traffic to it during a regional failover."
+        }
+      ],
+      "reveal": "DR postgres must replicate from pg-primary — not pg-replica, which adds lag and creates a chain dependency. It connects to lb-eu so the EU load balancer routes traffic to it during failover. Zone eu-west-1b provides geographic separation from eu-west-1a where lb-eu and app-eu already live."
     }
   ]
 }

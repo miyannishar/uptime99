@@ -1,0 +1,801 @@
+{
+  "instances": [
+    {
+      "id": "log_oom_first_cause",
+      "minigame": "log_hunt_rca",
+      "difficulty": 2,
+      "for_actions": [
+        "restart"
+      ],
+      "brief": "{{node_name}} is returning 5xx to every upstream caller. The app log covers the last 10 minutes. Find the line that explains why the process stopped accepting requests.",
+      "teaches": "The earliest error in a causal chain is the root cause. Errors that arrive after a process crashes are blast-radius: they tell you what broke downstream, not what broke first.",
+      "levers": {
+        "line_count": 46,
+        "decoy_errors": 6,
+        "search_enabled": true
+      },
+      "given": {
+        "source": "tail -n 60 /var/log/checkout/app.log",
+        "lines": [
+          {
+            "ts": "13:58:02",
+            "level": "INFO",
+            "text": "checkout-api v2.13.1 started on port 3000"
+          },
+          {
+            "ts": "13:58:10",
+            "level": "INFO",
+            "text": "database pool initialised: 10 connections"
+          },
+          {
+            "ts": "13:59:01",
+            "level": "INFO",
+            "text": "GET /health 200 OK (4ms)"
+          },
+          {
+            "ts": "13:59:15",
+            "level": "WARN",
+            "text": "GC pause 180ms — heap 380MB / 512MB"
+          },
+          {
+            "ts": "13:59:22",
+            "level": "INFO",
+            "text": "POST /checkout 200 OK (45ms)"
+          },
+          {
+            "ts": "13:59:30",
+            "level": "WARN",
+            "text": "GC pause 340ms — heap 421MB / 512MB"
+          },
+          {
+            "ts": "13:59:41",
+            "level": "INFO",
+            "text": "POST /checkout 200 OK (51ms)"
+          },
+          {
+            "ts": "13:59:55",
+            "level": "WARN",
+            "text": "GC pause 610ms — heap 463MB / 512MB"
+          },
+          {
+            "ts": "14:00:03",
+            "level": "INFO",
+            "text": "POST /checkout 200 OK (88ms)"
+          },
+          {
+            "ts": "14:00:18",
+            "level": "WARN",
+            "text": "GC pause 950ms — heap 492MB / 512MB"
+          },
+          {
+            "ts": "14:00:29",
+            "level": "INFO",
+            "text": "POST /checkout 200 OK (130ms)"
+          },
+          {
+            "ts": "14:00:44",
+            "level": "WARN",
+            "text": "GC pause 1400ms — heap 506MB / 512MB"
+          },
+          {
+            "ts": "14:01:02",
+            "level": "INFO",
+            "text": "POST /checkout 200 OK (210ms)"
+          },
+          {
+            "ts": "14:01:15",
+            "level": "WARN",
+            "text": "GC pause 1900ms — heap 511MB / 512MB"
+          },
+          {
+            "ts": "14:02:11",
+            "level": "FATAL",
+            "text": "JavaScript heap out of memory (heap limit 512 MB, used 512 MB)"
+          },
+          {
+            "ts": "14:02:11",
+            "level": "ERROR",
+            "text": "upstream timed out (110) while reading upstream from /checkout-api upstream"
+          },
+          {
+            "ts": "14:02:12",
+            "level": "ERROR",
+            "text": "upstream timed out (110) while reading upstream from /checkout-api upstream"
+          },
+          {
+            "ts": "14:02:12",
+            "level": "ERROR",
+            "text": "upstream timed out (110) while reading upstream from /checkout-api upstream"
+          },
+          {
+            "ts": "14:02:13",
+            "level": "ERROR",
+            "text": "connection reset by peer (104) while connecting to /checkout-api upstream"
+          },
+          {
+            "ts": "14:02:13",
+            "level": "ERROR",
+            "text": "upstream timed out (110) while reading upstream from /checkout-api upstream"
+          },
+          {
+            "ts": "14:02:14",
+            "level": "ERROR",
+            "text": "connection reset by peer (104) while connecting to /checkout-api upstream"
+          },
+          {
+            "ts": "14:02:14",
+            "level": "ERROR",
+            "text": "upstream timed out (110) while reading upstream from /checkout-api upstream"
+          },
+          {
+            "ts": "14:02:15",
+            "level": "ERROR",
+            "text": "connection reset by peer (104) while connecting to /checkout-api upstream"
+          },
+          {
+            "ts": "14:02:15",
+            "level": "ERROR",
+            "text": "upstream timed out (110) while reading upstream from /checkout-api upstream"
+          },
+          {
+            "ts": "14:02:16",
+            "level": "ERROR",
+            "text": "upstream timed out (110) while reading upstream from /checkout-api upstream"
+          },
+          {
+            "ts": "14:02:16",
+            "level": "ERROR",
+            "text": "connection reset by peer (104) while connecting to /checkout-api upstream"
+          },
+          {
+            "ts": "14:02:17",
+            "level": "ERROR",
+            "text": "upstream timed out (110) while reading upstream from /checkout-api upstream"
+          },
+          {
+            "ts": "14:02:17",
+            "level": "ERROR",
+            "text": "connection reset by peer (104) while connecting to /checkout-api upstream"
+          },
+          {
+            "ts": "14:02:18",
+            "level": "ERROR",
+            "text": "upstream timed out (110) while reading upstream from /checkout-api upstream"
+          },
+          {
+            "ts": "14:02:18",
+            "level": "ERROR",
+            "text": "connection reset by peer (104) while connecting to /checkout-api upstream"
+          },
+          {
+            "ts": "14:02:19",
+            "level": "ERROR",
+            "text": "upstream timed out (110) while reading upstream from /checkout-api upstream"
+          },
+          {
+            "ts": "14:02:19",
+            "level": "ERROR",
+            "text": "connection reset by peer (104) while connecting to /checkout-api upstream"
+          },
+          {
+            "ts": "14:02:20",
+            "level": "ERROR",
+            "text": "upstream timed out (110) while reading upstream from /checkout-api upstream"
+          },
+          {
+            "ts": "14:02:20",
+            "level": "ERROR",
+            "text": "connection reset by peer (104) while connecting to /checkout-api upstream"
+          },
+          {
+            "ts": "14:02:21",
+            "level": "ERROR",
+            "text": "upstream timed out (110) while reading upstream from /checkout-api upstream"
+          },
+          {
+            "ts": "14:02:21",
+            "level": "ERROR",
+            "text": "connection reset by peer (104) while connecting to /checkout-api upstream"
+          },
+          {
+            "ts": "14:02:22",
+            "level": "ERROR",
+            "text": "upstream timed out (110) while reading upstream from /checkout-api upstream"
+          },
+          {
+            "ts": "14:02:22",
+            "level": "ERROR",
+            "text": "connection reset by peer (104) while connecting to /checkout-api upstream"
+          },
+          {
+            "ts": "14:02:23",
+            "level": "ERROR",
+            "text": "upstream timed out (110) while reading upstream from /checkout-api upstream"
+          },
+          {
+            "ts": "14:02:23",
+            "level": "ERROR",
+            "text": "connection reset by peer (104) while connecting to /checkout-api upstream"
+          },
+          {
+            "ts": "14:02:24",
+            "level": "ERROR",
+            "text": "upstream timed out (110) while reading upstream from /checkout-api upstream"
+          },
+          {
+            "ts": "14:02:24",
+            "level": "ERROR",
+            "text": "connection reset by peer (104) while connecting to /checkout-api upstream"
+          },
+          {
+            "ts": "14:02:25",
+            "level": "ERROR",
+            "text": "upstream timed out (110) while reading upstream from /checkout-api upstream"
+          },
+          {
+            "ts": "14:02:25",
+            "level": "ERROR",
+            "text": "connection reset by peer (104) while connecting to /checkout-api upstream"
+          },
+          {
+            "ts": "14:02:26",
+            "level": "ERROR",
+            "text": "upstream timed out (110) while reading upstream from /checkout-api upstream"
+          },
+          {
+            "ts": "14:02:26",
+            "level": "ERROR",
+            "text": "connection reset by peer (104) while connecting to /checkout-api upstream"
+          }
+        ]
+      },
+      "solution": {
+        "line": 15
+      },
+      "wrong_outcomes": [
+        {
+          "when": "wrong_line",
+          "shows": "Selecting an 'upstream timed out' or 'connection reset' ERROR line misidentifies blast-radius as cause: those errors are what other services see after the process dies — not what killed it. Error rate stays at 100% and reputation falls 4 points.",
+          "why_wrong": "The upstream errors and connection resets begin at 14:02:11 — the same second as the FATAL. They are downstream consequences of the process exiting, not the trigger. The trigger is the FATAL heap exhaustion line."
+        }
+      ],
+      "reveal": "GC pause duration rose steadily from 180ms to 1900ms over two minutes as the heap approached its 512 MB limit. At 14:02:11 the V8 runtime could not allocate further and the process terminated with 'heap out of memory'. Every ERROR line after that timestamp is an upstream caller seeing a dead socket — they are the blast radius, not the cause. Restarting the process clears the heap and restores service; the GC escalation tells you to investigate the memory leak separately."
+    },
+    {
+      "id": "log_first_error_after_deploy",
+      "minigame": "log_hunt_rca",
+      "difficulty": 2,
+      "for_actions": [
+        "rollback_deploy"
+      ],
+      "brief": "Error rate on {{node_name}} jumped after a recent deploy. The log spans the last 30 minutes. Identify the line that first reveals what the deploy broke.",
+      "teaches": "Correlate the first new error signature with the change boundary. A pre-existing ERROR that predates the deploy is unrelated noise; the first error whose timestamp follows the deploy boundary is the regression.",
+      "levers": {
+        "line_count": 42,
+        "decoy_errors": 3,
+        "search_enabled": true
+      },
+      "given": {
+        "source": "tail -n 60 /var/log/checkout/app.log",
+        "lines": [
+          {
+            "ts": "13:38:00",
+            "level": "INFO",
+            "text": "checkout-api v2.13.1 running normally — error rate 0.2%"
+          },
+          {
+            "ts": "13:40:17",
+            "level": "ERROR",
+            "text": "disk usage 91% on /var/log — consider log rotation"
+          },
+          {
+            "ts": "13:41:02",
+            "level": "INFO",
+            "text": "POST /checkout 200 OK (38ms)"
+          },
+          {
+            "ts": "13:45:00",
+            "level": "INFO",
+            "text": "GET /health 200 OK (3ms)"
+          },
+          {
+            "ts": "13:50:00",
+            "level": "INFO",
+            "text": "GET /health 200 OK (3ms)"
+          },
+          {
+            "ts": "13:55:00",
+            "level": "INFO",
+            "text": "POST /checkout 200 OK (42ms)"
+          },
+          {
+            "ts": "14:00:00",
+            "level": "INFO",
+            "text": "GET /health 200 OK (3ms)"
+          },
+          {
+            "ts": "14:02:00",
+            "level": "INFO",
+            "text": "deploy checkout-api v2.14.0 started (image: checkout-api:2.14.0)"
+          },
+          {
+            "ts": "14:02:03",
+            "level": "INFO",
+            "text": "pod checkout-api-6f7d9b-p1 is Terminating"
+          },
+          {
+            "ts": "14:02:04",
+            "level": "INFO",
+            "text": "pod checkout-api-6f7d9b-p2 is Terminating"
+          },
+          {
+            "ts": "14:02:05",
+            "level": "INFO",
+            "text": "pod checkout-api-6f7d9b-p3 is Terminating"
+          },
+          {
+            "ts": "14:02:05",
+            "level": "INFO",
+            "text": "pod checkout-api-7c8e2a-p1 is Running"
+          },
+          {
+            "ts": "14:02:06",
+            "level": "INFO",
+            "text": "pod checkout-api-7c8e2a-p2 is Running"
+          },
+          {
+            "ts": "14:02:06",
+            "level": "INFO",
+            "text": "pod checkout-api-7c8e2a-p3 is Running"
+          },
+          {
+            "ts": "14:02:07",
+            "level": "ERROR",
+            "text": "TypeError: Cannot read properties of undefined (reading 'currency') at PriceFormatter.format (price.js:88)"
+          },
+          {
+            "ts": "14:02:07",
+            "level": "ERROR",
+            "text": "TypeError: Cannot read properties of undefined (reading 'currency') at PriceFormatter.format (price.js:88)"
+          },
+          {
+            "ts": "14:02:08",
+            "level": "ERROR",
+            "text": "TypeError: Cannot read properties of undefined (reading 'currency') at PriceFormatter.format (price.js:88)"
+          },
+          {
+            "ts": "14:02:08",
+            "level": "ERROR",
+            "text": "TypeError: Cannot read properties of undefined (reading 'currency') at PriceFormatter.format (price.js:88)"
+          },
+          {
+            "ts": "14:02:09",
+            "level": "ERROR",
+            "text": "TypeError: Cannot read properties of undefined (reading 'currency') at PriceFormatter.format (price.js:88)"
+          },
+          {
+            "ts": "14:02:10",
+            "level": "ERROR",
+            "text": "upstream timed out (110) while connecting to /payment-api"
+          },
+          {
+            "ts": "14:02:10",
+            "level": "ERROR",
+            "text": "TypeError: Cannot read properties of undefined (reading 'currency') at PriceFormatter.format (price.js:88)"
+          },
+          {
+            "ts": "14:02:11",
+            "level": "ERROR",
+            "text": "upstream timed out (110) while connecting to /payment-api"
+          },
+          {
+            "ts": "14:02:11",
+            "level": "ERROR",
+            "text": "TypeError: Cannot read properties of undefined (reading 'currency') at PriceFormatter.format (price.js:88)"
+          },
+          {
+            "ts": "14:02:12",
+            "level": "ERROR",
+            "text": "upstream timed out (110) while connecting to /payment-api"
+          },
+          {
+            "ts": "14:02:12",
+            "level": "ERROR",
+            "text": "TypeError: Cannot read properties of undefined (reading 'currency') at PriceFormatter.format (price.js:88)"
+          },
+          {
+            "ts": "14:02:13",
+            "level": "ERROR",
+            "text": "upstream timed out (110) while connecting to /payment-api"
+          },
+          {
+            "ts": "14:02:13",
+            "level": "ERROR",
+            "text": "TypeError: Cannot read properties of undefined (reading 'currency') at PriceFormatter.format (price.js:88)"
+          },
+          {
+            "ts": "14:02:14",
+            "level": "ERROR",
+            "text": "upstream timed out (110) while connecting to /payment-api"
+          },
+          {
+            "ts": "14:02:14",
+            "level": "ERROR",
+            "text": "TypeError: Cannot read properties of undefined (reading 'currency') at PriceFormatter.format (price.js:88)"
+          },
+          {
+            "ts": "14:02:15",
+            "level": "ERROR",
+            "text": "upstream timed out (110) while connecting to /payment-api"
+          },
+          {
+            "ts": "14:02:15",
+            "level": "ERROR",
+            "text": "TypeError: Cannot read properties of undefined (reading 'currency') at PriceFormatter.format (price.js:88)"
+          },
+          {
+            "ts": "14:02:16",
+            "level": "ERROR",
+            "text": "upstream timed out (110) while connecting to /payment-api"
+          },
+          {
+            "ts": "14:02:16",
+            "level": "ERROR",
+            "text": "TypeError: Cannot read properties of undefined (reading 'currency') at PriceFormatter.format (price.js:88)"
+          },
+          {
+            "ts": "14:02:17",
+            "level": "ERROR",
+            "text": "upstream timed out (110) while connecting to /payment-api"
+          },
+          {
+            "ts": "14:02:17",
+            "level": "ERROR",
+            "text": "TypeError: Cannot read properties of undefined (reading 'currency') at PriceFormatter.format (price.js:88)"
+          },
+          {
+            "ts": "14:02:18",
+            "level": "ERROR",
+            "text": "upstream timed out (110) while connecting to /payment-api"
+          },
+          {
+            "ts": "14:02:18",
+            "level": "ERROR",
+            "text": "TypeError: Cannot read properties of undefined (reading 'currency') at PriceFormatter.format (price.js:88)"
+          },
+          {
+            "ts": "14:02:19",
+            "level": "ERROR",
+            "text": "upstream timed out (110) while connecting to /payment-api"
+          },
+          {
+            "ts": "14:02:20",
+            "level": "ERROR",
+            "text": "upstream timed out (110) while connecting to /payment-api"
+          },
+          {
+            "ts": "14:02:21",
+            "level": "ERROR",
+            "text": "upstream timed out (110) while connecting to /payment-api"
+          },
+          {
+            "ts": "14:02:22",
+            "level": "ERROR",
+            "text": "upstream timed out (110) while connecting to /payment-api"
+          },
+          {
+            "ts": "14:02:23",
+            "level": "ERROR",
+            "text": "upstream timed out (110) while connecting to /payment-api"
+          }
+        ]
+      },
+      "solution": {
+        "line": 15
+      },
+      "wrong_outcomes": [
+        {
+          "when": "wrong_line",
+          "shows": "Selecting the disk-usage ERROR at 13:40 identifies noise that predates the deploy by 22 minutes — it cannot be the regression. Selecting a timeout ERROR at 14:02:10+ misses the actual first failure signature; error rate stays at 9% and rollback is not applied.",
+          "why_wrong": "The disk-usage ERROR at 13:40 is pre-existing noise with no relation to the deploy. The timeout ERRORs that begin at 14:02:10 are a secondary cascade — the TypeError was already firing for 3 seconds before the first timeout appeared. The first line that carries a new error signature introduced by v2.14.0 is line 15."
+        }
+      ],
+      "reveal": "The deploy boundary is the INFO line at 14:02:00. The first ERROR after that boundary is a TypeError at 14:02:07 — a null-dereference inside PriceFormatter.format that v2.14.0 introduced when it restructured the price object shape. The disk-usage ERROR at 13:40 is pre-existing and unrelated; the timeout ERRORs at 14:02:10 are a secondary cascade caused by the TypeError failing requests. Rolling back to v2.13.1 removes the null-dereference and stops both the TypeError and the timeout cascade."
+    },
+    {
+      "id": "log_slow_query_frequency",
+      "minigame": "log_hunt_rca",
+      "difficulty": 2,
+      "for_actions": [
+        "add_index"
+      ],
+      "brief": "The Postgres slow-query log on {{node_name}} shows elevated p95 latency since 12:00. Two query patterns are flagged. Find the line that points to the query that is actually hurting production traffic.",
+      "teaches": "Total cost is duration × frequency. A single 12-second query that runs once per night costs the database 12 seconds of wall time. A 420 ms query running 20 times per minute costs 8400 ms per minute — 700× more throughput drain. Index the high-frequency path.",
+      "levers": {
+        "line_count": 44,
+        "decoy_errors": 1,
+        "search_enabled": true
+      },
+      "given": {
+        "source": "tail -n 60 /var/log/postgresql/slow_queries.log",
+        "lines": [
+          {
+            "ts": "12:00:01",
+            "level": "ERROR",
+            "text": "duration: 420ms  SELECT * FROM orders WHERE customer_id = $1  plan: Seq Scan on orders (rows=4200000)"
+          },
+          {
+            "ts": "12:00:02",
+            "level": "ERROR",
+            "text": "duration: 423ms  SELECT * FROM orders WHERE customer_id = $1  plan: Seq Scan on orders (rows=4200000)"
+          },
+          {
+            "ts": "12:00:03",
+            "level": "ERROR",
+            "text": "duration: 418ms  SELECT * FROM orders WHERE customer_id = $1  plan: Seq Scan on orders (rows=4200000)"
+          },
+          {
+            "ts": "12:00:04",
+            "level": "ERROR",
+            "text": "duration: 432ms  SELECT * FROM orders WHERE customer_id = $1  plan: Seq Scan on orders (rows=4200000)"
+          },
+          {
+            "ts": "12:00:05",
+            "level": "ERROR",
+            "text": "duration: 425ms  SELECT * FROM orders WHERE customer_id = $1  plan: Seq Scan on orders (rows=4200000)"
+          },
+          {
+            "ts": "12:00:06",
+            "level": "ERROR",
+            "text": "duration: 419ms  SELECT * FROM orders WHERE customer_id = $1  plan: Seq Scan on orders (rows=4200000)"
+          },
+          {
+            "ts": "12:00:07",
+            "level": "ERROR",
+            "text": "duration: 428ms  SELECT * FROM orders WHERE customer_id = $1  plan: Seq Scan on orders (rows=4200000)"
+          },
+          {
+            "ts": "12:00:07",
+            "level": "ERROR",
+            "text": "duration: 421ms  SELECT * FROM orders WHERE customer_id = $1  plan: Seq Scan on orders (rows=4200000)"
+          },
+          {
+            "ts": "12:00:08",
+            "level": "ERROR",
+            "text": "duration: 416ms  SELECT * FROM orders WHERE customer_id = $1  plan: Seq Scan on orders (rows=4200000)"
+          },
+          {
+            "ts": "12:00:08",
+            "level": "ERROR",
+            "text": "duration: 435ms  SELECT * FROM orders WHERE customer_id = $1  plan: Seq Scan on orders (rows=4200000)"
+          },
+          {
+            "ts": "12:00:09",
+            "level": "ERROR",
+            "text": "duration: 422ms  SELECT * FROM orders WHERE customer_id = $1  plan: Seq Scan on orders (rows=4200000)"
+          },
+          {
+            "ts": "12:00:09",
+            "level": "ERROR",
+            "text": "duration: 418ms  SELECT * FROM orders WHERE customer_id = $1  plan: Seq Scan on orders (rows=4200000)"
+          },
+          {
+            "ts": "12:00:10",
+            "level": "ERROR",
+            "text": "duration: 430ms  SELECT * FROM orders WHERE customer_id = $1  plan: Seq Scan on orders (rows=4200000)"
+          },
+          {
+            "ts": "12:00:10",
+            "level": "ERROR",
+            "text": "duration: 424ms  SELECT * FROM orders WHERE customer_id = $1  plan: Seq Scan on orders (rows=4200000)"
+          },
+          {
+            "ts": "12:00:11",
+            "level": "ERROR",
+            "text": "duration: 417ms  SELECT * FROM orders WHERE customer_id = $1  plan: Seq Scan on orders (rows=4200000)"
+          },
+          {
+            "ts": "12:00:11",
+            "level": "ERROR",
+            "text": "duration: 420ms  SELECT * FROM orders WHERE customer_id = $1  plan: Seq Scan on orders (rows=4200000)"
+          },
+          {
+            "ts": "12:00:12",
+            "level": "ERROR",
+            "text": "duration: 427ms  SELECT * FROM orders WHERE customer_id = $1  plan: Seq Scan on orders (rows=4200000)"
+          },
+          {
+            "ts": "12:00:12",
+            "level": "ERROR",
+            "text": "duration: 421ms  SELECT * FROM orders WHERE customer_id = $1  plan: Seq Scan on orders (rows=4200000)"
+          },
+          {
+            "ts": "12:00:13",
+            "level": "ERROR",
+            "text": "duration: 419ms  SELECT * FROM orders WHERE customer_id = $1  plan: Seq Scan on orders (rows=4200000)"
+          },
+          {
+            "ts": "12:00:13",
+            "level": "ERROR",
+            "text": "duration: 433ms  SELECT * FROM orders WHERE customer_id = $1  plan: Seq Scan on orders (rows=4200000)"
+          },
+          {
+            "ts": "12:00:14",
+            "level": "ERROR",
+            "text": "duration: 423ms  SELECT * FROM orders WHERE customer_id = $1  plan: Seq Scan on orders (rows=4200000)"
+          },
+          {
+            "ts": "12:00:14",
+            "level": "ERROR",
+            "text": "duration: 426ms  SELECT * FROM orders WHERE customer_id = $1  plan: Seq Scan on orders (rows=4200000)"
+          },
+          {
+            "ts": "12:00:57",
+            "level": "WARN",
+            "text": "scheduled report: duration: 12400ms  SELECT amount, created_at FROM analytics_rollup WHERE period = 'nightly' plan: Seq Scan on analytics_rollup (rows=8200000)"
+          },
+          {
+            "ts": "12:01:01",
+            "level": "ERROR",
+            "text": "duration: 418ms  SELECT * FROM orders WHERE customer_id = $1  plan: Seq Scan on orders (rows=4200000)"
+          },
+          {
+            "ts": "12:01:01",
+            "level": "ERROR",
+            "text": "duration: 422ms  SELECT * FROM orders WHERE customer_id = $1  plan: Seq Scan on orders (rows=4200000)"
+          },
+          {
+            "ts": "12:01:02",
+            "level": "ERROR",
+            "text": "duration: 430ms  SELECT * FROM orders WHERE customer_id = $1  plan: Seq Scan on orders (rows=4200000)"
+          },
+          {
+            "ts": "12:01:02",
+            "level": "ERROR",
+            "text": "duration: 424ms  SELECT * FROM orders WHERE customer_id = $1  plan: Seq Scan on orders (rows=4200000)"
+          },
+          {
+            "ts": "12:01:03",
+            "level": "ERROR",
+            "text": "duration: 420ms  SELECT * FROM orders WHERE customer_id = $1  plan: Seq Scan on orders (rows=4200000)"
+          },
+          {
+            "ts": "12:01:03",
+            "level": "ERROR",
+            "text": "duration: 418ms  SELECT * FROM orders WHERE customer_id = $1  plan: Seq Scan on orders (rows=4200000)"
+          },
+          {
+            "ts": "12:01:04",
+            "level": "ERROR",
+            "text": "duration: 425ms  SELECT * FROM orders WHERE customer_id = $1  plan: Seq Scan on orders (rows=4200000)"
+          },
+          {
+            "ts": "12:01:04",
+            "level": "ERROR",
+            "text": "duration: 431ms  SELECT * FROM orders WHERE customer_id = $1  plan: Seq Scan on orders (rows=4200000)"
+          },
+          {
+            "ts": "12:01:05",
+            "level": "ERROR",
+            "text": "duration: 417ms  SELECT * FROM orders WHERE customer_id = $1  plan: Seq Scan on orders (rows=4200000)"
+          },
+          {
+            "ts": "12:01:05",
+            "level": "ERROR",
+            "text": "duration: 423ms  SELECT * FROM orders WHERE customer_id = $1  plan: Seq Scan on orders (rows=4200000)"
+          },
+          {
+            "ts": "12:01:06",
+            "level": "ERROR",
+            "text": "duration: 429ms  SELECT * FROM orders WHERE customer_id = $1  plan: Seq Scan on orders (rows=4200000)"
+          },
+          {
+            "ts": "12:01:06",
+            "level": "ERROR",
+            "text": "duration: 421ms  SELECT * FROM orders WHERE customer_id = $1  plan: Seq Scan on orders (rows=4200000)"
+          },
+          {
+            "ts": "12:01:07",
+            "level": "ERROR",
+            "text": "duration: 418ms  SELECT * FROM orders WHERE customer_id = $1  plan: Seq Scan on orders (rows=4200000)"
+          },
+          {
+            "ts": "12:01:07",
+            "level": "ERROR",
+            "text": "duration: 427ms  SELECT * FROM orders WHERE customer_id = $1  plan: Seq Scan on orders (rows=4200000)"
+          },
+          {
+            "ts": "12:01:08",
+            "level": "ERROR",
+            "text": "duration: 420ms  SELECT * FROM orders WHERE customer_id = $1  plan: Seq Scan on orders (rows=4200000)"
+          },
+          {
+            "ts": "12:01:08",
+            "level": "ERROR",
+            "text": "duration: 424ms  SELECT * FROM orders WHERE customer_id = $1  plan: Seq Scan on orders (rows=4200000)"
+          },
+          {
+            "ts": "12:01:09",
+            "level": "ERROR",
+            "text": "duration: 416ms  SELECT * FROM orders WHERE customer_id = $1  plan: Seq Scan on orders (rows=4200000)"
+          },
+          {
+            "ts": "12:01:09",
+            "level": "ERROR",
+            "text": "duration: 433ms  SELECT * FROM orders WHERE customer_id = $1  plan: Seq Scan on orders (rows=4200000)"
+          },
+          {
+            "ts": "12:01:10",
+            "level": "ERROR",
+            "text": "duration: 422ms  SELECT * FROM orders WHERE customer_id = $1  plan: Seq Scan on orders (rows=4200000)"
+          },
+          {
+            "ts": "12:01:10",
+            "level": "ERROR",
+            "text": "duration: 425ms  SELECT * FROM orders WHERE customer_id = $1  plan: Seq Scan on orders (rows=4200000)"
+          },
+          {
+            "ts": "12:01:11",
+            "level": "ERROR",
+            "text": "duration: 419ms  SELECT * FROM orders WHERE customer_id = $1  plan: Seq Scan on orders (rows=4200000)"
+          }
+        ]
+      },
+      "solution": {
+        "line": 1,
+        "accept": [
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20,
+          21,
+          22,
+          24,
+          25,
+          26,
+          27,
+          28,
+          29,
+          30,
+          31,
+          32,
+          33,
+          34,
+          35,
+          36,
+          37,
+          38,
+          39,
+          40,
+          41,
+          42,
+          43,
+          44
+        ]
+      },
+      "wrong_outcomes": [
+        {
+          "when": "wrong_line",
+          "shows": "Selecting the analytics_rollup query at 12:00:57 (12,400 ms) focuses on duration alone. That query runs once — 12,400 ms of total cost. The orders query runs ~20 times per minute at 420 ms each, costing ~8,400 ms per minute continuously. P95 stays elevated and the index is applied to the wrong table.",
+          "why_wrong": "The analytics_rollup query is a scheduled nightly report. Its 12-second runtime happens once and is expected. The SELECT on orders runs continuously — every 3 seconds across all customer lookups — doing a full sequential scan of 4.2 M rows on each call. Frequency × duration is what fills the connection pool and drives p95 up."
+        }
+      ],
+      "reveal": "The orders query (SELECT * FROM orders WHERE customer_id = $1) appears 42 times in this 75-second window — roughly 20 times per minute. Each execution scans all 4.2 M rows because there is no index on customer_id. At 420 ms each, that is 8,400 ms per minute of sequential scan load, filling the connection pool and raising p95. The analytics_rollup query at 12,400 ms looks dramatic but runs once (a scheduled nightly report, marked as such in its log line). An index on orders(customer_id) drops the orders query to under 5 ms."
+    }
+  ]
+}

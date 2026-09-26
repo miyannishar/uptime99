@@ -1,0 +1,203 @@
+{
+  "instances": [
+    {
+      "id": "shell_restart_crashloop",
+      "minigame": "shell_fix",
+      "difficulty": 2,
+      "for_actions": [
+        "restart"
+      ],
+      "brief": "One deployment in prod has been crash-looping since a memory spike on {{node_name}}; the others are healthy. Restart only the failing deployment — the cluster state is in the shell above.",
+      "teaches": "kubectl rollout restart targets a single deployment by name. Restarting a healthy deployment drops its pods for ~40 s, adding unnecessary downtime to an active incident.",
+      "levers": {
+        "history_lines": 4,
+        "show_placeholder": true
+      },
+      "given": {
+        "prefix": "kubectl rollout restart deployment/",
+        "placeholder": "<deployment-name>",
+        "history": [
+          "$ kubectl get deploy -n prod",
+          "NAME           READY   UP-TO-DATE   AVAILABLE",
+          "checkout-api   0/3     3            0",
+          "search-api     3/3     3            3",
+          "auth-api       3/3     3            3",
+          "$ kubectl get pods -n prod -l app=checkout-api",
+          "NAME                          READY   STATUS             RESTARTS",
+          "checkout-api-7d9f8b-xk2p4    0/1     CrashLoopBackOff   14"
+        ]
+      },
+      "solution": {
+        "accepts": [
+          "checkout-api",
+          "checkout-api -n prod"
+        ]
+      },
+      "wrong_outcomes": [
+        {
+          "when": "wrong_command",
+          "shows": "Restarting search-api or auth-api drops their 3 ready pods for ~40 s while checkout-api continues failing — error rate climbs from 9% to 14% during the unnecessary rollout.",
+          "why_wrong": "search-api and auth-api are healthy; restarting them adds unnecessary downtime. Target only the deployment that is crashing."
+        }
+      ],
+      "reveal": "kubectl rollout restart triggers a rolling restart of all pods in the named deployment. Because search-api and auth-api are healthy (3/3 ready), restarting them would create a brief traffic gap with zero benefit. Always name the specific deployment that shows CrashLoopBackOff."
+    },
+    {
+      "id": "shell_rollback_known_good",
+      "minigame": "shell_fix",
+      "difficulty": 2,
+      "for_actions": [
+        "rollback_deploy"
+      ],
+      "brief": "checkout-api error rate jumped from 0.2% to 9% at 14:03. Roll back to the last revision that was running cleanly — the rollout history is in the shell above.",
+      "teaches": "kubectl rollout undo --to-revision lets you skip over a known-bad revision. Going back one further (revision 10) may re-open bugs that revision 11 fixed; staying on revision 12 is a no-op.",
+      "levers": {
+        "history_lines": 5,
+        "show_placeholder": true
+      },
+      "given": {
+        "prefix": "kubectl rollout undo deployment/checkout-api --to-revision=",
+        "placeholder": "<revision-number>",
+        "history": [
+          "$ kubectl rollout history deployment/checkout-api",
+          "REVISION  CHANGE-CAUSE",
+          "10        fix: remove deprecated endpoint",
+          "11        feat: add idempotency key validation (3 days clean)",
+          "12        refactor: migrate auth middleware (deployed 14:02, errors at 14:03)",
+          "$ kubectl get deployment checkout-api -o wide",
+          "READY: 3/3   UP-TO-DATE: 3   AVAILABLE: 3   CURRENT-REVISION: 12"
+        ]
+      },
+      "solution": {
+        "accepts": [
+          "11"
+        ]
+      },
+      "wrong_outcomes": [
+        {
+          "when": "wrong_command",
+          "shows": "Using revision 10 re-opens the idempotency bug shipped in revision 11 — duplicate requests cause double-charges, raising error rate by another 3% and triggering a second incident. Using revision 12 is a no-op and error rate stays at 9%.",
+          "why_wrong": "Revision 11 ran cleanly for 3 days and contains a schema-compatible fix not present in revision 10. Always roll back to the last known-good revision, not the furthest available one."
+        }
+      ],
+      "reveal": "revision 12 introduced the regression (error rate 0.2% → 9% within one minute of deploy). revision 11 is the last known-good build — it ran for 3 days without incident and contains a bug fix absent in revision 10. --to-revision=12 would attempt to re-apply the current broken revision and is effectively a no-op."
+    },
+    {
+      "id": "shell_flush_scoped",
+      "minigame": "shell_fix",
+      "difficulty": 2,
+      "for_actions": [
+        "flush_cache"
+      ],
+      "brief": "Sessions in db2 are returning malformed JSON after a bad serializer deploy. db0 holds the product catalog — 1.84 M keys, 25 min to rebuild. Flush only the affected database.",
+      "teaches": "redis-cli -n <db> FLUSHDB flushes exactly one Redis database. FLUSHALL clears every database on the instance — in this case, db0 would lose 1.84 M product-catalog keys and p95 would climb from 40 ms to 900 ms for 25 minutes.",
+      "levers": {
+        "history_lines": 5,
+        "show_placeholder": true
+      },
+      "given": {
+        "prefix": "redis-cli -n ",
+        "placeholder": "<db-number> FLUSHDB",
+        "history": [
+          "$ redis-cli INFO keyspace",
+          "# Keyspace",
+          "db0:keys=1840211,expires=0  (product catalog, ~25 min to rebuild)",
+          "db2:keys=48213,expires=0    (user sessions)",
+          "$ redis-cli -n 2 GET session:u8f3a9",
+          "\"{\\\"userId\\\":4821,\\\"role\\\":null,\\\"__corrupt\\\":true}\""
+        ]
+      },
+      "solution": {
+        "accepts": [
+          "2 FLUSHDB",
+          "2 flushdb"
+        ]
+      },
+      "wrong_outcomes": [
+        {
+          "when": "wrong_command",
+          "shows": "Flushing db0 (or reaching for FLUSHALL) wipes the 1.84 M-key product catalog: cache hit ratio drops from 94% to 0% and p95 climbs from 40 ms to 900 ms for the 25 minutes the catalog takes to rebuild — while the corrupt sessions in db2 are still being served.",
+          "why_wrong": "The corrupt keys live in db2. Flushing any other database — or everything with FLUSHALL — throws away the 1.84 M-key catalog in db0, which takes 25 minutes to rebuild, and leaves the corrupt sessions in place."
+        }
+      ],
+      "reveal": "redis-cli -n 2 FLUSHDB targets only database 2 (user sessions). The 48 213 malformed session keys are removed and clients are forced to re-authenticate, eliminating the corrupt JSON. db0's 1.84 M product-catalog keys are untouched, so cache hit ratio and p95 latency remain normal."
+    },
+    {
+      "id": "replication_lag_terminal",
+      "minigame": "shell_fix",
+      "difficulty": 2,
+      "for_actions": ["add_replica"],
+      "brief": "pg-replica-{{tenant}}-01 in {{region}} shows a {{revision}}-second lag as measured by the replica itself. Before deciding whether to promote or wait for catch-up, confirm the current lag and write-ahead log position from the primary's replication stats view.",
+      "teaches": "pg_last_xact_replay_timestamp() on the replica measures the age of the last replayed transaction, not the distance behind the WAL stream. pg_stat_replication on the primary reports the authoritative per-standby lag in bytes and wall-clock time.",
+      "levers": {
+        "history_lines": 6,
+        "show_placeholder": true
+      },
+      "given": {
+        "prefix": "psql -h pg-primary-{{tenant}} -U postgres -c \"SELECT application_name, write_lag, replay_lag FROM ",
+        "placeholder": "<view-name>\"",
+        "history": [
+          "$ psql -h pg-replica-{{tenant}}-01 -U postgres -c \"SELECT now() - pg_last_xact_replay_timestamp() AS replica_lag;\"",
+          " replica_lag",
+          "-------------",
+          " 00:00:{{revision}}",
+          "(1 row)",
+          "$ # Confirm current lag from the primary before deciding to promote"
+        ]
+      },
+      "solution": {
+        "accepts": [
+          "pg_stat_replication\"",
+          "pg_stat_replication WHERE application_name = 'pg-replica-{{tenant}}-01'\""
+        ]
+      },
+      "wrong_outcomes": [
+        {
+          "when": "wrong_command",
+          "shows": "Query runs against pg_stat_activity instead. Result: 31 rows of active client connections, no replication state. Unable to determine whether lag is stable or growing. Promotion proceeds — lag was already recovering, and the failover adds an unnecessary 40-second downtime window.",
+          "why_wrong": "pg_stat_activity shows client sessions, not replication state. The per-standby write_lag and replay_lag columns live only in pg_stat_replication, which is queryable only on the primary."
+        }
+      ],
+      "reveal": "pg_last_xact_replay_timestamp() on the replica returns the commit timestamp of the most recently replayed WAL record. It tells you when the last transaction was applied, but not whether lag is growing or shrinking, or how far behind the stream the replica is in bytes. pg_stat_replication on the primary reports the sent_lsn, write_lsn, flush_lsn, and replay_lsn for every connected standby, alongside wall-clock lag columns (write_lag, flush_lag, replay_lag). If those columns show lag decreasing, the replica is catching up and promotion is unnecessary — a needless failover costs the downtime of the switch without any benefit."
+    },
+    {
+      "id": "drain_dlq_terminal",
+      "minigame": "shell_fix",
+      "difficulty": 2,
+      "for_actions": ["drain_queue"],
+      "brief": "{{tenant}}-worker has been stuck for {{revision}} seconds on a poison message. The dead-letter queue is blocking the consumer. Purge only the DLQ without touching the main queue.",
+      "teaches": "DEL removes exactly one named key. FLUSHDB clears every key in the database — including the live main queue — discarding valid in-flight jobs along with the failed ones.",
+      "levers": {
+        "history_lines": 7,
+        "show_placeholder": true
+      },
+      "given": {
+        "prefix": "redis-cli -h redis-{{tenant}} ",
+        "placeholder": "<command> <key>",
+        "history": [
+          "$ redis-cli -h redis-{{tenant}} LLEN rq:queue:failed",
+          "(integer) 1",
+          "$ redis-cli -h redis-{{tenant}} LLEN rq:queue:default",
+          "(integer) 42831",
+          "$ redis-cli -h redis-{{tenant}} LRANGE rq:queue:failed 0 0",
+          "1) \"{\\\"job_id\\\": \\\"{{entity_id}}\\\", \\\"attempts\\\": 3, \\\"error\\\": \\\"poison message\\\"}\"",
+          "$ # Purge only the dead-letter queue"
+        ]
+      },
+      "solution": {
+        "accepts": [
+          "DEL rq:queue:failed",
+          "del rq:queue:failed"
+        ]
+      },
+      "wrong_outcomes": [
+        {
+          "when": "wrong_command",
+          "shows": "FLUSHDB issued. Both rq:queue:failed and rq:queue:default are deleted. 42,831 jobs in the main queue are permanently discarded — they will never be processed. A second incident opens 12 minutes later for the missing work.",
+          "why_wrong": "FLUSHDB clears every key in the database, including the 42,831-job main queue. DEL targets a single named key and leaves everything else intact."
+        }
+      ],
+      "reveal": "The LLEN output shows two keys: rq:queue:failed (1 job — the poison message) and rq:queue:default (42,831 jobs — live in-flight work). DEL rq:queue:failed removes exactly one key, the dead-letter queue, leaving the main queue intact. FLUSHDB removes every key in the database regardless of name — it is equivalent to dropping both queues simultaneously. Once the DLQ is cleared, the consumer can resume processing from rq:queue:default without any of the valid work being lost."
+    }
+  ]
+}

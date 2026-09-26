@@ -85,11 +85,11 @@ describe('debriefSummary', () => {
     expect(summary.scenario_name).toBe('First Incident')
   })
 
-  it('reports cleared = false when reputation reaches zero', () => {
-    // The golden run ends with reputation=0 because oom_kill runs unresolved
+  it('reports cleared = false when reputation is zero', () => {
+    // Patch reputation to 0 to test the cleared condition independent of decay rate
     const s = runSession(startRun(fresh(), c), c)
-    const summary = debriefSummary(s, c)
-    expect(s.carried.reputation).toBe(0)
+    const zeroRep = { ...s, carried: { ...s.carried, reputation: 0 } }
+    const summary = debriefSummary(zeroRep, c)
     expect(summary.cleared).toBe(false)
   })
 

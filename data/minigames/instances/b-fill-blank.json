@@ -4,8 +4,8 @@
       "id": "yaml_replicas_for_load",
       "minigame": "yaml_manifest",
       "difficulty": 2,
-      "brief": "app-us-01 is at 94% utilisation. Sustained inbound is 4,800 req/s.",
-      "teaches": "Replica count is measured load divided by per-replica capacity, plus headroom \u2014 never a round number chosen by feel.",
+      "brief": "{{node_name}} is at 94% utilisation. Sustained inbound is 4,800 req/s.",
+      "teaches": "Replica count is measured load divided by per-replica capacity, plus headroom — never a round number chosen by feel.",
       "levers": {
         "blank_count": 1,
         "input_mode": "pick_from_list",
@@ -33,17 +33,17 @@
         {
           "when": "wrong_value",
           "shows": "Rollout completes. Utilisation pins at 100%, request queue depth climbs to 1,900, p95 latency stays at 840 ms and error rate holds at 3.1%. Nothing improved.",
-          "why_wrong": "Four replicas give 3,600 msg/s of capacity against 4,800 arriving \u2014 still short, so the queue keeps growing and latency never recovers."
+          "why_wrong": "Four replicas give 3,600 msg/s of capacity against 4,800 arriving — still short, so the queue keeps growing and latency never recovers."
         }
       ],
-      "reveal": "4,800 req/s at 900 req/s per replica needs 5.33 replicas, so six is the first count that serves the load with any headroom. Twelve would work and cost roughly double for capacity you are not using \u2014 correct is the smallest number that holds, not the largest you can afford."
+      "reveal": "4,800 req/s at 900 req/s per replica needs 5.33 replicas, so six is the first count that serves the load with any headroom. Twelve would work and cost roughly double for capacity you are not using — correct is the smallest number that holds, not the largest you can afford."
     },
     {
       "id": "yaml_hpa_and_requests",
       "minigame": "yaml_manifest",
       "difficulty": 5,
-      "brief": "api deployment is not scaling under load despite an HPA being configured. Both pods are saturated relative to their node allocation.",
-      "teaches": "An HPA cannot compute utilisation without a CPU request on the container \u2014 it divides actual usage by the requested value, and a missing request makes the target permanently uncomputable.",
+      "brief": "{{node_name}} is not scaling under load despite an HPA being configured. Both pods are saturated relative to their node allocation.",
+      "teaches": "An HPA cannot compute utilisation without a CPU request on the container — it divides actual usage by the requested value, and a missing request makes the target permanently uncomputable.",
       "levers": {
         "blank_count": 4,
         "input_mode": "free_text",
@@ -52,7 +52,7 @@
       "given": {
         "language": "yaml",
         "template": "apiVersion: autoscaling/v2\nkind: HorizontalPodAutoscaler\nmetadata:\n  name: api\n  namespace: production\nspec:\n  scaleTargetRef:\n    apiVersion: apps/v1\n    kind: Deployment\n    name: api\n  minReplicas: {{1}}\n  maxReplicas: {{2}}\n  metrics:\n    - type: Resource\n      resource:\n        name: cpu\n        target:\n          type: Utilization\n          averageUtilization: {{3}}\n---\napiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: api\n  namespace: production\nspec:\n  selector:\n    matchLabels:\n      app: api\n  template:\n    metadata:\n      labels:\n        app: api\n    spec:\n      containers:\n        - name: api\n          image: api:v2.4.1\n          env:\n            - name: DB_POOL_SIZE\n              value: \"20\"\n            - name: CACHE_TTL_SECONDS\n              value: \"300\"\n          resources:\n            requests:\n              cpu: {{4}}\n              memory: 256Mi\n            limits:\n              cpu: 1000m\n              memory: 512Mi",
-        "facts": "Each pod handles 240 req/s at roughly 235m CPU. Steady-state load: 2 pods at 94% CPU. Budget ceiling: 10 pods. Scale out when average CPU exceeds 70%. The previous deploy omitted the cpu requests field \u2014 HPA reported '<unknown>/70%' and never fired. This cluster specifies CPU requests in 25m steps, rounded up from measured steady-state to leave headroom for bursts. The service must always run at least 2 pods so a single zone failure cannot take it fully offline."
+        "facts": "Each pod handles 240 req/s at roughly 235m CPU. Steady-state load: 2 pods at 94% CPU. Budget ceiling: 10 pods. Scale out when average CPU exceeds 70%. The previous deploy omitted the cpu requests field — HPA reported '<unknown>/70%' and never fired. This cluster specifies CPU requests in 25m steps, rounded up from measured steady-state to leave headroom for bursts. The service must always run at least 2 pods so a single zone failure cannot take it fully offline."
       },
       "solution": {
         "blanks": {
@@ -69,14 +69,14 @@
           "why_wrong": "HPA computes utilisation as actual-cpu divided by cpu-request. Without a cpu request value, the quotient is undefined and the controller does not fire."
         }
       ],
-      "reveal": "HPA computes utilisation as actual CPU usage divided by the CPU request declared on the container. If requests is absent or zero, there is nothing to divide by \u2014 the controller reports the target as '<unknown>' and refuses to scale. The cpu request also tells the Kubernetes scheduler how much CPU to reserve when placing a pod, so it must reflect realistic steady-state consumption rather than a theoretical ceiling. Setting averageUtilization to 70 leaves 30% headroom so a traffic spike can absorb additional load while the next scale event is still completing its rollout."
+      "reveal": "HPA computes utilisation as actual CPU usage divided by the CPU request declared on the container. If requests is absent or zero, there is nothing to divide by — the controller reports the target as '<unknown>' and refuses to scale. The cpu request also tells the Kubernetes scheduler how much CPU to reserve when placing a pod, so it must reflect realistic steady-state consumption rather than a theoretical ceiling. Setting averageUtilization to 70 leaves 30% headroom so a traffic spike can absorb additional load while the next scale event is still completing its rollout."
     },
     {
       "id": "cache_key_scope_pattern",
       "minigame": "cache_key_match",
       "difficulty": 2,
-      "brief": "user_id 123 updated their display name. Downstream reads are returning stale data from cache. Invalidate only their entries.",
-      "teaches": "A cache key glob that is too broad evicts live data for users who were not involved \u2014 user:* and user:123:* are one colon segment apart and one is an outage.",
+      "brief": "{{node_name}} is serving stale data. {{key_prefix}} {{entity_id}} was just updated. Invalidate only that entity's cache entries without flushing data for the 47,000 other active users.",
+      "teaches": "A cache key glob that is too broad evicts live data for entities that were not involved — {{key_prefix}}:* and {{key_prefix}}:{{entity_id}}:* are one colon segment apart and one is an outage.",
       "levers": {
         "blank_count": 1,
         "input_mode": "pick_from_list",
@@ -84,37 +84,37 @@
       },
       "given": {
         "language": "shell",
-        "template": "#!/bin/bash\n# Invalidate cache entries after user profile update\nredis-cli -h cache-01 --scan --pattern '{{1}}' | xargs -r redis-cli -h cache-01 DEL",
+        "template": "#!/bin/bash\n# Invalidate cache entries after {{key_prefix}} update\nredis-cli -h cache-01 --scan --pattern '{{1}}' | xargs -r redis-cli -h cache-01 DEL",
         "options": {
           "1": [
-            "user:*",
-            "user:123:*",
-            "user:123:profile",
-            "session:*"
+            "{{key_prefix}}:*",
+            "{{key_prefix}}:{{entity_id}}:*",
+            "{{key_prefix}}:{{entity_id}}:profile",
+            "{{key_prefix}}:{{entity_id}}"
           ]
         },
-        "facts": "Cache keys follow the pattern user:{id}:{data-type} \u2014 for example user:123:profile, user:123:session, user:123:preferences. There are 47,000 other users currently active with hot cache entries."
+        "facts": "Cache keys follow the pattern {{key_prefix}}:{id}:{data-type} — for example {{key_prefix}}:{{entity_id}}:profile, {{key_prefix}}:{{entity_id}}:session, {{key_prefix}}:{{entity_id}}:preferences. There are 47,000 other users currently active with hot cache entries."
       },
       "solution": {
         "blanks": {
-          "1": "user:123:*"
+          "1": "{{key_prefix}}:{{entity_id}}:*"
         }
       },
       "wrong_outcomes": [
         {
           "when": "wrong_value",
-          "shows": "Command runs. 141,000 keys deleted in 1.2 seconds. Cache miss rate spikes to 99.7%. Database connection pool exhausted \u2014 12,400 simultaneous cache-miss queries arrive. Service degrades for 8 minutes until the cache rewarms.",
-          "why_wrong": "user:* matches every user's cache entries \u2014 all 47,000 active users lost their sessions and profiles, not just user 123, triggering a read stampede against the database."
+          "shows": "Command runs. 141,000 keys deleted in 1.2 seconds. Cache miss rate spikes to 99.7%. Database connection pool exhausted — 12,400 simultaneous cache-miss queries arrive. Service degrades for 8 minutes until the cache rewarms.",
+          "why_wrong": "{{key_prefix}}:* matches every user's cache entries — all 47,000 active users lost their sessions and profiles, not just {{key_prefix}} {{entity_id}}, triggering a read stampede against the database."
         }
       ],
-      "reveal": "Redis SCAN with MATCH visits every key in the keyspace and returns those whose names match the glob. user:* matches any key that starts with 'user:' \u2014 every session, profile, and preferences entry for every user. user:123:* anchors the second colon-delimited segment to a specific user id, matching only the three keys belonging to that user. The difference between clearing one user's stale data and evicting every active user's cached state is a single additional field in the key pattern \u2014 and the consequence is the difference between a targeted fix and a cache stampede."
+      "reveal": "Redis SCAN with MATCH visits every key in the keyspace and returns those whose names match the glob. {{key_prefix}}:* matches any key that starts with '{{key_prefix}}:' — every session, profile, and preferences entry for every user. {{key_prefix}}:{{entity_id}}:* anchors the second colon-delimited segment to a specific id, matching only the entries belonging to that entity. The difference between clearing one entity's stale data and evicting every active user's cached state is a single additional field in the key pattern — and the consequence is the difference between a targeted fix and a cache stampede."
     },
     {
       "id": "iam_least_privilege_read",
       "minigame": "iam_policy_puzzle",
       "difficulty": 3,
-      "brief": "reporting-lambda reads completed order files from the orders-archive S3 bucket. Author a least-privilege statement granting only what it needs.",
-      "teaches": "Least-privilege IAM requires scoping both the Action and the Resource \u2014 s3:GetObject on * grants read access to every S3 object in the account, not only the intended bucket.",
+      "brief": "{{node_name}} needs a least-privilege IAM policy. reporting-lambda reads completed order files from the orders-archive S3 bucket. Author a least-privilege statement granting only what it needs.",
+      "teaches": "Least-privilege IAM requires scoping both the Action and the Resource — s3:GetObject on * grants read access to every S3 object in the account, not only the intended bucket.",
       "levers": {
         "blank_count": 2,
         "input_mode": "pick_from_list",
@@ -147,18 +147,18 @@
       "wrong_outcomes": [
         {
           "when": "wrong_value",
-          "shows": "Policy attached. CloudTrail logs show reporting-lambda successfully called s3:GetObject on backups-prod, secrets-store, and 21 other buckets in the account over the next 4 hours \u2014 the wildcard resource granted read access to every S3 object.",
+          "shows": "Policy attached. CloudTrail logs show reporting-lambda successfully called s3:GetObject on backups-prod, secrets-store, and 21 other buckets in the account over the next 4 hours — the wildcard resource granted read access to every S3 object.",
           "why_wrong": "Resource '*' matches every S3 ARN in the account. Scoping the action correctly but leaving the resource as a wildcard means the right verb applies to every object everywhere."
         }
       ],
-      "reveal": "IAM evaluates a permission as the intersection of Action and Resource. Specifying s3:GetObject eliminates write and management operations, but Resource '*' expands the scope to every S3 object across every bucket the account can reach. The ARN arn:aws:s3:::orders-archive/* uses the /* suffix because GetObject targets object keys rather than the bucket itself \u2014 the bucket ARN alone would not match object-level reads. A policy with the correct action and a wildcard resource passes a review that only counts the verb, but fails the principle of least privilege because the noun is unrestricted."
+      "reveal": "IAM evaluates a permission as the intersection of Action and Resource. Specifying s3:GetObject eliminates write and management operations, but Resource '*' expands the scope to every S3 object across every bucket the account can reach. The ARN arn:aws:s3:::orders-archive/* uses the /* suffix because GetObject targets object keys rather than the bucket itself — the bucket ARN alone would not match object-level reads. A policy with the correct action and a wildcard resource passes a review that only counts the verb, but fails the principle of least privilege because the noun is unrestricted."
     },
     {
       "id": "iam_rotate_without_outage",
       "minigame": "iam_policy_puzzle",
       "difficulty": 4,
-      "brief": "deploy-bot IAM access key is 90 days old and must be rotated. Fourteen containers use it. A previous rotation caused 4 minutes of AccessDenied errors.",
-      "teaches": "IAM key rotation requires an overlap window where both keys are active \u2014 push the new key, disable (not delete) the old one, and delete only after confirming every caller has reloaded.",
+      "brief": "{{node_name}} has an IAM access key that needs zero-downtime rotation. The key is 90 days old and must be rotated. Fourteen containers use it. A previous rotation caused 4 minutes of AccessDenied errors.",
+      "teaches": "IAM key rotation requires an overlap window where both keys are active — push the new key, disable (not delete) the old one, and delete only after confirming every caller has reloaded.",
       "levers": {
         "blank_count": 3,
         "input_mode": "free_text",
@@ -166,8 +166,8 @@
       },
       "given": {
         "language": "shell",
-        "template": "#!/bin/bash\n# Rotate deploy-bot IAM access key with zero-downtime overlap\nUSER=\"deploy-bot\"\nOLD_KEY_ID=$(aws iam list-access-keys --user-name \"$USER\" \\\n  --query 'AccessKeyMetadata[0].AccessKeyId' --output text)\n\n# Step 1: create new key \u2014 both keys now active\naws iam create-access-key --user-name \"$USER\" > /tmp/new-key.json\n\n# Step 2: push new credentials to the secret store\n#         all 14 containers reload credentials every 5 minutes\naws secretsmanager put-secret-value \\\n  --secret-id prod/deploy-bot-key \\\n  --secret-string \"$(cat /tmp/new-key.json)\"\nsleep {{1}}\n\n# Step 3: verify new key works\naws sts get-caller-identity\n\n# Step 4: deactivate the old key (do not delete \u2014 preserve rollback option)\naws iam update-access-key \\\n  --user-name \"$USER\" \\\n  --access-key-id \"$OLD_KEY_ID\" \\\n  --status {{2}}\n\n# Step 5: after monitoring for {{3}} hours with no errors, delete in a separate run\n# aws iam delete-access-key --user-name \"$USER\" --access-key-id \"$OLD_KEY_ID\"",
-        "facts": "Containers reload credentials from Secrets Manager every 5 minutes. The previous rotation deleted the old key immediately after updating the secret \u2014 3 containers that had not yet reloaded received AccessDenied for 4 minutes until they restarted. IAM allows two active access keys per user simultaneously. The operations runbook requires a 24-hour observation window after disabling a key before deletion is considered safe."
+        "template": "#!/bin/bash\n# Rotate deploy-bot IAM access key with zero-downtime overlap\nUSER=\"deploy-bot\"\nOLD_KEY_ID=$(aws iam list-access-keys --user-name \"$USER\" \\\n  --query 'AccessKeyMetadata[0].AccessKeyId' --output text)\n\n# Step 1: create new key — both keys now active\naws iam create-access-key --user-name \"$USER\" > /tmp/new-key.json\n\n# Step 2: push new credentials to the secret store\n#         all 14 containers reload credentials every 5 minutes\naws secretsmanager put-secret-value \\\n  --secret-id prod/deploy-bot-key \\\n  --secret-string \"$(cat /tmp/new-key.json)\"\nsleep {{1}}\n\n# Step 3: verify new key works\naws sts get-caller-identity\n\n# Step 4: deactivate the old key (do not delete — preserve rollback option)\naws iam update-access-key \\\n  --user-name \"$USER\" \\\n  --access-key-id \"$OLD_KEY_ID\" \\\n  --status {{2}}\n\n# Step 5: after monitoring for {{3}} hours with no errors, delete in a separate run\n# aws iam delete-access-key --user-name \"$USER\" --access-key-id \"$OLD_KEY_ID\"",
+        "facts": "Containers reload credentials from Secrets Manager every 5 minutes. The previous rotation deleted the old key immediately after updating the secret — 3 containers that had not yet reloaded received AccessDenied for 4 minutes until they restarted. IAM allows two active access keys per user simultaneously. The operations runbook requires a 24-hour observation window after disabling a key before deletion is considered safe."
       },
       "solution": {
         "blanks": {
@@ -183,14 +183,14 @@
           "why_wrong": "Deleting the old key before every container has adopted the new one collapses the overlap window. Containers that cache credentials for up to 5 minutes have no way to recover until their next scheduled reload."
         }
       ],
-      "reveal": "AWS IAM allows two active access keys per user simultaneously, and this is what makes zero-downtime rotation possible. The rotation strategy: create the new key, distribute it to every credential store, then sleep for at least one full reload cycle (5 minutes = 300 seconds) so every running container has had a chance to pick it up. Then disable \u2014 not delete \u2014 the old key. Disabling is reversible: if AccessDenied errors appear after disabling, re-enabling is one command. Only after a monitoring window confirms no caller is still using the old key does deletion become safe. Deleting before the sleep completes replicates the previous outage exactly."
+      "reveal": "AWS IAM allows two active access keys per user simultaneously, and this is what makes zero-downtime rotation possible. The rotation strategy: create the new key, distribute it to every credential store, then sleep for at least one full reload cycle (5 minutes = 300 seconds) so every running container has had a chance to pick it up. Then disable — not delete — the old key. Disabling is reversible: if AccessDenied errors appear after disabling, re-enabling is one command. Only after a monitoring window confirms no caller is still using the old key does deletion become safe. Deleting before the sleep completes replicates the previous outage exactly."
     },
     {
       "id": "comms_first_update",
       "minigame": "incident_comms",
       "difficulty": 1,
-      "brief": "checkout-service went down 4 minutes ago. Root cause is unknown. Write the first public status update.",
-      "teaches": "A first status update names what users cannot do and commits to a next-update time \u2014 speculating on cause before it is confirmed hands users wrong information to amplify.",
+      "brief": "{{node_name}} went down 4 minutes ago. Root cause is unknown. Write the first public status update.",
+      "teaches": "A first status update names what users cannot do and commits to a next-update time — speculating on cause before it is confirmed hands users wrong information to amplify.",
       "levers": {
         "blank_count": 2,
         "input_mode": "pick_from_list",
@@ -223,18 +223,18 @@
       "wrong_outcomes": [
         {
           "when": "wrong_value",
-          "shows": "Update posted. Within 9 minutes, 31 social media posts asked 'database failure \u2014 was data lost?' and 4 journalists emailed asking for comment on a potential data breach. A secondary incident call was opened to manage the communications fallout.",
+          "shows": "Update posted. Within 9 minutes, 31 social media posts asked 'database failure — was data lost?' and 4 journalists emailed asking for comment on a potential data breach. A secondary incident call was opened to manage the communications fallout.",
           "why_wrong": "Naming an unconfirmed cause gives users specific wrong information to act on. 'Database connectivity issue' prompted data-loss fears that had nothing to do with the actual impact."
         }
       ],
-      "reveal": "A status update's job at the start of an incident is to set expectations, not diagnose. Users need exactly two things: what they cannot do right now, and when they will hear more. Naming an unconfirmed root cause creates a second problem \u2014 if the diagnosis later changes, the retraction damages trust more than saying nothing would have. An exact UTC timestamp is a commitment that closes the waiting loop for affected users. 'When we know more' is not a time and does not close that loop \u2014 it tells users to keep checking, which generates support contacts and amplified speculation."
+      "reveal": "A status update's job at the start of an incident is to set expectations, not diagnose. Users need exactly two things: what they cannot do right now, and when they will hear more. Naming an unconfirmed root cause creates a second problem — if the diagnosis later changes, the retraction damages trust more than saying nothing would have. An exact UTC timestamp is a commitment that closes the waiting loop for affected users. 'When we know more' is not a time and does not close that loop — it tells users to keep checking, which generates support contacts and amplified speculation."
     },
     {
       "id": "comms_partial_degradation",
       "minigame": "incident_comms",
       "difficulty": 2,
-      "brief": "Report exports have been failing for Standard-plan users since 09:14 UTC. Professional and Enterprise plans are unaffected. Root cause is unknown. Author the status update.",
-      "teaches": "A partial-degradation update names the exact affected feature and the exact user segment \u2014 vague severity labels and open-ended investigation notes drive support tickets from users who cannot self-qualify.",
+      "brief": "{{node_name}} is experiencing partial degradation. Report exports have been failing for Standard-plan users since 09:14 UTC. Professional and Enterprise plans are unaffected. Root cause is unknown. Author the status update.",
+      "teaches": "A partial-degradation update names the exact affected feature and the exact user segment — vague severity labels and open-ended investigation notes drive support tickets from users who cannot self-qualify.",
       "levers": {
         "blank_count": 3,
         "input_mode": "pick_from_list",
@@ -274,18 +274,18 @@
       "wrong_outcomes": [
         {
           "when": "wrong_value",
-          "shows": "Update posted. Support queue received 47 tickets in 14 minutes \u2014 customers could not self-qualify from the vague feature name, could not determine whether their plan was affected, and had no time to expect the next update.",
+          "shows": "Update posted. Support queue received 47 tickets in 14 minutes — customers could not self-qualify from the vague feature name, could not determine whether their plan was affected, and had no time to expect the next update.",
           "why_wrong": "Vague feature names and open-ended next-update commitments force users who cannot self-determine their impact to open a ticket, multiplying the incident's operational cost."
         }
       ],
-      "reveal": "When degradation is partial, naming the exact feature \u2014 'Report export (CSV and PDF)' rather than 'reporting features' \u2014 lets every user immediately determine whether they are affected. A user not exporting a report closes the page. A user mid-export knows exactly what broke. Naming the affected plan tier extends the same benefit: a Professional-plan customer sees they are safe in one sentence. 'Soon' and 'after the investigation' are open loops \u2014 they tell users to keep polling, which produces support contacts. An exact UTC timestamp is a promise that eliminates that need."
+      "reveal": "When degradation is partial, naming the exact feature — 'Report export (CSV and PDF)' rather than 'reporting features' — lets every user immediately determine whether they are affected. A user not exporting a report closes the page. A user mid-export knows exactly what broke. Naming the affected plan tier extends the same benefit: a Professional-plan customer sees they are safe in one sentence. 'Soon' and 'after the investigation' are open loops — they tell users to keep polling, which produces support contacts. An exact UTC timestamp is a promise that eliminates that need."
     },
     {
       "id": "iam_encrypt_at_rest",
       "minigame": "iam_policy_puzzle",
       "difficulty": 3,
-      "brief": "ehr-service writes patient records to the patient-records S3 bucket encrypted with a customer-managed KMS key. Author the bucket policy and key policy that enforce encryption and permit the service to read and write.",
-      "teaches": "Encryption at rest requires two independent grants: the bucket policy must enforce the specific CMK, and the key policy must permit both GenerateDataKey for writes and Decrypt for reads \u2014 one missing action silently passes writes while failing every read.",
+      "brief": "{{node_name}} needs encryption at rest configured for patient data. ehr-service writes patient records to the patient-records S3 bucket encrypted with a customer-managed KMS key. Author the bucket policy and key policy that enforce encryption and permit the service to read and write.",
+      "teaches": "Encryption at rest requires two independent grants: the bucket policy must enforce the specific CMK, and the key policy must permit both GenerateDataKey for writes and Decrypt for reads — one missing action silently passes writes while failing every read.",
       "levers": {
         "blank_count": 2,
         "input_mode": "pick_from_list",
@@ -319,18 +319,18 @@
       "wrong_outcomes": [
         {
           "when": "wrong_value",
-          "shows": "Stack deployed. ehr-service uploads succeed for 6 hours. Then s3:GetObject begins returning 'The ciphertext refers to a customer master key that does not exist, is not enabled or you do not have permissions to access it.' Every read fails \u2014 847 patient record requests return 500 errors.",
+          "shows": "Stack deployed. ehr-service uploads succeed for 6 hours. Then s3:GetObject begins returning 'The ciphertext refers to a customer master key that does not exist, is not enabled or you do not have permissions to access it.' Every read fails — 847 patient record requests return 500 errors.",
           "why_wrong": "kms:GenerateDataKey allows writing encrypted objects but kms:Decrypt is required for reading them back. Omitting Decrypt passes all writes silently while making every subsequent read fail."
         }
       ],
-      "reveal": "AWS uses envelope encryption for S3 server-side encryption: when ehr-service writes an object, S3 calls kms:GenerateDataKey to obtain a one-time data key, encrypts the object with it, and discards the plaintext. When the service reads the object back, S3 calls kms:Decrypt to recover that data key and decrypt the object. Both API calls must be permitted in the key policy for the calling role. The bucket policy's StringNotEquals condition acts as a write firewall \u2014 any PutObject that does not specify the exact production CMK ARN is denied, blocking both unencrypted uploads and uploads using the wrong key. Granting GenerateDataKey alone produces a silent asymmetry: all writes succeed and every subsequent read fails with a cryptic key-permissions error."
+      "reveal": "AWS uses envelope encryption for S3 server-side encryption: when ehr-service writes an object, S3 calls kms:GenerateDataKey to obtain a one-time data key, encrypts the object with it, and discards the plaintext. When the service reads the object back, S3 calls kms:Decrypt to recover that data key and decrypt the object. Both API calls must be permitted in the key policy for the calling role. The bucket policy's StringNotEquals condition acts as a write firewall — any PutObject that does not specify the exact production CMK ARN is denied, blocking both unencrypted uploads and uploads using the wrong key. Granting GenerateDataKey alone produces a silent asymmetry: all writes succeed and every subsequent read fails with a cryptic key-permissions error."
     },
     {
       "id": "yaml_hpa_threshold",
       "minigame": "yaml_manifest",
       "difficulty": 2,
-      "brief": "The cluster autoscaler is oscillating \u2014 scaling up and immediately back down, causing pod churn every 90 seconds. The HPA target CPU utilisation is set too low.",
-      "teaches": "HPA target utilisation controls when scale-out triggers. Set it below your steady-state CPU utilisation and the autoscaler will never be satisfied \u2014 it scales up, the new pods lower average CPU, then it scales back down.",
+      "brief": "{{node_name}} autoscaler is oscillating — scaling up and immediately back down, causing pod churn every 90 seconds. The HPA target CPU utilisation is set too low.",
+      "teaches": "HPA target utilisation controls when scale-out triggers. Set it below your steady-state CPU utilisation and the autoscaler will never be satisfied — it scales up, the new pods lower average CPU, then it scales back down.",
       "levers": {
         "blank_count": 1,
         "input_mode": "pick_from_list",
@@ -357,11 +357,253 @@
       "wrong_outcomes": [
         {
           "when": "wrong_value",
-          "shows": "Pod churn continues. The autoscaler cannot reach the target and keeps oscillating \u2014 adding pods drops average CPU below the target, triggering a scale-down, which raises CPU above the target again.",
+          "shows": "Pod churn continues. The autoscaler cannot reach the target and keeps oscillating — adding pods drops average CPU below the target, triggering a scale-down, which raises CPU above the target again.",
           "why_wrong": "A target below steady-state (20 or 40) means the autoscaler will always be fighting against normal load. A target of 95 leaves no headroom for traffic bursts and will scale too late."
         }
       ],
-      "reveal": "The correct target is 70%: comfortably above steady-state (58%) so normal load does not trigger unnecessary scale-outs, but below 100% so there is room to absorb traffic spikes before the next scale event. Targets below steady-state cause the oscillation seen here \u2014 the autoscaler adds pods, average CPU drops below target, it removes pods, average CPU rises above target again."
+      "reveal": "The correct target is 70%: comfortably above steady-state (58%) so normal load does not trigger unnecessary scale-outs, but below 100% so there is room to absorb traffic spikes before the next scale event. Targets below steady-state cause the oscillation seen here — the autoscaler adds pods, average CPU drops below target, it removes pods, average CPU rises above target again."
+    },
+    {
+      "id": "pool_max_size_config",
+      "minigame": "pool_config",
+      "difficulty": 2,
+      "brief": "{{node_name}} is exhausting its database connection pool during peak traffic. New connections queue behind the pool ceiling — requests are timing out waiting for a slot. Configure PgBouncer to handle client connections from all application pods without starving PostgreSQL's admin reserve.",
+      "teaches": "max_client_conn is PgBouncer's client-side ceiling — the total connections it will accept from all application pods combined. default_pool_size is the server-side ceiling — the connections PgBouncer opens to PostgreSQL per database/user pair. In transaction mode, a server connection is released after each transaction, so default_pool_size can be much lower than max_client_conn. Statement mode breaks multi-statement transactions; session mode holds a server connection for the lifetime of the client session, defeating multiplexing.",
+      "levers": {
+        "blank_count": 3,
+        "input_mode": "pick_from_list",
+        "surrounding_noise": true
+      },
+      "given": {
+        "language": "ini",
+        "template": "[pgbouncer]\npool_mode = {{1}}\nmax_client_conn = {{2}}\ndefault_pool_size = {{3}}\nserver_pool_timeout = 30",
+        "options": {
+          "1": [
+            "transaction",
+            "session",
+            "statement"
+          ],
+          "2": [
+            "40",
+            "50",
+            "100"
+          ],
+          "3": [
+            "8",
+            "50",
+            "80",
+            "100"
+          ]
+        },
+        "facts": "10 application pods, each opening up to 5 connections at peak (50 client connections total). Rolling deploys briefly double the pod count, so max_client_conn must cover 2× peak. Database max_connections = 100, of which 20% is reserved for admin connections, replication, and schema migrations — leaving 80 slots for the app. There is a single database/user pair. The app runs multi-statement transactions and uses no session state: no session-level SET, no advisory locks, no LISTEN/NOTIFY, no server-side prepared statements."
+      },
+      "solution": {
+        "blanks": {
+          "1": "transaction",
+          "2": "100",
+          "3": "80"
+        }
+      },
+      "wrong_outcomes": [
+        {
+          "when": "wrong_value",
+          "shows": "One of three failures: (a) max_client_conn=50 — during rolling deploys, 20 pods try to connect simultaneously and 10 hit 'sorry, too many clients'; (b) default_pool_size=100 — pg_dump and schema migrations get 'too many connections' because no admin slots remain; (c) statement mode — every BEGIN fails with 'transaction blocks not allowed in statement pooling mode'.",
+          "why_wrong": "pool_mode=transaction releases the server connection after each transaction — safe because the app uses no session state. max_client_conn=100 covers 2× peak (20 pods × 5 = 100 during deploys). default_pool_size=80 uses 80% of max_connections, leaving 20 admin slots for replication and migrations."
+        }
+      ],
+      "reveal": "pool_mode=transaction: PgBouncer holds the PostgreSQL server connection only for the duration of one transaction, then returns it to the pool. This lets 100 client connections share 80 server slots — safe because the app uses no session state. Statement mode would break multi-statement transactions immediately. max_client_conn=100 covers the rolling-deploy spike: 10 existing pods plus 10 new pods each with 5 connections = 100; 50 would queue connections during every deploy. default_pool_size=80 leaves 20 of PostgreSQL's 100 max_connections free for admin tasks; 100 locks out migrations and pg_dump; 8 starves the pool and defeats the capacity increase."
+    },
+    {
+      "id": "terraform_resize_create_first",
+      "minigame": "terraform_resize",
+      "difficulty": 3,
+      "brief": "Finance approved moving {{node_name}} from Tier {{current_tier}} ({{current_capacity}}) to Tier {{target_tier}} ({{target_capacity}}). Edit the Terraform so the change applies with no downtime.",
+      "teaches": "Change one variable per infrastructure change, and tell Terraform to create the replacement before destroying the original — its default for a replaced resource is destroy first, which is an outage.",
+      "levers": {
+        "blank_count": 3,
+        "input_mode": "pick_from_list",
+        "surrounding_noise": true
+      },
+      "given": {
+        "language": "hcl",
+        "template": "resource \"cloud_node\" \"{{node_id}}\" {\n  tier          = {{1}}\n  replica_count = {{2}}\n  region        = \"us-east-1\"\n\n  lifecycle {\n    create_before_destroy = {{3}}\n  }\n}",
+        "options": {
+          "1": [
+            "{{current_tier}}",
+            "{{target_tier}}",
+            "{{target_tier + 1}}"
+          ],
+          "2": [
+            "1",
+            "2",
+            "4"
+          ],
+          "3": [
+            "true",
+            "false"
+          ]
+        },
+        "facts": "Current state: tier = {{current_tier}}, replica_count = 2. Change policy: one variable per change — replica_count stays as it is. Changing tier replaces the resource; without create_before_destroy, Terraform destroys the old node before the new one exists."
+      },
+      "solution": {
+        "blanks": {
+          "1": "{{target_tier}}",
+          "2": "2",
+          "3": "true"
+        }
+      },
+      "wrong_outcomes": [
+        {
+          "when": "wrong_value",
+          "shows": "terraform apply: destroying {{node_name}} (Tier {{current_tier}})… creating Tier {{target_tier}}… 6 minutes 40 seconds with no node serving traffic, or a plan that also changes replica_count and doubles the blast radius of this change.",
+          "why_wrong": "tier must become {{target_tier}} (the approved tier), replica_count stays 2 (one variable per change), and create_before_destroy must be true so the replacement exists before the original is removed."
+        }
+      ],
+      "reveal": "Changing tier forces Terraform to replace the resource, and its default replacement order is destroy-then-create — correct for resources that cannot coexist, an outage for a serving node. create_before_destroy = true flips the order so traffic always has somewhere to go. Leaving replica_count alone keeps the change to a single variable, so if anything goes wrong there is exactly one thing to roll back."
+    },
+    {
+      "id": "terraform_resize_group_bounds",
+      "minigame": "terraform_resize",
+      "difficulty": 3,
+      "brief": "{{node_name}} moves to Tier {{target_tier}} ({{target_capacity}}). Load testing at the new tier shows steady state needs 2 nodes and peak needs 3. Set the group bounds so it survives a zone failure at both.",
+      "teaches": "Size a node group as N+1: the minimum covers steady state plus one spare, the maximum covers peak plus one spare, so losing a zone at any load never drops you below what the traffic needs.",
+      "levers": {
+        "blank_count": 3,
+        "input_mode": "pick_from_list",
+        "surrounding_noise": false
+      },
+      "given": {
+        "language": "hcl",
+        "template": "resource \"cloud_node_group\" \"{{node_id}}\" {\n  tier     = {{1}}\n  min_size = {{2}}\n  max_size = {{3}}\n}",
+        "options": {
+          "1": [
+            "{{current_tier}}",
+            "{{target_tier}}",
+            "{{target_tier + 1}}"
+          ],
+          "2": [
+            "2",
+            "3",
+            "4"
+          ],
+          "3": [
+            "3",
+            "4",
+            "6"
+          ]
+        },
+        "facts": "At Tier {{target_tier}}: steady state needs 2 nodes, peak needs 3. Policy: N+1 — one spare node on top of what the load needs, at every load level."
+      },
+      "solution": {
+        "blanks": {
+          "1": "{{target_tier}}",
+          "2": "3",
+          "3": "4"
+        }
+      },
+      "wrong_outcomes": [
+        {
+          "when": "wrong_value",
+          "shows": "A zone fails at peak: the group drops to 2 nodes against a need of 3, utilisation hits 150% and p95 climbs from 80 ms to 1.3 s — or the group idles at 6 nodes and costs 50% more than peak ever needs.",
+          "why_wrong": "tier is the approved {{target_tier}}; min_size = 2 + 1 spare = 3; max_size = 3 + 1 spare = 4. Anything lower loses capacity when a zone fails; 6 pays for nodes no load level requires."
+        }
+      ],
+      "reveal": "N+1 means the spare is sized against the load you are actually at. At steady state you need 2, so min_size 3 survives losing one. At peak you need 3, so max_size 4 survives losing one there too. Setting max_size to 6 is not safer, only more expensive — the autoscaler will never need it, but a misconfigured policy will happily use it."
+    },
+    {
+      "id": "pool_replica_routing",
+      "minigame": "pool_config",
+      "difficulty": 2,
+      "brief": "{{node_name}} has a primary and a streaming read replica. Analytics queries are hitting the primary and competing with OLTP writes. Configure PgBouncer so that write traffic connects to the primary and analytics traffic connects to the replica, using two database aliases.",
+      "teaches": "PgBouncer routes traffic based on which database alias the application connects to, not by inspecting query content. Defining two aliases pointing at different PostgreSQL hosts puts the routing decision at connection time — the application chooses the alias; PgBouncer handles the pool.",
+      "levers": {
+        "blank_count": 3,
+        "input_mode": "pick_from_list",
+        "surrounding_noise": true
+      },
+      "given": {
+        "language": "ini",
+        "template": "[databases]\napp    = host={{1}} port=5432 dbname=app\napp_ro = host={{2}} port=5432 dbname=app\n\n[pgbouncer]\npool_mode = {{3}}\nmax_client_conn = 200",
+        "options": {
+          "1": [
+            "pg-primary",
+            "pg-replica"
+          ],
+          "2": [
+            "pg-primary",
+            "pg-replica"
+          ],
+          "3": [
+            "session",
+            "transaction",
+            "statement"
+          ]
+        },
+        "facts": "OLTP writes connect to database alias 'app'; analytics readers connect to 'app_ro'. pg-replica is a streaming read replica and rejects all write operations. Both workloads run multi-statement transactions and use no session state: no session-level SET, no advisory locks, no LISTEN/NOTIFY."
+      },
+      "solution": {
+        "blanks": {
+          "1": "pg-primary",
+          "2": "pg-replica",
+          "3": "transaction"
+        }
+      },
+      "wrong_outcomes": [
+        {
+          "when": "wrong_value",
+          "shows": "Two failures depending on mistake: (a) hosts swapped — INSERT and UPDATE requests routed through 'app' land on pg-replica and fail immediately with 'ERROR: cannot execute INSERT in a read-only transaction'; analytics keeps loading the primary instead of the replica, solving nothing; (b) session or statement mode — session mode holds each server connection for the full application session, exhausting both pools; statement mode aborts every multi-statement transaction.",
+          "why_wrong": "alias 'app' must point at pg-primary (the only host that accepts writes) and 'app_ro' at pg-replica. pool_mode=transaction is correct because both workloads use multi-statement transactions with no session state — it releases server connections between transactions, enabling multiplexing across 200 client connections."
+        }
+      ],
+      "reveal": "PgBouncer database aliases are the routing primitive: the app connects to 'app' for writes and 'app_ro' for reads, and PgBouncer forwards each alias to the configured host. It does not inspect queries. The alias names are arbitrary — the routing contract is between the application and the alias it chooses to connect to. host=pg-primary is required for 'app' because pg-replica rejects writes; swapping the hosts silently routes all OLTP writes to a read-only server. pool_mode=transaction is correct for both pools — the workloads run multi-statement transactions but hold no session state, so releasing the server connection after each transaction is safe and allows 200 client connections to share a smaller pool of server connections."
+    },
+    {
+      "id": "pool_exhaustion_config",
+      "minigame": "pool_config",
+      "difficulty": 2,
+      "for_actions": [
+        "increase_connections"
+      ],
+      "brief": "{{tenant}}-api is returning 503 errors. `pg_stat_activity` shows the connection pool ceiling is hit on every request. Update the pool configuration to handle the load without starving the database.",
+      "teaches": "Pool size is derived from worker-process concurrency demand, not chosen arbitrarily. Checkout timeout controls how long a thread waits for a free connection — too high means threads pile up and hold server capacity; too low fails requests that could have succeeded with a short wait.",
+      "levers": {
+        "blank_count": 2,
+        "input_mode": "pick_from_list",
+        "surrounding_noise": true
+      },
+      "given": {
+        "language": "yaml",
+        "template": "production:\n  adapter: postgresql\n  database: {{tenant}}_prod\n  username: <%= ENV['DB_USER'] %>\n  password: <%= ENV['DB_PASS'] %>\n  pool: {{1}}\n  checkout_timeout: {{2}}",
+        "options": {
+          "1": [
+            "5",
+            "10",
+            "25",
+            "50"
+          ],
+          "2": [
+            "1",
+            "3",
+            "5",
+            "10"
+          ]
+        },
+        "facts": "Current pool ceiling: 5. You run 6 Puma worker processes, each holding at most 4 concurrent database connections. The existing checkout_timeout of 10 seconds causes threads to hold server capacity too long during pool exhaustion — reduce it to 3 seconds to fail fast and surface errors to callers rather than queuing indefinitely."
+      },
+      "solution": {
+        "blanks": {
+          "1": "25",
+          "2": "3"
+        }
+      },
+      "wrong_outcomes": [
+        {
+          "when": "wrong_value",
+          "shows": "With pool: 10 the checkout queue shrinks but does not clear — 6 workers × 4 connections = 24 needed, so 10 is still short. Error rate falls from 38% to 11%, then climbs back as traffic remains constant. checkout_timeout of 3 is correct but insufficient alone.",
+          "why_wrong": "Pool size 10 is still below the 24-connection peak demand. The ceiling must be at least 24; 25 is the first listed value that clears the peak and provides one slot of headroom."
+        }
+      ],
+      "reveal": "6 worker processes each holding at most 4 connections means peak demand is 24 connections. A pool of 25 gives one slot of headroom above peak. Setting it to 50 is safe but wastes database connection slots that other services share. The checkout_timeout determines how long a Puma thread waits before raising ActiveRecord::ConnectionTimeoutError — 10 seconds is too generous under pool exhaustion because a thread holds a web-server slot for the full wait, backing up the request queue further downstream. 3 seconds fails fast and allows the caller to retry or return an error rather than holding the connection slot."
     }
   ]
 }

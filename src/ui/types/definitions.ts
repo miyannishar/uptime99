@@ -208,6 +208,14 @@ export interface ActionDef {
   readonly minigame: string
   /** 1–5. With `minigame`, forms the difficulty-slot. Required. */
   readonly difficulty: number
+  /**
+   * Optional extra minigame/difficulty slots. Slot 0 is always the action's
+   * own `minigame`/`difficulty`; pool entries are slots 1+. The picker in
+   * src/engine/minigamePick.ts selects one slot deterministically from
+   * (rng_seed, action id, context key). Every pool entry is a difficulty-slot:
+   * checkSlotCoverage and checkRegistryMatchesActions iterate slotsFor(action).
+   */
+  readonly minigame_pool?: readonly { readonly minigame: string; readonly difficulty: number }[]
   readonly time_cost_s: number
   readonly money_cost: number
   readonly cooldown_s: number
@@ -334,7 +342,7 @@ export interface IncidentDef {
 
 /* ------------------------------------------------------------- minigames --- */
 
-export type FormatId = 'ordered_sequence' | 'fill_blank' | 'dial' | 'wiring' | 'evidence'
+export type FormatId = 'ordered_sequence' | 'fill_blank' | 'dial' | 'wiring' | 'evidence' | 'terminal' | 'log_hunt' | 'patch' | 'monitor' | 'classify'
 export type LeverType = 'integer' | 'number' | 'boolean' | 'enum'
 
 export interface LeverDef {
@@ -366,7 +374,8 @@ export interface MinigameDef {
  */
 export type WrongWhen =
   | 'any' | 'below' | 'above' | 'wrong_order'
-  | 'wrong_value' | 'wrong_target' | 'wrong_choice'
+  | 'wrong_value' | 'wrong_target' | 'wrong_choice' | 'wrong_command' | 'wrong_line'
+  | 'too_early' | 'too_late' | 'wrong_metric' | 'wrong_bin'
 
 export interface WrongOutcome {
   readonly when: WrongWhen
@@ -431,16 +440,90 @@ export interface EvidenceGiven {
 }
 export interface EvidenceSolution { readonly choice: string }
 
+export interface TerminalGiven {
+  readonly prefix: string
+  readonly history: readonly string[]
+  readonly placeholder?: string
+}
+export interface TerminalSolution { readonly accepts: readonly string[] }
+
+export interface LogHuntLine {
+  readonly ts: string
+  readonly level: string
+  readonly text: string
+}
+export interface LogHuntGiven {
+  readonly source: string
+  readonly lines: readonly LogHuntLine[]
+}
+export interface LogHuntSolution {
+  /** 1-based line number. */
+  readonly line: number
+  /** Other 1-based lines that are the same root cause; also graded correct. */
+  readonly accept?: readonly number[]
+}
+
+export interface PatchGiven {
+  readonly filename: string
+  readonly language: string
+  readonly content: string
+}
+export interface PatchSolution {
+  /** 1-based line number. Only this line may change. */
+  readonly line: number
+  /** Normalised target line must contain each of these strings. */
+  readonly must_contain: readonly string[]
+  /** Normalised target line must NOT contain any of these strings. */
+  readonly must_not_contain?: readonly string[]
+}
+
+export interface MonitorMetric {
+  readonly id: string
+  readonly label: string
+  readonly unit: string
+  readonly start: number
+  readonly slope: number
+  readonly amplitude: number
+  readonly period_s: number
+  /** Optional physical bounds applied by valueAt. */
+  readonly floor?: number
+  readonly ceil?: number
+}
+export interface MonitorGiven {
+  readonly metrics: readonly MonitorMetric[]
+  /** Total duration of the monitor session in seconds. */
+  readonly duration_s: number
+  /** The policy rule shown on screen; names a threshold but not when to click. */
+  readonly rule: string
+}
+export interface MonitorSolution {
+  readonly metric: string
+  readonly threshold: number
+  readonly direction: 'above' | 'below'
+  readonly window_s: number
+}
+
+export interface ClassifyItem { readonly id: string; readonly label: string }
+export interface ClassifyBin { readonly id: string; readonly label: string }
+export interface ClassifyGiven {
+  readonly items: readonly ClassifyItem[]
+  readonly bins: readonly ClassifyBin[]
+}
+/** Maps each item id to the bin id it should go in. */
+export interface ClassifySolution { readonly bins: Readonly<Record<string, string>> }
+
 export type InstanceGiven =
-  | SequenceGiven | FillBlankGiven | DialGiven | WiringGiven | EvidenceGiven
+  | SequenceGiven | FillBlankGiven | DialGiven | WiringGiven | EvidenceGiven | TerminalGiven | LogHuntGiven | PatchGiven | MonitorGiven | ClassifyGiven
 export type InstanceSolution =
-  | SequenceSolution | FillBlankSolution | DialSolution | WiringSolution | EvidenceSolution
+  | SequenceSolution | FillBlankSolution | DialSolution | WiringSolution | EvidenceSolution | TerminalSolution | LogHuntSolution | PatchSolution | MonitorSolution | ClassifySolution
 
 export interface MinigameInstanceDef {
   readonly id: string
   readonly minigame: string
   /** Must be a difficulty some action actually invokes this minigame at. */
   readonly difficulty: number
+  /** Optional: only these actions may open this instance (see checkForActionsRefs). */
+  readonly for_actions?: readonly string[]
   readonly brief: string
   /** A transferable principle, never a restatement of the answer. */
   readonly teaches: string

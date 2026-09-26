@@ -195,6 +195,7 @@ export function expectValidIncidentFile(dataPath: string): void {
 // Two copies of one rule is how an earlier cycle in this project shipped a
 // matchability check that disagreed with its own implementation.
 import { WHEN_BY_FORMAT } from '../../src/validate/minigameChecks'
+import { slotsFor } from '../../src/engine/minigamePick'
 
 export function expectValidInstanceFile(dataPath: string): void {
   expectValidAgainst('data/schema/minigame-instance.schema.json', dataPath)
@@ -207,10 +208,12 @@ export function expectValidInstanceFile(dataPath: string): void {
   const mg = Object.fromEntries(minigames.map((m: any) => [m.id, m]))
   const fmt = Object.fromEntries(formats.map((f: any) => [f.id, f]))
 
-  // which difficulties each minigame is actually invoked at
+  // which difficulties each minigame is actually invoked at (including pool slots)
   const demanded: Record<string, Set<number>> = {}
   for (const a of actions) {
-    ;(demanded[a.minigame] = demanded[a.minigame] ?? new Set()).add(a.difficulty)
+    for (const s of slotsFor(a)) {
+      ;(demanded[s.minigame] = demanded[s.minigame] ?? new Set()).add(s.difficulty)
+    }
   }
 
   for (const i of instances) {

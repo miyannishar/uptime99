@@ -17,5 +17,5 @@
   ],
   "end": { "kind": "fixed_window", "ticks": 60 },
   "incidents": [],
-  "ticket_ids": ["upgrade_redis_t2", "add_db_replica", "add_metrics"]
+  "ticket_ids": ["upgrade_redis_t2", "add_db_replica", "scale_out_app"]
 }

@@ -123,7 +123,12 @@ export function CommandPalette({ open, onClose, entries, onRun }: CommandPalette
                 <span className={s.node}>{node.inst.instance_id}</span>
                 {action.resolvesActiveIncident && <span className={s.fixes}>resolves</span>}
                 <span className={s.spacer} />
-                <DifficultyDots difficulty={action.def.difficulty} label={action.minigame.name} />
+                <DifficultyDots
+                  difficulty={action.def.difficulty}
+                  label={(action.def.minigame_pool?.length ?? 0) > 0
+                    ? `${action.def.minigame_pool!.length + 1} puzzle types`
+                    : action.minigame.name}
+                />
                 <span className={s.cost}>
                   {formatDuration(action.def.time_cost_s)}
                   {' · '}

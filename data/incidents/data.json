@@ -35,7 +35,7 @@
         {
           "kind": "overage",
           "when": "per_tick",
-          "basis": "affected_instances * 2"
+          "basis": "affected_instances * 1"
         }
       ],
       "signals": [
@@ -52,7 +52,7 @@
             ],
             "min_tier": 1
           },
-          "text": "Replication lag on the database layer has climbed to 38 seconds and is still rising. Read queries routed to replicas are returning data that is up to 38 seconds stale."
+          "text": "Replication lag on the {{layer_name}} layer has climbed to 38 seconds and is still rising. Read queries routed to replicas are returning data that is up to 38 seconds stale."
         },
         {
           "level": 2,
@@ -62,7 +62,7 @@
             ],
             "min_tier": 2
           },
-          "text": "pg-replica-01's replication lag hit 38 seconds at 16:42 UTC and is not recovering. The replica is falling further behind the primary with each passing minute; lag was under 200 ms three hours ago."
+          "text": "Replication lag behind {{node_name}} hit 38 seconds at 16:42 UTC and is not recovering. The replica is falling further behind the primary with each passing minute; lag was under 200 ms three hours ago."
         },
         {
           "level": 3,
@@ -72,7 +72,7 @@
             ],
             "min_tier": 2
           },
-          "text": "pg-primary is performing sequential scans on the orders table for every analytics query \u2014 no index on created_at. Each scan locks rows long enough to stall WAL flushing, causing pg-replica-01 to stall on replay. The lag accumulates in direct proportion to analytics query volume. Adding an index on the hot column or moving the primary to a larger instance class would stop the write stall."
+          "text": "{{node_name}} is performing sequential scans on the orders table for every analytics query \u2014 no index on created_at. Each scan locks rows long enough to stall WAL flushing, causing its replica to stall on replay. The lag accumulates in direct proportion to analytics query volume. Adding an index on the hot column or moving {{node_name}} to a larger instance class would stop the write stall."
         }
       ]
     },
@@ -126,7 +126,7 @@
             ],
             "min_tier": 1
           },
-          "text": "Backup completion rate on the persistence layer is nominal. Last snapshot reported as successful 6 hours ago. No metric anomaly is visible."
+          "text": "Backup completion rate on the {{layer_name}} layer is nominal. Last snapshot reported as successful 6 hours ago. No metric anomaly is visible."
         },
         {
           "level": 2,
@@ -136,7 +136,7 @@
             ],
             "min_tier": 2
           },
-          "text": "backup-us-01's last three snapshot jobs completed with exit code 0, but the verification checksum step was silently skipped after a configuration change deployed on Monday. The backups exist on disk; their integrity is unconfirmed."
+          "text": "{{node_name}}'s last three snapshot jobs completed with exit code 0, but the verification checksum step was silently skipped after a configuration change deployed on Monday. The backups exist on disk; their integrity is unconfirmed."
         },
         {
           "level": 3,
@@ -204,7 +204,7 @@
             ],
             "min_tier": 1
           },
-          "text": "Availability on the persistence layer has dropped to 0%. All read and write requests to the affected data store are failing with connection refused. The outage began 4 minutes ago and shows no sign of recovery."
+          "text": "Availability on the {{layer_name}} layer has dropped to 0%. All read and write requests to the affected data store are failing with connection refused. The outage began 4 minutes ago and shows no sign of recovery."
         },
         {
           "level": 2,
@@ -214,7 +214,7 @@
             ],
             "min_tier": 2
           },
-          "text": "pg-primary is unreachable. The instance failed its health check at 09:17 UTC and has not recovered. The host is reporting a disk I/O error at the block device level. No replica exists to promote."
+          "text": "{{node_name}} is unreachable. The instance failed its health check at 09:17 UTC and has not recovered. The host is reporting a disk I/O error at the block device level. No replica exists to promote."
         },
         {
           "level": 3,
@@ -224,7 +224,7 @@
             ],
             "min_tier": 2
           },
-          "text": "pg-primary's underlying EBS volume experienced an unrecoverable hardware failure at 09:17 UTC. The filesystem is corrupt and the instance cannot be brought back. No backups were ever configured for this node. There is no snapshot, no replica, no restore path. All data written to this instance since provisioning is permanently gone."
+          "text": "{{node_name}}'s underlying EBS volume experienced an unrecoverable hardware failure at 09:17 UTC. The filesystem is corrupt and the instance cannot be brought back. No backups were ever configured for this node. There is no snapshot, no replica, no restore path. All data written to this instance since provisioning is permanently gone."
         }
       ]
     },
@@ -279,7 +279,7 @@
             ],
             "min_tier": 1
           },
-          "text": "Error rate on the database layer jumped to 100% at 14:23 UTC. All read and write queries to the affected instance are failing. The spike correlates exactly with a deployment window."
+          "text": "Error rate on the {{layer_name}} layer jumped to 100% at 14:23 UTC. All read and write queries to the affected instance are failing. The spike correlates exactly with a deployment window."
         },
         {
           "level": 2,
@@ -289,7 +289,7 @@
             ],
             "min_tier": 2
           },
-          "text": "pg-primary-01 is refusing all connections since 14:23 UTC. The instance is running but the database process is in recovery mode and cannot accept new queries. The deployment at 14:22 UTC included a schema migration."
+          "text": "{{node_name}} (Tier {{current_tier}}) is refusing all connections since 14:23 UTC. The instance is running but the database process is in recovery mode and cannot accept new queries. The deployment at 14:22 UTC included a schema migration."
         },
         {
           "level": 3,
@@ -339,7 +339,7 @@
         {
           "kind": "overage",
           "when": "per_tick",
-          "basis": "affected_instances * 2"
+          "basis": "affected_instances * 1"
         }
       ],
       "signals": [
@@ -356,7 +356,7 @@
             ],
             "min_tier": 1
           },
-          "text": "API p99 latency on the caching layer climbed from 45 ms to 2,100 ms over the last 8 minutes. Cache hit ratio has dropped from 94% to 12% in the same window."
+          "text": "API p99 latency on the {{layer_name}} layer climbed from 45 ms to 2,100 ms over the last 8 minutes. Cache hit ratio has dropped from 94% to 12% in the same window."
         },
         {
           "level": 2,
@@ -366,7 +366,7 @@
             ],
             "min_tier": 2
           },
-          "text": "redis-us-01 is evicting keys at 18,000 entries per minute \u2014 40x the normal rate. Cache hit ratio is at 12% and falling. The eviction policy is actively clearing recently written keys to make room for new ones."
+          "text": "{{node_name}} is evicting keys at 18,000 entries per minute \u2014 40x the normal rate. Cache hit ratio is at 12% and falling. The eviction policy is actively clearing recently written keys to make room for new ones."
         },
         {
           "level": 3,
@@ -376,7 +376,7 @@
             ],
             "min_tier": 2
           },
-          "text": "redis-us-01 hit its maxmemory limit after a traffic spike wrote 3.2 GB of session data in under 5 minutes. The allkeys-lru policy began evicting the most recently accessed keys \u2014 the opposite of the desired behavior for a session store. Nearly every subsequent request is a cache miss and falls through to the primary database, which is now absorbing 40x its baseline query load. The cache needs to be warmed before latency recovers."
+          "text": "{{node_name}} hit its maxmemory limit after a traffic spike wrote 3.2 GB of session data in under 5 minutes. The allkeys-lru policy began evicting the most recently accessed keys \u2014 the opposite of the desired behavior for a session store. Nearly every subsequent request is a cache miss and falls through to the primary database, which is now absorbing 40x its baseline query load. The cache needs to be warmed before latency recovers."
         }
       ]
     },
@@ -415,7 +415,7 @@
         {
           "kind": "overage",
           "when": "per_tick",
-          "basis": "affected_instances * 2"
+          "basis": "affected_instances * 1"
         }
       ],
       "signals": [
@@ -432,7 +432,7 @@
             ],
             "min_tier": 1
           },
-          "text": "Cache write throughput on the caching layer has spiked to 5x its normal baseline. Database read load climbed 60% in the same window, consistent with a mass cache miss event."
+          "text": "Cache write throughput on the {{layer_name}} layer has spiked to 5x its normal baseline. Database read load climbed 60% in the same window, consistent with a mass cache miss event."
         },
         {
           "level": 2,
@@ -442,7 +442,7 @@
             ],
             "min_tier": 2
           },
-          "text": "redis-us-01 is processing 31,000 invalidation events per minute, up from a baseline of 2,200. Cache utilization has dropped sharply as keys are being purged faster than they are repopulated."
+          "text": "{{node_name}} is processing 31,000 invalidation events per minute, up from a baseline of 2,200. Cache utilization has dropped sharply as keys are being purged faster than they are repopulated."
         },
         {
           "level": 3,
@@ -452,7 +452,7 @@
             ],
             "min_tier": 2
           },
-          "text": "A background data migration job triggered a bulk UPDATE on the catalog table at 11:05 UTC, touching 480,000 rows. Each row update published a cache invalidation event. The event processor fanned out 480,000 DELETE calls to redis-us-01 in 90 seconds, emptying nearly the entire cache in one sweep. Every subsequent user request is a cold miss against the primary database until the cache is warmed or the stale key set is flushed and rebuilt."
+          "text": "A background data migration job triggered a bulk UPDATE on the catalog table at 11:05 UTC, touching 480,000 rows. Each row update published a cache invalidation event. The event processor fanned out 480,000 DELETE calls to {{node_name}} in 90 seconds, emptying nearly the entire cache in one sweep. Every subsequent user request is a cold miss against the primary database until the cache is warmed or the stale key set is flushed and rebuilt."
         }
       ]
     },
@@ -493,7 +493,7 @@
         {
           "kind": "overage",
           "when": "per_tick",
-          "basis": "affected_instances * 2"
+          "basis": "affected_instances * 1"
         }
       ],
       "signals": [
@@ -510,7 +510,7 @@
             ],
             "min_tier": 1
           },
-          "text": "Cache availability on the caching layer dropped to 0% for 90 seconds starting at 03:14 UTC and then recovered. API latency on all cache-dependent routes spiked sharply during the window and has not fully recovered; cache hit ratio is still near 0%."
+          "text": "Cache availability on the {{layer_name}} layer dropped to 0% for 90 seconds starting at 03:14 UTC and then recovered. API latency on all cache-dependent routes spiked sharply during the window and has not fully recovered; cache hit ratio is still near 0%."
         },
         {
           "level": 2,
@@ -520,7 +520,7 @@
             ],
             "min_tier": 2
           },
-          "text": "redis-us-01 came back online at 03:15 UTC after a 90-second outage, but the in-memory dataset is completely empty. Cache hit ratio is 0.3% and every request is falling through to the primary database."
+          "text": "{{node_name}} came back online at 03:15 UTC after a 90-second outage, but the in-memory dataset is completely empty. Cache hit ratio is 0.3% and every request is falling through to the primary database."
         },
         {
           "level": 3,
@@ -530,7 +530,7 @@
             ],
             "min_tier": 2
           },
-          "text": "redis-us-01's host was replaced during a scheduled infrastructure maintenance window at 03:14 UTC. The new instance started cold \u2014 Redis persistence (AOF and RDB) was never enabled on this node, so no data survived the restart. The in-memory state cannot be recovered automatically; the cache must be warmed before hit rates return to baseline and the database query load normalises."
+          "text": "{{node_name}}'s host was replaced during a scheduled infrastructure maintenance window at 03:14 UTC. The new instance started cold \u2014 Redis persistence (AOF and RDB) was never enabled on this node, so no data survived the restart. The in-memory state cannot be recovered automatically; the cache must be warmed before hit rates return to baseline and the database query load normalises."
         }
       ]
     },
@@ -584,7 +584,7 @@
             ],
             "min_tier": 1
           },
-          "text": "Error rate on the affected layer has been at 47% for approximately 72 hours based on historical data. The metric was never surfaced in any alert or dashboard because this layer's instrumentation was not configured."
+          "text": "Error rate on the {{layer_name}} layer has been at 47% for approximately 72 hours based on historical data. The metric was never surfaced in any alert or dashboard because this layer's instrumentation was not configured."
         },
         {
           "level": 2,
@@ -594,7 +594,7 @@
             ],
             "min_tier": 2
           },
-          "text": "export-worker-us-01 has been returning HTTP 500 on all export requests since Tuesday 08:14 UTC. The instance is running and passing its basic liveness probe, which only checks the health endpoint \u2014 not the export handler itself."
+          "text": "{{node_name}} has been returning HTTP 500 on all export requests since Tuesday 08:14 UTC. The instance is running and passing its basic liveness probe, which only checks the health endpoint \u2014 not the export handler itself."
         },
         {
           "level": 3,
@@ -604,7 +604,7 @@
             ],
             "min_tier": 2
           },
-          "text": "export-worker-us-01 began failing all export requests after a Tuesday deploy changed the output directory path. The handler silently catches the FileNotFoundError and returns a 500 with no log output. Because this node has no monitoring configured, no alert fired, no metric spiked anywhere visible, and no engineer was paged. The failure ran undetected for 72 hours across thousands of affected requests \u2014 none of which triggered a single automated notification."
+          "text": "{{node_name}} began failing all export requests after a Tuesday deploy changed the output directory path. The handler silently catches the FileNotFoundError and returns a 500 with no log output. Because this node has no monitoring configured, no alert fired, no metric spiked anywhere visible, and no engineer was paged. The failure ran undetected for 72 hours across thousands of affected requests \u2014 none of which triggered a single automated notification."
         }
       ]
     },
@@ -667,7 +667,7 @@
             ],
             "min_tier": 1
           },
-          "text": "Active database connections are at 100% of max_connections on the data layer. New queries queue and time out."
+          "text": "Connection error rate on the {{layer_name}} layer is at 8% and rising. New requests are failing to acquire a database connection."
         },
         {
           "level": 2,
@@ -677,7 +677,7 @@
             ],
             "min_tier": 2
           },
-          "text": "postgres-1 is returning 'FATAL: remaining connection slots are reserved for non-replication superuser connections' on every new connection attempt."
+          "text": "{{node_name}} (Tier {{current_tier}}) connection pool is exhausted. All {{current_capacity}} capacity is in use and new requests are queuing."
         },
         {
           "level": 3,
@@ -687,7 +687,7 @@
             ],
             "min_tier": 2
           },
-          "text": "Connection acquisition time in the trace spans averages 4.2 seconds and never falls below 1 second. No pooler is sitting between the app and the database \u2014 every request acquires a direct connection."
+          "text": "{{node_name}} Tier {{current_tier}} has no connection pooler \u2014 each application request opens a direct connection. Upgrading to Tier {{current_tier + 1}} adds a connection pool."
         }
       ]
     }

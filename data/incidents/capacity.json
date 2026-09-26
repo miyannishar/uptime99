@@ -54,7 +54,7 @@
             ],
             "min_tier": 1
           },
-          "text": "CPU utilization on the compute layer climbed from 22% to 81% over the last 18 minutes. p95 latency has risen from 70ms to 940ms in the same window."
+          "text": "CPU utilization on the {{layer_name}} layer climbed from 22% to 81% over the last 18 minutes. p95 latency has risen from 70ms to 940ms in the same window."
         },
         {
           "level": 2,
@@ -64,7 +64,7 @@
             ],
             "min_tier": 2
           },
-          "text": "app-us-01 and app-us-02 are both above 95% CPU. Request queue depth is climbing on both nodes and neither is shedding load."
+          "text": "{{node_name}} (Tier {{current_tier}}) is above 95% CPU. Request queue depth is climbing and the node is not shedding load."
         },
         {
           "level": 3,
@@ -74,7 +74,7 @@
             ],
             "min_tier": 2
           },
-          "text": "Neither app-us-01 nor app-us-02 has autoscaling enabled. Inbound request rate tripled in 15 minutes and no additional compute capacity was provisioned to absorb it."
+          "text": "{{node_name}} has no autoscaling enabled. Inbound request rate tripled in 15 minutes and no additional compute capacity was provisioned to absorb the surge."
         }
       ]
     },
@@ -131,7 +131,7 @@
             ],
             "min_tier": 1
           },
-          "text": "Request rate on the compute layer jumped 2.6× in five minutes. p95 latency crossed 600ms and is still climbing."
+          "text": "Request rate on the {{layer_name}} layer jumped 2.6× in five minutes. p95 latency crossed 600ms and is still climbing."
         },
         {
           "level": 2,
@@ -141,7 +141,7 @@
             ],
             "min_tier": 2
           },
-          "text": "app-us-01 is at 89% CPU. The instance is still serving requests but latency has crossed the 500ms alert threshold and is not recovering."
+          "text": "{{node_name}} (Tier {{current_tier}}) is at 89% CPU. The instance is still serving requests but latency has crossed the 500ms alert threshold and is not recovering."
         },
         {
           "level": 3,
@@ -151,7 +151,7 @@
             ],
             "min_tier": 2
           },
-          "text": "A single enterprise customer triggered a bulk data export at 14:30 UTC, sending 24,000 API requests in four minutes. app-us-01 absorbed all of it and is saturating; no additional capacity is available to share the load."
+          "text": "A single enterprise customer triggered a bulk data export at 14:30 UTC, sending 24,000 API requests in four minutes. {{node_name}} absorbed all of it and is saturating; no additional capacity is available to share the load."
         }
       ]
     },
@@ -218,7 +218,7 @@
             ],
             "min_tier": 1
           },
-          "text": "Traffic volume on the edge and ingress layers is 19× the daily average and still rising. Ingress error rate has reached 38% and health is deteriorating."
+          "text": "Traffic volume on the {{layer_name}} layer is 19× the daily average and still rising. Error rate has reached 38% and health is deteriorating."
         },
         {
           "level": 2,
@@ -228,7 +228,7 @@
             ],
             "min_tier": 2
           },
-          "text": "cdn-us-01 and lb-us-01 are both at 100% utilization with health scores below 60%. Both nodes are rejecting new connections and returning 503 on a growing share of requests."
+          "text": "{{node_name}} (Tier {{current_tier}}) is at 100% utilization with health below 60%. The node is rejecting new connections and returning 503 on a growing share of requests."
         },
         {
           "level": 3,
@@ -292,7 +292,7 @@
             ],
             "min_tier": 1
           },
-          "text": "CPU on the compute layer runs above 85% every weekday afternoon. Response times are degraded during the window but never quite fail."
+          "text": "CPU on the {{layer_name}} layer runs above 85% every weekday afternoon. Response times are degraded during the window but never quite fail."
         },
         {
           "level": 2,
@@ -302,7 +302,7 @@
             ],
             "min_tier": 2
           },
-          "text": "app-us-01 consistently hits 92% CPU between 13:00 and 17:00 UTC. The node cannot keep up with afternoon load and latency climbs throughout the window."
+          "text": "{{node_name}} (Tier {{current_tier}}) consistently hits 92% CPU between 13:00 and 17:00 UTC. The node cannot keep up with afternoon load and latency climbs throughout the window."
         },
         {
           "level": 3,
@@ -312,7 +312,7 @@
             ],
             "min_tier": 2
           },
-          "text": "app-us-01 is already at the largest available instance size on this tier. No larger vertical option exists on this platform; the node has reached its hardware ceiling and cannot be upsized without refactoring to support horizontal scale."
+          "text": "{{node_name}} is already at the largest available instance size on Tier {{current_tier}}. No larger vertical option exists on this platform; the node has reached its hardware ceiling and cannot be upsized without refactoring to support horizontal scale."
         }
       ]
     },
@@ -367,7 +367,7 @@
             ],
             "min_tier": 1
           },
-          "text": "Utilization on the compute layer exceeds 96% at peak. Error rate spikes to 7% during the same window and has been worsening each week."
+          "text": "Utilization on the {{layer_name}} layer exceeds 96% at peak. Error rate spikes to 7% during the same window and has been worsening each week."
         },
         {
           "level": 2,
@@ -377,7 +377,7 @@
             ],
             "min_tier": 2
           },
-          "text": "app-us-01 is at 97% CPU and dropping 5% of requests with 503 errors. Vertical scaling cannot be applied; the instance is already at the maximum available tier."
+          "text": "{{node_name}} (Tier {{current_tier}}) is at 97% CPU and dropping 5% of requests with 503 errors. Vertical scaling cannot be applied; the instance is already at the maximum available tier."
         },
         {
           "level": 3,
@@ -387,7 +387,7 @@
             ],
             "min_tier": 2
           },
-          "text": "app-us-01 has been progressively upgraded to the maximum tier size this platform offers. No larger VM SKU is available. The node is exhausting all allocated vCPUs and the only path to more headroom is refactoring the service to support horizontal scale-out."
+          "text": "{{node_name}} has been progressively upgraded to the maximum tier size this platform offers. No larger VM SKU is available. The node is exhausting all allocated vCPUs and the only path to more headroom is refactoring the service to support horizontal scale-out."
         }
       ]
     },
@@ -442,7 +442,7 @@
             ],
             "min_tier": 1
           },
-          "text": "Compute layer latency spiked from 55ms to 340ms for 85 seconds starting at 11:47 UTC, then returned to baseline without intervention. Utilization briefly peaked before the spike."
+          "text": "{{layer_name}} layer latency spiked from 55ms to 340ms for 85 seconds starting at 11:47 UTC, then returned to baseline without intervention. Utilization briefly peaked before the spike."
         },
         {
           "level": 2,
@@ -452,7 +452,7 @@
             ],
             "min_tier": 2
           },
-          "text": "app-us-01 triggered a scale-out event at 11:47 UTC. New instances were provisioned but there was an 85-second window before they completed warm-up and entered the load balancer rotation."
+          "text": "{{node_name}} triggered a scale-out event at 11:47 UTC. New instances were provisioned but there was an 85-second window before they completed warm-up and entered the load balancer rotation."
         },
         {
           "level": 3,
@@ -462,7 +462,7 @@
             ],
             "min_tier": 2
           },
-          "text": "The autoscaler provisioned two replacement nodes when CPU crossed 70%, but both required a 75-second health-check warm-up period before receiving traffic. During that window, app-us-01 alone handled all requests and saturated. Upgrading the base tier would reduce the frequency of autoscale events."
+          "text": "The autoscaler provisioned two replacement nodes when CPU crossed 70%, but both required a 75-second health-check warm-up period before receiving traffic. During that window, {{node_name}} alone handled all requests and saturated. Upgrading the base tier would reduce the frequency of autoscale events."
         }
       ]
     },
@@ -517,7 +517,7 @@
             ],
             "min_tier": 1
           },
-          "text": "Cache miss rate on the data layer is at 97%. Average database query time has jumped from 5ms to 420ms and is not recovering."
+          "text": "Cache miss rate on the {{layer_name}} layer is at 97%. Average database query time has jumped from 5ms to 420ms and is not recovering."
         },
         {
           "level": 2,
@@ -527,7 +527,7 @@
             ],
             "min_tier": 2
           },
-          "text": "redis-01 was restarted and its working set is empty. Every application request is falling through to pg-primary, which is now handling 45× its normal query volume."
+          "text": "{{node_name}} was restarted and its working set is empty. Every application request is falling through to the primary database, which is now handling 45× its normal query volume."
         },
         {
           "level": 3,
@@ -537,7 +537,7 @@
             ],
             "min_tier": 2
           },
-          "text": "redis-01 lost all in-memory state during its restart. Traces show 100% of reads bypassing the cache and hitting pg-primary directly. At this query rate the database will become the new bottleneck; the cache must be warmed before query load increases further."
+          "text": "{{node_name}} lost all in-memory state during its restart. Traces show 100% of reads bypassing the cache and hitting the primary database directly. At this query rate the database will become the new bottleneck; the cache must be warmed before query load increases further."
         }
       ]
     },
@@ -604,7 +604,7 @@
             ],
             "min_tier": 2
           },
-          "text": "metrics-pipeline-01 has been degraded for 24 minutes. No alerting rule is configured on this node, so the on-call team received no notification and the issue compounded undetected."
+          "text": "One or more observability nodes have been degraded for over 20 minutes. No alerting rules are configured on these nodes, so the on-call team received no notification and the issue compounded undetected."
         },
         {
           "level": 3,
@@ -614,7 +614,7 @@
             ],
             "min_tier": 2
           },
-          "text": "Trace data shows metrics-pipeline-01 began degrading at 09:12 UTC. The first human notification came from a customer complaint at 09:35 UTC — a 23-minute blind window caused entirely by the absence of an alerting rule on that node."
+          "text": "Trace data shows one or more observability nodes began degrading well before any human notification. The first alert came from a customer complaint — the blind window exists entirely because no alerting rules are configured on those nodes."
         }
       ]
     }

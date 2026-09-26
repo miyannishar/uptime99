@@ -6,6 +6,10 @@
       "description": "Kill and restart the service process to clear transient faults and restore responsiveness.",
       "minigame": "log_triage",
       "difficulty": 1,
+      "minigame_pool": [
+        { "minigame": "shell_fix", "difficulty": 2 },
+        { "minigame": "log_hunt_rca", "difficulty": 2 }
+      ],
       "time_cost_s": 20,
       "money_cost": 0,
       "cooldown_s": 90,
@@ -88,6 +92,9 @@
       "description": "Configure the platform autoscaler to automatically add or remove instances based on load metrics.",
       "minigame": "threshold_tuning",
       "difficulty": 3,
+      "minigame_pool": [
+        { "minigame": "live_monitor", "difficulty": 3 }
+      ],
       "time_cost_s": 90,
       "money_cost": 60,
       "cooldown_s": 300,
@@ -121,6 +128,9 @@
       "description": "Provision a replica and route read traffic to it, increasing capacity and removing the single-node risk.",
       "minigame": "query_plan_puzzle",
       "difficulty": 3,
+      "minigame_pool": [
+        { "minigame": "shell_fix", "difficulty": 2 }
+      ],
       "time_cost_s": 45,
       "money_cost": 80,
       "cooldown_s": 120,
@@ -390,6 +400,10 @@
       "description": "Invalidate all cached entries to force a clean reload and eliminate stale or corrupted cache data.",
       "minigame": "cache_key_match",
       "difficulty": 2,
+      "minigame_pool": [
+        { "minigame": "shell_fix", "difficulty": 2 },
+        { "minigame": "log_triage", "difficulty": 1 }
+      ],
       "time_cost_s": 15,
       "money_cost": 0,
       "cooldown_s": 120,
@@ -446,6 +460,11 @@
       "description": "Revert to the previous known-good artifact and redeploy it to undo a bad release that introduced errors.",
       "minigame": "diff_review",
       "difficulty": 3,
+      "minigame_pool": [
+        { "minigame": "shell_fix", "difficulty": 2 },
+        { "minigame": "log_hunt_rca", "difficulty": 2 },
+        { "minigame": "tier_migration", "difficulty": 3 }
+      ],
       "time_cost_s": 90,
       "money_cost": 0,
       "cooldown_s": 300,
@@ -474,6 +493,9 @@
       "description": "Generate new secrets and update all consumers so compromised or shared credentials can no longer be used.",
       "minigame": "iam_policy_puzzle",
       "difficulty": 4,
+      "minigame_pool": [
+        { "minigame": "cert_chain_puzzle", "difficulty": 2 }
+      ],
       "time_cost_s": 120,
       "money_cost": 0,
       "cooldown_s": 600,
@@ -506,6 +528,10 @@
       "description": "Apply per-client request caps at the edge or ingress layer to prevent abuse from overwhelming the origin.",
       "minigame": "threshold_tuning",
       "difficulty": 2,
+      "minigame_pool": [
+        { "minigame": "config_patch", "difficulty": 3 },
+        { "minigame": "tier_migration", "difficulty": 3 }
+      ],
       "time_cost_s": 60,
       "money_cost": 30,
       "cooldown_s": 240,
@@ -573,6 +599,10 @@
       "description": "Process all pending messages in the queue to clear the backlog and remove the unbounded-growth condition.",
       "minigame": "queue_triage",
       "difficulty": 3,
+      "minigame_pool": [
+        { "minigame": "live_monitor", "difficulty": 3 },
+        { "minigame": "shell_fix", "difficulty": 2 }
+      ],
       "time_cost_s": 90,
       "money_cost": 0,
       "cooldown_s": 180,
@@ -627,6 +657,9 @@
       "description": "Lower the DNS TTL so downstream resolvers pick up record changes faster during incident cutover.",
       "minigame": "dns_cutover",
       "difficulty": 2,
+      "minigame_pool": [
+        { "minigame": "config_patch", "difficulty": 3 }
+      ],
       "time_cost_s": 30,
       "money_cost": 0,
       "cooldown_s": 300,
@@ -652,6 +685,9 @@
       "description": "Create a targeted index on the hot query path to eliminate full-table scans and reduce query latency.",
       "minigame": "query_plan_puzzle",
       "difficulty": 3,
+      "minigame_pool": [
+        { "minigame": "log_hunt_rca", "difficulty": 2 }
+      ],
       "time_cost_s": 120,
       "money_cost": 0,
       "cooldown_s": 300,
@@ -681,8 +717,11 @@
       "id": "increase_connections",
       "name": "Increase Connection Pool",
       "description": "Raise the maximum connection limit so the service stops queuing requests behind an exhausted pool.",
-      "minigame": "resource_sizing",
+      "minigame": "pool_config",
       "difficulty": 2,
+      "minigame_pool": [
+        { "minigame": "config_patch", "difficulty": 3 }
+      ],
       "time_cost_s": 30,
       "money_cost": 0,
       "cooldown_s": 120,
@@ -737,6 +776,10 @@
       "description": "Move the node to the next hardware or service tier to unlock higher capacity and availability guarantees.",
       "minigame": "capacity_planning",
       "difficulty": 3,
+      "minigame_pool": [
+        { "minigame": "tier_migration", "difficulty": 3 },
+        { "minigame": "terraform_resize", "difficulty": 3 }
+      ],
       "time_cost_s": 0,
       "money_cost": 0,
       "cooldown_s": 60,
@@ -788,6 +831,9 @@
       "description": "Remove the public network exposure and enforce least-privilege access controls so the node is no longer reachable without authentication.",
       "minigame": "iam_policy_puzzle",
       "difficulty": 3,
+      "minigame_pool": [
+        { "minigame": "signal_sort", "difficulty": 2 }
+      ],
       "time_cost_s": 90,
       "money_cost": 0,
       "cooldown_s": 300,
@@ -817,6 +863,9 @@
       "description": "Instrument the node with metrics collection and alerting so failures are detected and escalated automatically.",
       "minigame": "threshold_tuning",
       "difficulty": 2,
+      "minigame_pool": [
+        { "minigame": "signal_sort", "difficulty": 2 }
+      ],
       "time_cost_s": 90,
       "money_cost": 50,
       "cooldown_s": 300,
@@ -908,6 +957,9 @@
       "description": "Refine the active rule set for WAF, API gateway, or alerting to improve detection accuracy and reduce noise.",
       "minigame": "threshold_tuning",
       "difficulty": 3,
+      "minigame_pool": [
+        { "minigame": "live_monitor", "difficulty": 3 }
+      ],
       "time_cost_s": 60,
       "money_cost": 0,
       "cooldown_s": 180,
@@ -964,6 +1016,9 @@
       "description": "Redistribute alert assignments across the on-call roster to reduce per-engineer fatigue and prevent missed pages.",
       "minigame": "incident_comms",
       "difficulty": 2,
+      "minigame_pool": [
+        { "minigame": "signal_sort", "difficulty": 2 }
+      ],
       "time_cost_s": 120,
       "money_cost": 0,
       "cooldown_s": 600,
